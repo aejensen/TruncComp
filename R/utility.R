@@ -11,6 +11,6 @@ isDataOkay <- function(d) {
   TRUE
 }
 
-isValid <- function(truncComObj) {
-  truncCombObj$success
+isValid <- function(truncCompObj) {
+  truncCompObj$success
 }

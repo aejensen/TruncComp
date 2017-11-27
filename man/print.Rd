@@ -1,19 +1,19 @@
 \name{print.truncComp}
-\alias{print.truncComp}
+\alias{print}
+
 \title{print}
+
 \usage{
 print(tcObj)
 }
-\description{
-Print
-}
+
+\description{Print}
+
 \arguments{
 \item{tcObj}{A truncComp object estimated from a call to \code{truncComp}}
 }
 
-\value{
-1
-}
+\author{Andreas Kryger Jensen <aeje@sund.ku.dk>}
 
 \examples{
 1+2

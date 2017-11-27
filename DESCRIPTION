@@ -1,11 +1,14 @@
 Package: TruncComp
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Title: Two-sample comparison of truncated continuous outcome by parametric or semi-parametric maximum likelihood
+Version: 0.1
+Author: Andreas Kryger Jensen
+Maintainer: Andreas Kryger Jensen <aeje@sund.ku.dk>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
+Imports:
+    bbmle,
+    EL

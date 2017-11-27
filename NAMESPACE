@@ -1,1 +1,5 @@
-exportPattern("^[[:alpha:]]+")
+#exportPattern("^[[:alpha:]]+")
+export(truncComp)
+export(simTruncData)
+S3method(print, TruncComp)
+S3method(summary, TruncComp)

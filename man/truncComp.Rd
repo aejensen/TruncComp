@@ -31,6 +31,8 @@ Returns an S3 object of class \code{truncComp}. The object includes the followin
 \item{init}{hej}
 }
 
+\author{Andreas Kryger Jensen <aeje@sund.ku.dk>}
+
 \seealso{
 \code{\link{print.truncComp}}, \code{\link{summary.truncComp}}
 }

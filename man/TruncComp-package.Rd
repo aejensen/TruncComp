@@ -29,5 +29,8 @@ Maintainer: \packageMaintainer{TruncComp}
 \keyword{ package }
 
 \examples{
-1 + 2
+library(TruncComp)
+d <- simTruncData(n = 100, mu0 = 3, mu1 = 3.5, pi0 = 0.6, pi1 = 0.5)
+truncComp(d$Y, d$A, d$Z, method="LRT")
+truncComp(d$Y, d$A, d$Z, method="SPLRT")
 }

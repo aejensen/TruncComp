@@ -12,5 +12,5 @@ isDataOkay <- function(d) {
 }
 
 isValid <- function(truncComObj) {
-  return truncCombObj$success
+  truncCombObj$success
 }

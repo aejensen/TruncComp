@@ -1,12 +1,12 @@
 #########################
 rm(list=ls())
 
-data <- TruncComp:::simTruncData(500, 0, 1, 0.4, 0.4)
+data <- TruncComp:::simTruncData(500, 0, 0.2, 0.8, 0.9)
 m <- truncComp.default(data$Y, data$A, data$R, method="SPLRT")
 m
 
 muDeltaSeq <- seq(-1, 1, length.out=25)
-piDeltaSeq <- seq(-1, 1, length.out=10)
+piDeltaSeq <- seq(-3, 3, length.out=10)
 matOut <- matrix(NA, length(muDeltaSeq), length(piDeltaSeq))
 for(a in 1:length(muDeltaSeq)) {
   for(b in 1:length(piDeltaSeq)) {
@@ -15,13 +15,10 @@ for(a in 1:length(muDeltaSeq)) {
 }
 
 image.plot(muDeltaSeq, piDeltaSeq, matOut)
-abline(v=-0.1109045)
-abline(h=log(1.0942200))
-
 points(c(m$muDelta, log(m$alphaDelta)))
 points(c(0,0), cex=5, pch=19)
 
-contour(muDeltaSeq, piDeltaSeq, matOut)
+contour(muDeltaSeq, piDeltaSeq, matOut, add=TRUE)
 
 
 m$muDelta

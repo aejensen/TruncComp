@@ -1,6 +1,6 @@
 #logistic log-likelihood function
 logit.likelihood <- function(data, beta) {
-  X <- model.matrix(~Z, data=data)
+  X <- model.matrix(~R, data=data)
   y <- data$A
 
   exb <- exp(X%*%beta)
@@ -28,7 +28,7 @@ logit.likelihood.profile <- function(data, delta, interval=c(-5,5)) {
 }
 
 logit.LRT <- function(data, delta) {
-  m1 <- stats::glm(A ~ Z, family=stats::binomial(), data=data)
+  m1 <- stats::glm(A ~ R, family=stats::binomial(), data=data)
   ll1 <- logit.likelihood(data, coef(m1))
 
   ll2 <- logit.likelihood.profile(data, delta)

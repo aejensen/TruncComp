@@ -1,32 +1,38 @@
 #########################
 rm(list=ls())
 
-hejhej <- function(data, muDelta, alphaDelta) {
-  yAlive1 <- data[data$Z == 0 & data$A == 1, "Y"]
-  yAlive2 <- data[data$Z == 1 & data$A == 1, "Y"]
-  ELRT <- EL::EL.means(yAlive2, yAlive1, mu = 0)
-
-  binom <- TruncComp:::logit.LRT(data, alphaDelta)
-
-  as.numeric(ELRT$statistic + binom)
-}
-
-data <- TruncComp:::simTruncData(50, 1, 1, 0.4, 0.4)
-m <- truncComp(data$Y, data$A, data$Z, method="SPLRT")
-
-m$W
-stats::qchisq(1-0.05, 2)
+data <- TruncComp:::simTruncData(500, 0, 1, 0.4, 0.4)
+m <- truncComp.default(data$Y, data$A, data$R, method="SPLRT")
+m
 
 muDeltaSeq <- seq(-1, 1, length.out=25)
 piDeltaSeq <- seq(-1, 1, length.out=10)
 matOut <- matrix(NA, length(muDeltaSeq), length(piDeltaSeq))
 for(a in 1:length(muDeltaSeq)) {
   for(b in 1:length(piDeltaSeq)) {
-    matOut[a,b] <- hejhej(data, muDeltaSeq[a], piDeltaSeq[b])
+    matOut[a,b] <- jointContrastCI(data, muDeltaSeq[a], piDeltaSeq[b])
   }
 }
 
+image.plot(muDeltaSeq, piDeltaSeq, matOut)
+abline(v=-0.1109045)
+abline(h=log(1.0942200))
 
+points(c(m$muDelta, log(m$alphaDelta)))
+points(c(0,0), cex=5, pch=19)
+
+contour(muDeltaSeq, piDeltaSeq, matOut)
+
+
+m$muDelta
+m$alphaDelta
+
+
+
+
+contour(muDeltaSeq, piDeltaSeq, matOut, q=0.5, add=TRUE)
+
+contour(muDeltaSeq, piDeltaSeq, matOut, levels=0.9, add=TRUE)
 
 
 
@@ -103,3 +109,14 @@ abline(v=1.55)
 
 stats::qchisq(1-0.05, 2)
 
+
+
+hejhej <- function(data, muDelta, alphaDelta) {
+  yAlive1 <- data[data$R == 0 & data$A == 1, "Y"]
+  yAlive2 <- data[data$R == 1 & data$A == 1, "Y"]
+  ELRT <- EL::EL.means(yAlive2, yAlive1, mu = muDelta)
+
+  binom <- TruncComp:::logit.LRT(data, alphaDelta)
+
+  as.numeric(ELRT$statistic + binom)
+}

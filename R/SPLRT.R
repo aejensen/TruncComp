@@ -1,9 +1,9 @@
-SPLRT <- function(data, muDelta = 0, conf.level = 0.95) {
-  yAlive1 <- data[data$Z == 0 & data$A == 1, "Y"]
-  yAlive2 <- data[data$Z == 1 & data$A == 1, "Y"]
+SPLRT <- function(data, conf.level = 0.95) {
+  yAlive1 <- data[data$R == 0 & data$A == 1, "Y"]
+  yAlive2 <- data[data$R == 1 & data$A == 1, "Y"]
 
   #Empirical likelihood ratio test
-  ELRT <- EL::EL.means(yAlive2, yAlive1, mu = muDelta, conf.level = conf.level)
+  ELRT <- EL::EL.means(yAlive2, yAlive1, conf.level = conf.level)
 
   muDelta <- as.numeric(ELRT$estimate)
   muDeltaCI <- as.numeric(ELRT$conf.int)
@@ -12,11 +12,11 @@ SPLRT <- function(data, muDelta = 0, conf.level = 0.95) {
 
   #Fit logistic models
   m0 <- stats::glm(A ~ 1, family=stats::binomial(), data=data)
-  m1 <- stats::glm(A ~ Z, family=stats::binomial(), data=data)
+  m1 <- stats::glm(A ~ R, family=stats::binomial(), data=data)
 
   binomConfint <- suppressMessages(stats::confint(m1, level = conf.level))
-  alphaDelta <- exp(stats::coef(m1)["Z"])
-  alphaDeltaCI <- as.numeric(exp(binomConfint["Z",]))
+  alphaDelta <- exp(stats::coef(m1)["R"])
+  alphaDeltaCI <- as.numeric(exp(binomConfint["R",]))
 
   binomTest <- stats::anova(m0, m1, test="LRT")
   alphaW <- as.numeric(binomTest$Deviance[2])

@@ -1,10 +1,40 @@
 #########################
 rm(list=ls())
 
-d <- simTruncData(50, 1, 2, 0.4, 0.6)
-m <- truncComp(d$Y, d$A, d$Z, method="SPLRT")
-m
+hejhej <- function(data, muDelta, alphaDelta) {
+  yAlive1 <- data[data$Z == 0 & data$A == 1, "Y"]
+  yAlive2 <- data[data$Z == 1 & data$A == 1, "Y"]
+  ELRT <- EL::EL.means(yAlive2, yAlive1, mu = 0)
 
+  binom <- TruncComp:::logit.LRT(data, alphaDelta)
+
+  as.numeric(ELRT$statistic + binom)
+}
+
+data <- TruncComp:::simTruncData(50, 1, 1, 0.4, 0.4)
+m <- truncComp(data$Y, data$A, data$Z, method="SPLRT")
+
+m$W
+stats::qchisq(1-0.05, 2)
+
+muDeltaSeq <- seq(-1, 1, length.out=25)
+piDeltaSeq <- seq(-1, 1, length.out=10)
+matOut <- matrix(NA, length(muDeltaSeq), length(piDeltaSeq))
+for(a in 1:length(muDeltaSeq)) {
+  for(b in 1:length(piDeltaSeq)) {
+    matOut[a,b] <- hejhej(data, muDeltaSeq[a], piDeltaSeq[b])
+  }
+}
+
+
+
+
+
+
+
+
+
+#######
 
 deltaSeq <- seq(-1, 3, length.out=50)
 plot(deltaSeq, sapply(deltaSeq, function(delta) TruncComp:::logit.LRT(d, delta)), type="l")

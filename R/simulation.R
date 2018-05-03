@@ -38,7 +38,7 @@ simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", CV = 1
   d1 <- as.data.frame(cbind(1, d1))
 
   d <- rbind(d0, d1)
-  colnames(d) <- c("Z", "A", "Y")
+  colnames(d) <- c("R", "A", "Y")
 
   d
 }

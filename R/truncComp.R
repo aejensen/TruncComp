@@ -1,4 +1,13 @@
-truncComp <- function(y, a, z, method, conf.level = 0.95, init = NULL) {
+truncComp.formula <- function(formula, atom, data, method, conf.level = 0.95, init = NULL) {
+  formulaVars <- all.vars(formula)
+  d <- data.frame(Y = data[, formulaVars[1]], A = 1, R = data[, formulaVars[2]])
+  d$A[d$Y == atom] <- 0
+
+  truncComp.default(d$Y, d$A, d$R, method, conf.level, init)
+}
+
+
+truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL) {
   returnErrorData <- function(error) {
     out <- list(muDelta = NULL,
                 muDeltaCI = NULL,
@@ -15,7 +24,7 @@ truncComp <- function(y, a, z, method, conf.level = 0.95, init = NULL) {
     out
   }
 
-  d <- data.frame(Y = y, A = a, Z = z)
+  d <- data.frame(Y = y, A = a, R = r)
 
   if(!isDataOkay(d)) {
     error <- "Estimation failed due to data error."

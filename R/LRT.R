@@ -1,11 +1,11 @@
 getLRstartingValues <- function(d) {
   logOdds <- function(p) log(p / (1-p))
 
-  mu0Init <- base::mean(d[d$Z == 0 & d$A == 1, "Y"])
-  muDeltaInit <- base::mean(d[d$Z == 1 & d$A == 1, "Y"])  - mu0Init
+  mu0Init <- base::mean(d[d$R == 0 & d$A == 1, "Y"])
+  muDeltaInit <- base::mean(d[d$R == 1 & d$A == 1, "Y"])  - mu0Init
   sigmaInit <- stats::sd(d[d$A == 1, "Y"])
-  alphaInit <- logOdds(base::mean(d[d$Z == 0, "A"]))
-  alphaDeltaInit <- logOdds(base::mean(d[d$Z == 1, "A"]))- alphaInit
+  alphaInit <- logOdds(base::mean(d[d$R == 0, "A"]))
+  alphaDeltaInit <- logOdds(base::mean(d[d$R == 1, "A"]))- alphaInit
 
   list(mu = mu0Init, muDelta = muDeltaInit,
        alpha = alphaInit, alphaDelta = alphaDeltaInit,
@@ -16,7 +16,7 @@ getLRstartingValues <- function(d) {
 LRT <- function(data, init, conf.level = 0.95) {
   a <- data$A
   y <- data$Y
-  z <- data$Z
+  z <- data$R
 
   #A = 1(y_i is observed)
   expit <- function(x) exp(x)/(exp(x) + 1)

@@ -1,9 +1,9 @@
-SPLRT <- function(data, conf.level = 0.95) {
+SPLRT <- function(data, muDelta = 0, conf.level = 0.95) {
   yAlive1 <- data[data$Z == 0 & data$A == 1, "Y"]
   yAlive2 <- data[data$Z == 1 & data$A == 1, "Y"]
 
   #Empirical likelihood ratio test
-  ELRT <- EL::EL.means(yAlive2, yAlive1, conf.level = conf.level)
+  ELRT <- EL::EL.means(yAlive2, yAlive1, mu = muDelta, conf.level = conf.level)
 
   muDelta <- as.numeric(ELRT$estimate)
   muDeltaCI <- as.numeric(ELRT$conf.int)
@@ -24,7 +24,7 @@ SPLRT <- function(data, conf.level = 0.95) {
   #W.binom <- 2 * (logLik(m1) - logLik(m0))
 
   W <- as.numeric(muW + alphaW) #Joint test statistic
-  p <- 1 - stats::pchisq(W, 2)         #Joint p-value
+  p <- 1 - stats::pchisq(W, 2)  #Joint p-value
 
   out <- list(muDelta = muDelta,
               muDeltaCI = muDeltaCI,
@@ -36,7 +36,7 @@ SPLRT <- function(data, conf.level = 0.95) {
               conf.level = conf.level,
               success = TRUE,
               error = "",
-              init = NULL)
+              init = NULL, muW = muW, alphaW = alphaW, ELRT = ELRT, yAlive1 = yAlive1, yAlive2 = yAlive2)
 
   class(out) <- append(class(out), "TruncComp")
   out

@@ -8,23 +8,26 @@ jointContrastLRT <- function(data, muDelta, alphaDelta) {
   as.numeric(ELRT$statistic + binom)
 }
 
-jointContrastCI <- function(model, muDelta = seq(-1, 1, length.out = 20), piDelta = seq(-3, 3, length.out = 20), plot=TRUE, conf.level = 0.95) {
+jointContrastCI <- function(model, muDelta = seq(-1, 1, length.out = 20),
+                                   logORdelta = seq(-3, 3, length.out = 20),
+                                   plot=TRUE, conf.level = 0.95) {
   data <- model$data
 
-  matOut <- matrix(NA, length(muDelta), length(piDelta))
+  matOut <- matrix(NA, length(muDelta), length(logORdelta))
   for(a in 1:length(muDelta)) {
-    for(b in 1:length(piDelta)) {
-      matOut[a,b] <- jointContrastLRT(data, muDelta[a], piDelta[b])
+    for(b in 1:length(logORdelta)) {
+      matOut[a,b] <- jointContrastLRT(data, muDelta[a], logORdelta[b])
     }
   }
 
   if(plot) {
-    fields::image.plot(muDelta, piDelta, matOut, xlab="Difference in mean", ylab="log OR")
+    fields::image.plot(muDelta, logORdelta, matOut, xlab="Difference in mean", ylab="log OR")
     points(model$muDelta, log(model$alphaDelta), pch=19, cex=3)
     points(0, 0, cex=3, pch=3)
-    contour(muDelta, piDelta, matOut, add=TRUE, levels=stats::qchisq(conf.level, 2), lwd=2)
+    contour(muDelta, logORdelta, matOut, add=TRUE, levels=stats::qchisq(conf.level, 2), lwd=2)
   }
-  matOut
+
+  list(muDelta = muDelta, logORdelta = logORdelta, surface = matOut)
 }
 
 

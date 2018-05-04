@@ -17,9 +17,10 @@ truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL) {
                 p = NULL,
                 method = method,
                 conf.level = conf.level,
-                success = TRUE,
+                success = FALSE,
                 error = error,
-                init = NULL)
+                init = NULL,
+                data = NULL)
     class(out) <- append(class(out), "CompositeOutcomeEstimation")
     out
   }
@@ -38,7 +39,7 @@ truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL) {
 
   if(method == "LRT") {
     if(is.null(init)) {
-      message("Calculating starting values for likelihood optimization")
+      #message("Calculating starting values for likelihood optimization")
       init <- getLRstartingValues(d)
     }
 
@@ -54,6 +55,7 @@ truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL) {
     out <- SPLRT(d, conf.level)
   }
 
+  out$data <- d
   out
 }
 

@@ -1,41 +1,54 @@
 #########################
 rm(list=ls())
 
-data <- TruncComp:::simTruncData(500, 0, 0.2, 0.8, 0.9)
-m <- truncComp.default(data$Y, data$A, data$R, method="SPLRT")
-m
-
-muDeltaSeq <- seq(-1, 1, length.out=25)
-piDeltaSeq <- seq(-3, 3, length.out=10)
-matOut <- matrix(NA, length(muDeltaSeq), length(piDeltaSeq))
-for(a in 1:length(muDeltaSeq)) {
-  for(b in 1:length(piDeltaSeq)) {
-    matOut[a,b] <- jointContrastCI(data, muDeltaSeq[a], piDeltaSeq[b])
-  }
+par(mfrow=c(3,3))
+for(k in 1:9) {
+  data <- TruncComp:::simTruncData(50, 0, 0.3, 0.85, 0.9)
+  m <- truncComp.default(data$Y, data$A, data$R, method="SPLRT")
+  a <- jointContrastCI(m)
 }
 
-image.plot(muDeltaSeq, piDeltaSeq, matOut)
-points(c(m$muDelta, log(m$alphaDelta)))
-points(c(0,0), cex=5, pch=19)
+simCoverage <- function(nsim, n, method, seed=12345) {
+  set.seed(seed)
+  coverageOut <- t(sapply(1:nsim, function(sim) {
+    #cat(sim, "\n")
+    data <- TruncComp:::simTruncData(n, 0, 0.3, 0.85, 0.9)
+    m <- truncComp.default(data$Y, data$A, data$R, method=method)
 
-contour(muDeltaSeq, piDeltaSeq, matOut, add=TRUE)
+    muDeltaTrue <- 0.3
+    orDeltaTrue <- (0.9/(1-0.9)) / (0.85/(1-0.85))
+
+    coverage.muDelta <- (m$muDeltaCI[1] < muDeltaTrue) & m$muDeltaCI[2] > muDeltaTrue
+    coverage.OR <- (m$alphaDeltaCI[1] < orDeltaTrue) & (m$alphaDeltaCI[2] > orDeltaTrue)
+
+    c(coverage.muDelta, coverage.OR)
+  }))
+  c(mean(coverageOut[,1] == TRUE, na.rm=TRUE), mean(coverageOut[,2] == TRUE, na.rm=TRUE))
+}
+
+simCoverage(nsim = 500, n = 30, method="SPLRT")
+simCoverage(nsim = 500, n = 50, method="SPLRT")
+simCoverage(nsim = 500, n = 100, method="SPLRT")
 
 
-m$muDelta
+
+data <- TruncComp:::simTruncData(100000, 0, 0.3, 0.6, 0.9)
+m <- truncComp.default(data$Y, data$A, data$R, method="SPLRT")
 m$alphaDelta
 
 
+image.plot(muDeltaSeq, piDeltaSeq, matOut)
+points(m$muDelta, log(m$alphaDelta), pch=19, cex=4)
+points(0, 0, cex=5, pch=19)
+
+contour(muDeltaSeq, piDeltaSeq, matOut, add=FALSE, levels=stats::qchisq(1-0.05, 2))
+contour(muDeltaSeq, piDeltaSeq, matOut, add=TRUE, levels=stats::qchisq(1-0.2, 2))
 
 
-contour(muDeltaSeq, piDeltaSeq, matOut, q=0.5, add=TRUE)
-
-contour(muDeltaSeq, piDeltaSeq, matOut, levels=0.9, add=TRUE)
 
 
-
-
-
-
+lines(c(m$muDelta, m$muDelta), c(0.331035, -0.07047824), lwd=2)
+0.7249986
 
 #######
 

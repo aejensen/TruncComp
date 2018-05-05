@@ -64,14 +64,15 @@ power2 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 2, nSim=nSim, ncor
 power3 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 3, nSim=nSim, ncores=64))
 power4 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 4, nSim=nSim, ncores=64))
 
-save(nSeq, power1, power2, power3, power4, file="powerSimResults.RData")
+save(nSeq, power1, power2, power3, power4,
+     file="powerSimulation.RData")
 
 
 
 ############################################################
 # PLOT THE RESULTS
 ############################################################
-load("powerSimResults.RData")
+load("powerSimulation.RData")
 
 par(mfrow=c(2,2), mgp=c(2,1,0), mar=c(3.5, 3, 1, 0.5))
 plot(nSeq, power1[1,], ylim=c(0, 1), type="l", col="firebrick1", bty="n",

@@ -110,10 +110,18 @@ SPLRT.4.100 <- pointEstimateSim(nsim = nSim, n = 100, scenario = 4, method="SPLR
 LRT.4.200 <- pointEstimateSim(nsim = nSim, n = 200, scenario = 4, method="LRT", ncores=64)
 SPLRT.4.200 <- pointEstimateSim(nsim = nSim, n = 200, scenario = 4, method="SPLRT", ncores=64)
 
+save(LRT.1.50, SPLRT.1.50, LRT.1.100, SPLRT.1.100, LRT.1.200, SPLRT.1.200,
+     LRT.2.50, SPLRT.2.50, LRT.2.100, SPLRT.2.100, LRT.2.200, SPLRT.2.200,
+     LRT.3.50, SPLRT.3.50, LRT.3.100, SPLRT.3.100, LRT.3.200, SPLRT.3.200,
+     LRT.4.50, SPLRT.4.50, LRT.4.100, SPLRT.4.100, LRT.4.200, SPLRT.4.200,
+     file = "coverageSimulation.RData")
+
 
 ############################################################
 # GATHER THE RESULTS
 ############################################################
+load("coverageSimulation.RData")
+
 getStats <- function(res, muDelta, logOR) {
   mat <- do.call("rbind", res)
   out <- c(biasMuDelta = mean(mat[,1] - muDelta, na.rm=TRUE),
@@ -126,9 +134,9 @@ getStats <- function(res, muDelta, logOR) {
   round(out, 4)
 }
 
-rbind(getStats(LRT.1.50, 0.5, log(1)), getStats(SPLRT.1.50, 0.5, log(1)))
-rbind(getStats(LRT.1.100, 0.5, log(1)), getStats(SPLRT.1.100, 0.5, log(1)))
-rbind(getStats(LRT.1.200, 0.5, log(1)), getStats(SPLRT.1.200, 0.5, log(1)))
+rbind(getStats(LRT.1.50, 0.5, 0), getStats(SPLRT.1.50, 0.5, 0))
+rbind(getStats(LRT.1.100, 0.5, 0), getStats(SPLRT.1.100, 0.5, 0))
+rbind(getStats(LRT.1.200, 0.5, 0), getStats(SPLRT.1.200, 0.5, 0))
 
 rbind(getStats(LRT.2.50, 0, -0.4418328), getStats(SPLRT.2.50, 0, -0.4418328))
 rbind(getStats(LRT.2.100, 0, -0.4418328), getStats(SPLRT.2.100, 0, -0.4418328))

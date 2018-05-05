@@ -56,7 +56,7 @@ powerSim <- function(n, scenario, nSim, alpha = 0.05, ncores=64, seed=12345) {
   apply(out, 2, mean, na.rm=TRUE)
 }
 
-nSim <- 25 * 10^3                   #number of simulations
+nSim <- 25 * 10^3                  #number of simulations
 nSeq <- seq(50, 350, length.out=16) #different sample sizes
 
 power1 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 1, nSim=nSim, ncores=64))
@@ -65,6 +65,7 @@ power3 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 3, nSim=nSim, ncor
 power4 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 4, nSim=nSim, ncores=64))
 
 save(nSeq, power1, power2, power3, power4, file="powerSimResults.RData")
+
 
 
 ############################################################

@@ -17,12 +17,12 @@ confint.TruncComp <- function(object, type = "marginal", muDelta = NULL, logORde
     }
 
     cMat <- matrix(NA, 4, 2)
-    cMat[1,] <- m$muDeltaCI
-    cMat[2,] <- m$alphaDeltaCI
-    cMat[3,] <- log(m$alphaDeltaCI)
+    cMat[1,] <- object$muDeltaCI
+    cMat[2,] <- object$alphaDeltaCI
+    cMat[3,] <- log(object$alphaDeltaCI)
     cMat[4,] <- NA
 
-    a <- (1 - m$conf.level)/2
+    a <- (1 - object$conf.level)/2
     a <- c(a, 1 - a)
     pct <- paste(format(100 * a, trim = TRUE, scientific = FALSE, digits = 3), "%")
 

@@ -1,11 +1,11 @@
 rm(list=ls())
 
+library(devtools)
+install_github('aejensen/TruncComp')
+
 library(TruncComp)
 library(parallel)
 library(sp)
-
-library(devtools)
-install_github('aejensen/TruncComp')
 
 pointEstimateSim <- function(nsim, n, scenario, method, ncores, seed=12345) {
   set.seed(seed)
@@ -51,7 +51,7 @@ pointEstimateSim <- function(nsim, n, scenario, method, ncores, seed=12345) {
     inclusion.OR <- (m$alphaDeltaCI[1] < orDeltaTrue) & (m$alphaDeltaCI[2] > orDeltaTrue)
 
     if(method == "SPLRT") {
-      jSurf <- confint(m, type="simultaneous", plot=FALSE, resolution = 40)
+      jSurf <- suppressMessages(confint(m, type="simultaneous", plot=FALSE, resolution = 40))
       cont <- contourLines(jSurf$muDelta, jSurf$logORdelta, jSurf$surface, levels=stats::qchisq(0.95, 2))
       inclusion.joint <- sp::point.in.polygon(muDeltaTrue, log(orDeltaTrue), cont[[1]]$x, cont[[1]]$y) == 1
     } else {
@@ -64,7 +64,7 @@ pointEstimateSim <- function(nsim, n, scenario, method, ncores, seed=12345) {
   out
 }
 
-nSim <- 1000
+nSim <- 1024
 
 #Setup 1
 LRT.1.50 <- pointEstimateSim(nsim = nSim, n = 50, scenario = 1, method="LRT", ncores=64)

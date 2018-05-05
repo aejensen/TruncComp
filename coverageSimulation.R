@@ -67,6 +67,9 @@ getStats <- function(res, muDelta, logOR) {
 
 nSim <- 1000
 
+cov.4.SPLRT.200 <- simCoverage(nsim = nSim, n = 2000, scenario = 4, method="SPLRT", ncores=64)
+getStats(cov.4.SPLRT.200, 0, log((0.3/(1-0.3)) / (0.4/(1-0.4))))
+
 #nSim <- 2000
 
 cov.1.SPLRT.50 <- simCoverage(nsim = nSim, n = 50, scenario = 1, method="SPLRT", ncores=64)
@@ -98,9 +101,12 @@ getStats(cov.3.SPLRT.100, 1, log((0.3/(1-0.3)) / (0.4/(1-0.4))))
 getStats(cov.1.SPLRT.200, 1, log(1))
 getStats(cov.2.SPLRT.200, 0, log((0.3/(1-0.3)) / (0.4/(1-0.4))))
 getStats(cov.3.SPLRT.200, 1, log((0.3/(1-0.3)) / (0.4/(1-0.4))))
-getStats(cov.4.SPLRT.200, 0, log((0.3/(1-0.3)) / (0.4/(1-0.4))))
-
-
+getStats(cov.4.SPLRT.200, 0, log((0.3/(1-0.3)) / (0.4/(1-0.4)))
 
 
 save.image("coverageResults.RData")
+
+
+####
+data <- TruncComp:::simTruncData(20000, 3, 4, 1, 1, dist="t-sq")
+mean(data$Y[data$R == 1]) - mean(data$Y[data$R == 0])

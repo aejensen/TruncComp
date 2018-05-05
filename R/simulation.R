@@ -1,4 +1,4 @@
-simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", CV = 1.5) {
+simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "t-sq") {
   #pi0 probability of observing the outcome for Z = 0
   #pi1 probability of observing the outcome for Z = 1
   #CV = coefficient of variation for gamma outcome
@@ -14,8 +14,8 @@ simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", CV = 1
     alive <- stats::rbinom(1, 1, pi0)
     if(dist == "norm") {
       y <- stats::rnorm(1, mu0, sigma)
-    } else if(dist == "gamma") {
-      y <- stats::rgamma(1, shape = 1/(CV^2), scale = mu0 * CV^2)
+    } else if(dist == "t-sq") {
+      y <- stats::rt(1, df = 2)^2 + mu0
     } else {
       stop("Invalid distribution")
     }
@@ -28,8 +28,8 @@ simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", CV = 1
     alive <- stats::rbinom(1, 1, pi1)
     if(dist == "norm") {
       y <- stats::rnorm(1, mu1, sigma)
-    } else if(dist == "gamma") {
-      y <- stats::rgamma(1, shape = 1/(CV^2), scale = mu1 * CV^2)
+    } else if(dist == "t-sq") {
+      y <- stats::rt(1, df = 2)^2 + mu1
     } else {
       stop("Invalid distribution")
     }

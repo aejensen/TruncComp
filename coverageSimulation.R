@@ -23,7 +23,9 @@ simCoverage <- function(nsim, n, scenario, method, ncores, seed=12345) {
       muDeltaTrue <- 1
       orDeltaTrue <- (0.3/(1-0.3)) / (0.4/(1-0.4))
     } else if(scenario == 4) {
-      stop("not implemented yet")
+      data <- TruncComp:::simTruncData(n, 3, 4, 1, 1, dist="t-sq")
+      muDeltaTrue <- 1
+      orDeltaTrue <- (0.3/(1-0.3)) / (0.4/(1-0.4))
     }
 
     m <- truncComp.default(data$Y, data$A, data$R, method=method)
@@ -33,8 +35,8 @@ simCoverage <- function(nsim, n, scenario, method, ncores, seed=12345) {
     inclusion.OR <- (m$alphaDeltaCI[1] < orDeltaTrue) & (m$alphaDeltaCI[2] > orDeltaTrue)
 
     #Get joint surface (slow!)
-    jointSurface <- jointContrastCI(m, muDelta = seq(m$muDeltaCI[1] -0.4 , m$muDeltaCI[2] + 0.4, length.out = 40),
-                                       logORdelta = seq(log(m$alphaDeltaCI[1]) - 0.4, log(m$alphaDeltaCI[2]) + 0.4, length.out = 40),
+    jointSurface <- jointContrastCI(m, muDelta = seq(m$muDeltaCI[1] -0.4 , m$muDeltaCI[2] + 0.4, length.out = 10),
+                                       logORdelta = seq(log(m$alphaDeltaCI[1]) - 0.4, log(m$alphaDeltaCI[2]) + 0.4, length.out = 10),
                                        plot=TRUE)
 
     #Get joint inclusion indicator
@@ -50,7 +52,7 @@ simCoverage <- function(nsim, n, scenario, method, ncores, seed=12345) {
   cov.OR <- mean(out[,2] == 1, na.rm=TRUE)
   cov.simult <- mean(out[,3] == 1, na.rm=TRUE)
 
-  c(cov.muDelta, cov.OR, cov.simult)
+  c(muDeltaCov = cov.muDelta, logORcov = cov.OR, simultCov = cov.simult)
 }
 
 nSim <- 2000
@@ -58,6 +60,7 @@ nSim <- 2000
 cov.1.SPLRT.50 <- simCoverage(nsim = nSim, n = 50, scenario = 1, method="SPLRT", ncores=64)
 cov.2.SPLRT.50 <- simCoverage(nsim = nSim, n = 50, scenario = 2, method="SPLRT", ncores=64)
 cov.3.SPLRT.50 <- simCoverage(nsim = nSim, n = 50, scenario = 3, method="SPLRT", ncores=64)
+cov.4.SPLRT.50 <- simCoverage(nsim = nSim, n = 50, scenario = 4, method="SPLRT", ncores=64)
 
 cov.1.SPLRT.100 <- simCoverage(nsim = nSim, n = 100, scenario = 1, method="SPLRT", ncores=64)
 cov.2.SPLRT.100 <- simCoverage(nsim = nSim, n = 100, scenario = 2, method="SPLRT", ncores=64)
@@ -81,3 +84,9 @@ cov.1.SPLRT.200
 cov.2.SPLRT.200
 cov.3.SPLRT.200
 
+save.image("coverageResults.RData")
+
+
+n <- 1000
+data <- TruncComp:::simTruncData(n, 3, 4, 1, 1, dist="t-sq")
+hist(data$Y)

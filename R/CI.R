@@ -8,21 +8,31 @@ jointContrastLRT <- function(data, muDelta, alphaDelta) {
   as.numeric(ELRT$statistic + binom)
 }
 
-jointContrastCI <- function(model, muDelta = seq(-1, 1, length.out = 20),
-                                   logORdelta = seq(-3, 3, length.out = 20),
-                                   plot=TRUE, conf.level = 0.95) {
-  data <- model$data
+jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL,
+                            plot=TRUE, conf.level = 0.95) {
+
+  if(!("TruncComp" %in% class(m))) {
+    stop("m must be an object of type TruncComp")
+  }
+
+  if(is.null(muDelta)) {
+    muDelta <- seq(m$muDeltaCI[1] -0.4 , m$muDeltaCI[2] + 0.4, length.out = 40)
+  }
+
+  if(is.null(logORdelta)) {
+    logORdelta = seq(log(m$alphaDeltaCI[1]) - 0.4, log(m$alphaDeltaCI[2]) + 0.4, length.out = 40)
+  }
 
   matOut <- matrix(NA, length(muDelta), length(logORdelta))
   for(a in 1:length(muDelta)) {
     for(b in 1:length(logORdelta)) {
-      matOut[a,b] <- jointContrastLRT(data, muDelta[a], logORdelta[b])
+      matOut[a,b] <- jointContrastLRT(m$data, muDelta[a], logORdelta[b])
     }
   }
 
   if(plot) {
     fields::image.plot(muDelta, logORdelta, matOut, xlab="Difference in mean", ylab="log OR")
-    points(model$muDelta, log(model$alphaDelta), pch=19, cex=3)
+    points(m$muDelta, log(m$alphaDelta), pch=19, cex=3)
     points(0, 0, cex=3, pch=3)
     contour(muDelta, logORdelta, matOut, add=TRUE, levels=stats::qchisq(conf.level, 2), lwd=2)
   }

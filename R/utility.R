@@ -14,3 +14,20 @@ isDataOkay <- function(d) {
 isValid <- function(truncCompObj) {
   truncCompObj$success
 }
+
+returnErrorData <- function(error, method, conf.level) {
+  out <- list(muDelta = NULL,
+              muDeltaCI = NULL,
+              alphaDelta = NULL,
+              alphaDeltaCI = NULL,
+              W = NULL,
+              p = NULL,
+              method = method,
+              conf.level = conf.level,
+              success = FALSE,
+              error = error,
+              init = NULL,
+              data = NULL)
+  class(out) <- append(class(out), "CompositeOutcomeEstimation")
+  out
+}

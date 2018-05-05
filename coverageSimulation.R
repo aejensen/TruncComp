@@ -108,5 +108,12 @@ save.image("coverageResults.RData")
 
 
 ####
-data <- TruncComp:::simTruncData(20000, 3, 4, 1, 1, dist="t-sq")
-mean(data$Y[data$R == 1]) - mean(data$Y[data$R == 0])
+test <- mclapply(1:1000, function(nsim) {
+  data <- TruncComp:::simTruncData(200, 3, 4, 0.4, 0.3, dist="t-sq", df=2)
+  m <- truncComp.default(data$Y, data$A, data$R, method="SPLRT")
+  m$muDelta
+}, mc.cores=64, mc.preschedule=FALSE)
+mean(unlist(test), na.rm=TRUE)
+
+
+

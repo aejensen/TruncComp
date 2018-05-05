@@ -15,7 +15,7 @@ powerSim <- function(n, scenario, nSim = 500, ncores=6) {
     } else if(scenario == 3) {
       data <- TruncComp:::simTruncData(n, 3, 4, 0.4, 0.3, dist="norm")
     } else if(scenario == 4) {
-      data <- TruncComp:::simTruncData(n, 3, 4, 0.4, 0.3, dist="t-sq")
+      data <- TruncComp:::simTruncData(n, 3, 4, 0.4, 0.3, dist="t-sq", df=2)
     }
     m.SPLRT <- truncComp.default(data$Y, data$A, data$R, method="SPLRT")
     m.LRT <- truncComp.default(data$Y, data$A, data$R, method="LRT")
@@ -29,6 +29,10 @@ powerSim <- function(n, scenario, nSim = 500, ncores=6) {
 
 nSim <- 500
 nSeq <- seq(40, 250, length.out=7)
+
+power4 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 4, nSim=nSim, ncores=64))
+
+
 
 power1 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 1, nSim=nSim, ncores=6))
 power2 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 2, nSim=nSim, ncores=6))

@@ -98,7 +98,7 @@ lines(nSeq, power4[2,], col="cornflowerblue", lwd=2)
 lines(nSeq, power4[3,], col="black", lwd=2)
 
 
-par(mgp=c(2.1,1,0))
+par(mgp=c(2.1,1,0), mfrow=c(1,1))
 plot(nSeq, (power1[3,] - power1[2,])/power1[2,] * 100, type="l", bty="n", ylim=c(0,30),
      col="black", lwd=2, xlab="Sample size per group",
      ylab="Percentage relative difference in power")
@@ -108,4 +108,3 @@ lines(nSeq, (power4[3,] - power4[2,])/power4[2,] * 100, col="firebrick1", lwd=2)
 legend("topleft", c("Setup 1", "Setup 2", "Setup 3", "Setup 4"),
        lwd=2, col=c("black", "cornflowerblue", "darkgoldenrod1", "firebrick1"),
        bty="n")
-

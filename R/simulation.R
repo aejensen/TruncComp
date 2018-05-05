@@ -42,3 +42,37 @@ simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df=4) 
 
   d
 }
+
+
+
+simTruncData2 <- function(n, f0, f1, pi0, pi1) {
+  #pi0 probability of observing the outcome for Z = 0
+  #pi1 probability of observing the outcome for Z = 1
+
+  #Number of random treatment allocations
+  #nTreatment <- rbinom(1, n, 0.5)
+  #nControl <- n - nTreatment
+  nTreatment <- n
+  nControl <- n
+
+  #Control group
+  d0 <- t(sapply(1:nControl, function(i) {
+    alive <- stats::rbinom(1, 1, pi0)
+    y <- f0()
+    c(alive, y * as.numeric(alive == 1))
+  }))
+  d0 <- as.data.frame(cbind(0, d0))
+
+  #Intervention group
+  d1 <- t(sapply(1:nTreatment, function(i) {
+    alive <- stats::rbinom(1, 1, pi1)
+    y <- f1()
+    c(alive, y * as.numeric(alive == 1))
+  }))
+  d1 <- as.data.frame(cbind(1, d1))
+
+  d <- rbind(d0, d1)
+  colnames(d) <- c("R", "A", "Y")
+
+  d
+}

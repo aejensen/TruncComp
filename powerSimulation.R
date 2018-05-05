@@ -32,6 +32,8 @@ nSeq <- seq(40, 250, length.out=7)
 
 power4 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 4, nSim=nSim, ncores=64))
 
+curve(gamlss.dist::dSN1(x, mu = 3, sigma = 1, nu = 14), 0, 8)
+?dSN1
 
 
 power1 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 1, nSim=nSim, ncores=6))

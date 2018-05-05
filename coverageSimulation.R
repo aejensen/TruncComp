@@ -116,4 +116,9 @@ test <- mclapply(1:1000, function(nsim) {
 mean(unlist(test), na.rm=TRUE)
 
 
+f0 <- gamlss.dist::rSN1(1, mu = 3, sigma=1, nu=12)
+f1 <- gamlss.dist::rSN1(1, mu = 4, sigma=1, nu=12)
+
+d <- TruncComp:::simTruncData2(200, f0, f1, 1, 1)
+hist(hej$Y[hej$R == 1])
 

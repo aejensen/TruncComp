@@ -4,6 +4,9 @@ library(TruncComp)
 library(parallel)
 library(sp)
 
+library(devtools)
+install_github('aejensen/TruncComp')
+
 simCoverage <- function(nsim, n, scenario, method, ncores, seed=12345) {
   set.seed(seed)
 
@@ -35,8 +38,8 @@ simCoverage <- function(nsim, n, scenario, method, ncores, seed=12345) {
     inclusion.OR <- (m$alphaDeltaCI[1] < orDeltaTrue) & (m$alphaDeltaCI[2] > orDeltaTrue)
 
     #Get joint surface (slow!)
-    #jointSurface <- jointContrastCI(m, muDelta = seq(m$muDeltaCI[1] -0.4 , m$muDeltaCI[2] + 0.4, length.out = 5),
-    #                                   logORdelta = seq(log(m$alphaDeltaCI[1]) - 0.4, log(m$alphaDeltaCI[2]) + 0.4, length.out = 5),
+    #jointSurface <- jointContrastCI(m, muDelta = seq(m$muDeltaCI[1] -0.4 , m$muDeltaCI[2] + 0.4, length.out = 40),
+    #                                   logORdelta = seq(log(m$alphaDeltaCI[1]) - 0.4, log(m$alphaDeltaCI[2]) + 0.4, length.out = 40),
     #                                   plot=TRUE)
 
     #Get joint inclusion indicator
@@ -95,24 +98,9 @@ getStats(cov.3.SPLRT.100, 1, log((0.3/(1-0.3)) / (0.4/(1-0.4))))
 getStats(cov.1.SPLRT.200, 1, log(1))
 getStats(cov.2.SPLRT.200, 0, log((0.3/(1-0.3)) / (0.4/(1-0.4))))
 getStats(cov.3.SPLRT.200, 1, log((0.3/(1-0.3)) / (0.4/(1-0.4))))
-getStats(cov.4.SPLRT.200, 1, log((0.3/(1-0.3)) / (0.4/(1-0.4))))
+getStats(cov.4.SPLRT.200, 0, log((0.3/(1-0.3)) / (0.4/(1-0.4))))
+
+
+
 
 save.image("coverageResults.RData")
-
-#################
-data <- TruncComp:::simTruncData(200, 0, 1, 0.3, 0.4, dist="t-sq")
-m <- truncComp.default(data$Y, data$A, data$R, method="SPLRT")
-m
-
-
-mean(data$Y[data$A == 1 & data$R == 0])
-mean(data$Y[data$A == 1 & data$R == 1])
-
-mean(data$Y[data$A == 1 & data$R == 0]) - mean(data$Y[data$A == 1 & data$R == 1])
-hist(data$Y)
-
-
-
-
-
-hist(stats::rt(1000, df = 3)^2 + 2)

@@ -15,7 +15,7 @@ simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm") {
     if(dist == "norm") {
       y <- stats::rnorm(1, mu0, sigma)
     } else if(dist == "t-sq") {
-      y <- stats::rt(1, df = 3)^2 + mu0
+      y <- stats::rt(1, df = 4)^2 + mu0
     } else {
       stop("Invalid distribution")
     }
@@ -29,7 +29,7 @@ simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm") {
     if(dist == "norm") {
       y <- stats::rnorm(1, mu1, sigma)
     } else if(dist == "t-sq") {
-      y <- stats::rt(1, df = 3)^2 + mu1
+      y <- stats::rt(1, df = 4)^2 + mu1
     } else {
       stop("Invalid distribution")
     }

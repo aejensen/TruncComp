@@ -67,8 +67,7 @@ pointEstimateSim <- function(nsim, n, scenario, method, ncores, seed=12345) {
   out
 }
 
-#nSim <- 1024
-nSim <- 64
+nSim <- 25 * 10^3
 
 #Setup 1
 LRT.1.50 <- pointEstimateSim(nsim = nSim, n = 50, scenario = 1, method="LRT", ncores=64)

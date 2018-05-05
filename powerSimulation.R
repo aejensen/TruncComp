@@ -6,41 +6,56 @@ library(parallel)
 library(devtools)
 install_github('aejensen/TruncComp')
 
-powerSim <- function(n, scenario, nSim = 500, ncores=6) {
+powerSim <- function(n, scenario, nSim = 500, alpha = 0.05, ncores=64, seed=12345) {
+  set.seed(12345)
+
   out <- parallel::mclapply(1:nSim, function(sim) {
+    #Define the four scenarios
     if(scenario == 1) {
-      data <- TruncComp:::simTruncData(n, 3, 4, 0.35, 0.35, dist="norm")
+      f0 <- function(n) stats::rnorm(n, 3, 1)
+      f1 <- function(n) stats::rnorm(n, 4, 1)
+      pi0 <- 0.35
+      pi1 <- 0.35
     } else if(scenario == 2) {
-      data <- TruncComp:::simTruncData(n, 3.5, 3.5, 0.4, 0.3, dist="norm")
+      f0 <- function(n) stats::rnorm(n, 3.5, 1)
+      f1 <- function(n) stats::rnorm(n, 3.5, 1)
+      pi0 <- 0.4
+      pi1 <- 0.3
     } else if(scenario == 3) {
-      data <- TruncComp:::simTruncData(n, 3, 4, 0.4, 0.3, dist="norm")
+      f0 <- function(n) stats::rnorm(n, 3, 1)
+      f1 <- function(n) stats::rnorm(n, 4, 1)
+      pi0 <- 0.4
+      pi1 <- 0.3
     } else if(scenario == 4) {
-      data <- TruncComp:::simTruncData(n, 3, 4, 0.4, 0.3, dist="t-sq", df=2)
+      f0 <- function() stats::rnorm(n, 8, 1)
+      f1 <- function() stats::rexp(n, 0.1)
+      pi0 <- 0.4
+      pi1 <- 0.3
     }
-    m.SPLRT <- truncComp.default(data$Y, data$A, data$R, method="SPLRT")
-    m.LRT <- truncComp.default(data$Y, data$A, data$R, method="LRT")
+
+    #Simulate data
+    data <- TruncComp::simulateTruncatedData(n, f0, f1, pi0, pi1)
+
+    #Fit models
+    m.SPLRT <- TruncComp::truncComp.default(data$Y, data$A, data$R, method="SPLRT")
+    m.LRT <- TruncComp::truncComp.default(data$Y, data$A, data$R, method="LRT")
     m.wil <- stats::wilcox.test(data$Y ~ data$R)
 
-    c(m.wil$p.value < 0.05, m.LRT$p < 0.05, m.SPLRT$p < 0.05)
+    #Get H0 rejection or not
+    c(m.wil$p.value < alpha, m.LRT$p < alpha, m.SPLRT$p < alpha)
   }, mc.cores=ncores)
   out <- do.call("rbind", out)
   apply(out, 2, mean, na.rm=TRUE)
 }
 
-nSim <- 500
+nSim <- 1000 #Number of simulations
 nSeq <- seq(40, 250, length.out=7)
 
+power1 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 1, nSim=nSim, ncores=64))
+power2 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 2, nSim=nSim, ncores=64))
+power3 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 3, nSim=nSim, ncores=64))
 power4 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 4, nSim=nSim, ncores=64))
 
-curve(gamlss.dist::dSN1(x, mu = 3, sigma = 1, nu = 14), 0, 8)
-?dSN1
-
-
-power1 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 1, nSim=nSim, ncores=6))
-power2 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 2, nSim=nSim, ncores=6))
-power3 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 3, nSim=nSim, ncores=6))
-power4 <- sapply(nSeq, function(n) powerSim(n = n, scenario = 4, nSim=nSim, ncores=6))
-out
 
 
 plot(nSeq, power1[1,], ylim=c(0, 1), type="l", col="green", bty="n")

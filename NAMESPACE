@@ -2,6 +2,6 @@
 export(truncComp.default)
 export(truncComp.formula)
 export(jointContrastCI)
-export(simTruncData)
+export(simulateTruncatedData)
 S3method(print, TruncComp)
 S3method(summary, TruncComp)

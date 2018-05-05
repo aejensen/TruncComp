@@ -12,11 +12,24 @@ install_github('aejensen/TruncComp')
 ```{r}
 library(TruncComp)
 
-d <- simTruncData(n = 100, mu0 = 3, mu1 = 3.5, pi0 = 0.6, pi1 = 0.5)
+#Define the two distributions for the observed data
+f0 <- function(n) stats::rnorm(n, 3, 1)
+f1 <- function(n) stats::rnorm(n, 3.5, 1)
 
-truncComp(d$Y, d$A, d$Z, method="LRT")
+#Define probabilities of being observed
+pi0 <- 0.35
+pi1 <- 0.6
 
-truncComp(d$Y, d$A, d$Z, method="SPLRT")
+#Simulate data
+d <- TruncComp::simulateTruncatedData(25, f0, f1, pi0, pi1)
 
-1+2
+#Estimate parameters using the semi-parametric method
+model <- truncComp(Y ~ R, atom = 0, data = d, method="SPLRT")
+summary(model)
+
+#Get marginal confidence intervals
+confint(model, type="marginal")
+
+#Get simultaneous confidence region
+confint(model, type="simultaneous", plot=TRUE, resolution = 10)
 ```

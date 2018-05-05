@@ -109,16 +109,15 @@ save.image("coverageResults.RData")
 
 ####
 test <- mclapply(1:1000, function(nsim) {
-  data <- TruncComp:::simTruncData(200, 3, 4, 0.4, 0.3, dist="t-sq", df=2)
+  f0 <- function() gamlss.dist::rSN1(1, mu = 3, sigma=1, nu=12)
+  f1 <- function() gamlss.dist::rSN1(1, mu = 4, sigma=1, nu=12)
+
+  d <- TruncComp:::simTruncData2(200, f0, f1, 0.3, 0.4)
   m <- truncComp.default(data$Y, data$A, data$R, method="SPLRT")
   m$muDelta
 }, mc.cores=64, mc.preschedule=FALSE)
 mean(unlist(test), na.rm=TRUE)
 
 
-f0 <- gamlss.dist::rSN1(1, mu = 3, sigma=1, nu=12)
-f1 <- gamlss.dist::rSN1(1, mu = 4, sigma=1, nu=12)
-
-d <- TruncComp:::simTruncData2(200, f0, f1, 1, 1)
-hist(hej$Y[hej$R == 1])
+hist(d$Y[d$R == 1])
 

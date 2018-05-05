@@ -12,7 +12,7 @@ truncComp <- function(formula, atom, data, method, conf.level = 0.95, init = NUL
   }
 
   #Get the variables from the formula
-  variables <- get_all_vars(formula, data = d)
+  variables <- get_all_vars(formula, data = data)
   outcome <- variables[,1]
   treatment <- variables[,2]
 

@@ -7,6 +7,9 @@ library(TruncComp)
 library(parallel)
 library(sp)
 
+############################################################
+# POINT ESTIMATION SIMULATION FOR THE MANUSCRIPT
+############################################################
 pointEstimateSim <- function(nsim, n, scenario, method, ncores, seed=12345) {
   set.seed(seed)
 
@@ -64,7 +67,8 @@ pointEstimateSim <- function(nsim, n, scenario, method, ncores, seed=12345) {
   out
 }
 
-nSim <- 1024
+#nSim <- 1024
+nSim <- 64
 
 #Setup 1
 LRT.1.50 <- pointEstimateSim(nsim = nSim, n = 50, scenario = 1, method="LRT", ncores=64)
@@ -107,9 +111,9 @@ LRT.4.200 <- pointEstimateSim(nsim = nSim, n = 200, scenario = 4, method="LRT", 
 SPLRT.4.200 <- pointEstimateSim(nsim = nSim, n = 200, scenario = 4, method="SPLRT", ncores=64)
 
 
-
-
-##################
+############################################################
+# GATHER THE RESULTS
+############################################################
 getStats <- function(res, muDelta, logOR) {
   mat <- do.call("rbind", res)
   out <- c(biasMuDelta = mean(mat[,1] - muDelta, na.rm=TRUE),

@@ -23,7 +23,7 @@ simCoverage <- function(nsim, n, scenario, method, ncores, seed=12345) {
       muDeltaTrue <- 1
       orDeltaTrue <- (0.3/(1-0.3)) / (0.4/(1-0.4))
     } else if(scenario == 4) {
-      data <- TruncComp:::simTruncData(n, 3, 4, 1, 1, dist="t-sq")
+      data <- TruncComp:::simTruncData(n, 3, 4, 0.4, 0.3, dist="t-sq")
       muDeltaTrue <- 1
       orDeltaTrue <- (0.3/(1-0.3)) / (0.4/(1-0.4))
     }
@@ -43,16 +43,26 @@ simCoverage <- function(nsim, n, scenario, method, ncores, seed=12345) {
     jointContour <- contourLines(jointSurface$muDelta, jointSurface$logORdelta, jointSurface$surface, levels=stats::qchisq(0.95, 2))
     inclusion.joint <- sp::point.in.polygon(muDeltaTrue, log(orDeltaTrue), jointContour[[1]]$x, jointContour[[1]]$y)
 
-    c(inclusion.muDelta, inclusion.OR, as.numeric(inclusion.joint == 1))
+    c(m$muDelta, log(m$alphaDelta), inclusion.muDelta, inclusion.OR, as.numeric(inclusion.joint == 1))
   }, mc.cores=ncores, mc.preschedule = FALSE)
 
+  colnames(out) <- c("muDelta", "logOR", "covMuDelta", "covLogOR", "covJoint")
+  out
+}
+
+cov.1.SPLRT.50 <- simCoverage(nsim = nSim, n = 200, scenario = 1, method="SPLRT", ncores=64)
+
+
+  out <- out[sapply(out, is.vector)]
   out <- do.call("rbind", out)
 
-  cov.muDelta <- mean(out[,1] == 1, na.rm=TRUE)
-  cov.OR <- mean(out[,2] == 1, na.rm=TRUE)
-  cov.simult <- mean(out[,3] == 1, na.rm=TRUE)
+  muDelta <- mean(out[,1], na.rm=TRUE)
+  alphaDelta <- mean(out[,2], na.rm=TRUE)
+  cov.muDelta <- mean(out[,3] == 1, na.rm=TRUE)
+  cov.OR <- mean(out[,4] == 1, na.rm=TRUE)
+  cov.simult <- mean(out[,5] == 1, na.rm=TRUE)
 
-  c(muDeltaCov = cov.muDelta, logORcov = cov.OR, simultCov = cov.simult)
+  c(muDelta, alphaDelta, muDeltaCov = cov.muDelta, logORcov = cov.OR, simultCov = cov.simult)
 }
 
 nSim <- 2000

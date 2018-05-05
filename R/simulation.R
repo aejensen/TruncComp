@@ -1,4 +1,4 @@
-simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "t-sq") {
+simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm") {
   #pi0 probability of observing the outcome for Z = 0
   #pi1 probability of observing the outcome for Z = 1
   #CV = coefficient of variation for gamma outcome

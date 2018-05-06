@@ -76,24 +76,24 @@ load("powerSimulation.RData")
 
 par(mfrow=c(2,2), mgp=c(2,1,0), mar=c(3.5, 3, 1, 0.5))
 plot(nSeq, power1[1,], ylim=c(0, 1), type="l", col="firebrick1", bty="n",
-     ylab="Power", xlab="Sample size per group", main="Setup 1", lwd=2)
+     ylab="Power", xlab="Sample size per group", main="Scenario 1", lwd=2)
 lines(nSeq, power1[2,], col="cornflowerblue", lwd=2)
 lines(nSeq, power1[3,], col="black", lwd=2)
 legend("topleft", c("Parametric", "Semi-parametric", "Wilcoxon"),
        lwd=2, lty=1, col=c("cornflowerblue", "black", "firebrick1"), bty="n")
 
 plot(nSeq, power2[1,], ylim=c(0, 1), type="l", col="firebrick1", bty="n",
-     ylab="Power", xlab="Sample size per group", main="Setup 2", lwd=2)
+     ylab="Power", xlab="Sample size per group", main="Scenario 2", lwd=2)
 lines(nSeq, power2[2,], col="cornflowerblue", lwd=2)
 lines(nSeq, power2[3,], col="black", lwd=2)
 
 plot(nSeq, power3[1,], ylim=c(0, 1), type="l", col="firebrick1", bty="n",
-    ylab="Power", xlab="Sample size per group", main="Setup 3", lwd=2)
+    ylab="Power", xlab="Sample size per group", main="Scenario 3", lwd=2)
 lines(nSeq, power3[2,], col="cornflowerblue", lwd=2)
 lines(nSeq, power3[3,], col="black", lwd=2)
 
 plot(nSeq, power4[1,], ylim=c(0, 1), type="l", col="firebrick1", bty="n",
-     ylab="Power", xlab="Sample size per group", main="Setup 4", lwd=2)
+     ylab="Power", xlab="Sample size per group", main="Scenario 4", lwd=2)
 lines(nSeq, power4[2,], col="cornflowerblue", lwd=2)
 lines(nSeq, power4[3,], col="black", lwd=2)
 
@@ -105,6 +105,6 @@ plot(nSeq, (power1[3,] - power1[2,])/power1[2,] * 100, type="l", bty="n", ylim=c
 lines(nSeq, (power2[3,] - power2[2,])/power2[2,] * 100, col="cornflowerblue", lwd=2)
 lines(nSeq, (power3[3,] - power3[2,])/power3[2,] * 100, col="darkgoldenrod1", lwd=2)
 lines(nSeq, (power4[3,] - power4[2,])/power4[2,] * 100, col="firebrick1", lwd=2)
-legend("topleft", c("Setup 1", "Setup 2", "Setup 3", "Setup 4"),
+legend("topleft", c("Scenario 1", "Scenario 2", "Scenario 3", "Scenario 4"),
        lwd=2, col=c("black", "cornflowerblue", "darkgoldenrod1", "firebrick1"),
        bty="n")

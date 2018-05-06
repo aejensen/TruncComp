@@ -23,6 +23,11 @@ SPLRT <- function(data, conf.level = 0.95) {
   #alphaP <- binomTest$"Pr(>Chi)"[2]
   #W.binom <- 2 * (logLik(m1) - logLik(m0))
 
+  #Get Delta
+  delta <- mean(data$Y[data$R == 1]) - mean(data$Y[data$R == 0])
+  deltaCI <- c(NA, NA)
+
+  #Joint likelihood ratio test
   W <- as.numeric(muW + alphaW) #Joint test statistic
   p <- 1 - stats::pchisq(W, 2)  #Joint p-value
 
@@ -30,13 +35,15 @@ SPLRT <- function(data, conf.level = 0.95) {
               muDeltaCI = muDeltaCI,
               alphaDelta = alphaDelta,
               alphaDeltaCI = alphaDeltaCI,
+              Delta = delta,
+              DeltaCI = deltaCI,
               W = W,
               p = p,
               method ="Semi-empirical Likelihood Ratio Test",
               conf.level = conf.level,
               success = TRUE,
               error = "",
-              init = NULL, muW = muW, alphaW = alphaW, ELRT = ELRT, yAlive1 = yAlive1, yAlive2 = yAlive2)
+              init = NULL)
 
   class(out) <- append(class(out), "TruncComp")
   out

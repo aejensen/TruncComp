@@ -66,7 +66,12 @@ LRT <- function(data, init, conf.level = 0.95) {
   muDeltaCI <- as.numeric(confintHA["muDelta", ])
   alphaDeltaCI <- as.numeric(exp(confintHA["alphaDelta",]))
 
-  #LR comparison between H_0 and H_A
+  #Get Delta
+  delta <- mean(data$Y[data$R == 1]) - mean(data$Y[data$R == 0])
+  deltaCI <- c(NA, NA)
+
+
+  #Joint likelihood ratio test
   LRT <- bbmle::anova(mH0, mHA)
   W <- LRT[2,"Chisq"]
   p <- LRT[2, "Pr(>Chisq)"]
@@ -75,6 +80,8 @@ LRT <- function(data, init, conf.level = 0.95) {
               muDeltaCI = muDeltaCI,
               alphaDelta = alphaDelta,
               alphaDeltaCI = alphaDeltaCI,
+              Delta = delta,
+              DeltaCI = deltaCI,
               W = W,
               p = p,
               method = "Parametric Likelihood Ratio Test",

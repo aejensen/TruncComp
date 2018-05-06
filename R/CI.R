@@ -11,8 +11,15 @@ confint.TruncComp <- function(object, type = "marginal", muDelta = NULL, logORde
     stop("Simultaneous confidence regions is only implemented for the semi-parametric likelihood ratio model.")
   }
 
+  if(length(conf.level) > 1) {
+    message("More than one confidence level given. Using only the first")
+    conf.level <- conf.level[1]
+  }
+
+
   if (type == "marginal") {
     if(conf.level != object$conf.level) {
+      #Fix this to be done automatically
       stop("Please refit model with the chosen confidence level and call again.")
     }
 
@@ -20,7 +27,7 @@ confint.TruncComp <- function(object, type = "marginal", muDelta = NULL, logORde
     cMat[1,] <- object$muDeltaCI
     cMat[2,] <- object$alphaDeltaCI
     cMat[3,] <- log(object$alphaDeltaCI)
-    cMat[4,] <- NA
+    cMat[4,] <- object$DeltaCI
 
     a <- (1 - object$conf.level)/2
     a <- c(a, 1 - a)
@@ -53,7 +60,6 @@ jointContrastLRT <- function(data, muDelta, alphaDelta) {
 }
 
 jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL, conf.level = 0.95, plot=TRUE, offset, resolution) {
-
   if(!("TruncComp" %in% class(m))) {
     stop("m must be an object of type TruncComp")
   }
@@ -80,6 +86,7 @@ jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL, conf.level = 0
     contour(muDelta, logORdelta, matOut, add=TRUE, levels=stats::qchisq(conf.level, 2), lwd=2)
   }
 
+  #Also add the contour itself to the return
   list(muDelta = muDelta, logORdelta = logORdelta, surface = matOut)
 }
 

@@ -49,19 +49,24 @@ pointEstimateSim <- function(nsim, n, scenario, method, ncores, seed=12345) {
     #Fit model
     m <- TruncComp::truncComp(Y ~ R, atom = 0, data = data, method = method)
 
+    muDelta.width <-  abs(m$muDeltaCI[2] - m$muDeltaCI[1])
+    logOR.width <- abs(m$alphaDeltaCI[2] - m$alphaDeltaCI[1])
+
     #Get marginal inclusion indicators
     inclusion.muDelta <- (m$muDeltaCI[1] < muDeltaTrue) & m$muDeltaCI[2] > muDeltaTrue
     inclusion.OR <- (m$alphaDeltaCI[1] < orDeltaTrue) & (m$alphaDeltaCI[2] > orDeltaTrue)
 
     if(method == "SPLRT") {
-      jSurf <- suppressMessages(confint(m, type="simultaneous", plot=FALSE, resolution = 40))
-      cont <- contourLines(jSurf$muDelta, jSurf$logORdelta, jSurf$surface, levels=stats::qchisq(0.95, 2))
-      inclusion.joint <- sp::point.in.polygon(muDeltaTrue, log(orDeltaTrue), cont[[1]]$x, cont[[1]]$y) == 1
+      #jSurf <- suppressMessages(confint(m, type="simultaneous", plot=FALSE, resolution = 40)) #40
+      #cont <- contourLines(jSurf$muDelta, jSurf$logORdelta, jSurf$surface, levels=stats::qchisq(0.95, 2))
+      #inclusion.joint <- sp::point.in.polygon(muDeltaTrue, log(orDeltaTrue), cont[[1]]$x, cont[[1]]$y) == 1
+      inclusion.joint <- NA
     } else {
       inclusion.joint <- NA #Not implemented for parametric likelihood
     }
 
-    c(m$muDelta, log(m$alphaDelta), inclusion.muDelta, inclusion.OR, inclusion.joint)
+    c(m$muDelta, log(m$alphaDelta), inclusion.muDelta, inclusion.OR,
+      inclusion.muDelta, inclusion.OR, inclusion.joint)
   }, mc.cores=ncores, mc.preschedule = TRUE)
 
   out
@@ -113,13 +118,13 @@ save(LRT.1.50, SPLRT.1.50, LRT.1.100, SPLRT.1.100, LRT.1.200, SPLRT.1.200,
      LRT.2.50, SPLRT.2.50, LRT.2.100, SPLRT.2.100, LRT.2.200, SPLRT.2.200,
      LRT.3.50, SPLRT.3.50, LRT.3.100, SPLRT.3.100, LRT.3.200, SPLRT.3.200,
      LRT.4.50, SPLRT.4.50, LRT.4.100, SPLRT.4.100, LRT.4.200, SPLRT.4.200,
-     file = "coverageSimulation.RData")
+     file = "coverageSimulationNoJoint.RData")
 
 
 ############################################################
 # GATHER THE RESULTS
 ############################################################
-load("coverageSimulation.RData")
+load("coverageSimulationNoJoint.RData")
 
 getStats <- function(res, muDelta, logOR) {
   mat <- do.call("rbind", res)
@@ -127,26 +132,28 @@ getStats <- function(res, muDelta, logOR) {
            sdMuDelta = sd(mat[,1], na.rm=TRUE),
            biasLogOR = mean(mat[,2] - logOR),
            sdLogOR = sd(mat[,1]),
-           covMuDelta = mean(mat[,3])*100,
-           covLogOR = mean(mat[,4])*100,
-           covJoint = mean(mat[,5])*100)
+           widthMuDelta = mean(mat[,3]),
+           widthLogOR = mean(mat[,4]),
+           covMuDelta = mean(mat[,5])*100,
+           covLogOR = mean(mat[,6])*100,
+           covJoint = mean(mat[,7])*100)
   round(out, 4)
 }
 
-rbind(getStats(LRT.1.50, 0.5, 0), getStats(SPLRT.1.50, 0.5, 0))
-rbind(getStats(LRT.1.100, 0.5, 0), getStats(SPLRT.1.100, 0.5, 0))
-rbind(getStats(LRT.1.200, 0.5, 0), getStats(SPLRT.1.200, 0.5, 0))
+rbind(LRT = getStats(LRT.1.50, 0.5, 0), SPLRT = getStats(SPLRT.1.50, 0.5, 0))
+rbind(LRT = getStats(LRT.1.100, 0.5, 0), SPLRT = getStats(SPLRT.1.100, 0.5, 0))
+rbind(LRT = getStats(LRT.1.200, 0.5, 0), SPLRT = getStats(SPLRT.1.200, 0.5, 0))
 
-rbind(getStats(LRT.2.50, 0, -0.4418328), getStats(SPLRT.2.50, 0, -0.4418328))
-rbind(getStats(LRT.2.100, 0, -0.4418328), getStats(SPLRT.2.100, 0, -0.4418328))
-rbind(getStats(LRT.2.200, 0, -0.4418328), getStats(SPLRT.2.200, 0, -0.4418328))
+rbind(LRT = getStats(LRT.2.50, 0, -0.4418328), SPLRT = getStats(SPLRT.2.50, 0, -0.4418328))
+rbind(LRT = getStats(LRT.2.100, 0, -0.4418328), SPLRT = getStats(SPLRT.2.100, 0, -0.4418328))
+rbind(LRT = getStats(LRT.2.200, 0, -0.4418328), SPLRT = getStats(SPLRT.2.200, 0, -0.4418328))
 
-rbind(getStats(LRT.3.50, 0.5, -0.4418328), getStats(SPLRT.3.50, 0.5, -0.4418328))
-rbind(getStats(LRT.3.100, 0.5, -0.4418328), getStats(SPLRT.3.100, 0.5, -0.4418328))
-rbind(getStats(LRT.3.200, 0.5, -0.4418328), getStats(SPLRT.3.200, 0.5, -0.4418328))
+rbind(LRT = getStats(LRT.3.50, 0.5, -0.4418328), SPLRT = getStats(SPLRT.3.50, 0.5, -0.4418328))
+rbind(LRT = getStats(LRT.3.100, 0.5, -0.4418328), SPLRT = getStats(SPLRT.3.100, 0.5, -0.4418328))
+rbind(LRT = getStats(LRT.3.200, 0.5, -0.4418328), SPLRT = getStats(SPLRT.3.200, 0.5, -0.4418328))
 
-rbind(getStats(LRT.4.50, 0.5, -0.4418328), getStats(SPLRT.4.50, 0.5, -0.4418328))
-rbind(getStats(LRT.4.100, 0.5, -0.4418328), getStats(SPLRT.4.100, 0.5, -0.4418328))
-rbind(getStats(LRT.4.200, 0.5, -0.4418328), getStats(SPLRT.4.200, 0.5, -0.4418328))
+rbind(LRT = getStats(LRT.4.50, 0.5, -0.4418328), SPLRT = getStats(SPLRT.4.50, 0.5, -0.4418328))
+rbind(LRT = getStats(LRT.4.100, 0.5, -0.4418328), SPLRT = getStats(SPLRT.4.100, 0.5, -0.4418328))
+rbind(LRT = getStats(LRT.4.200, 0.5, -0.4418328), SPLRT = getStats(SPLRT.4.200, 0.5, -0.4418328))
 
 

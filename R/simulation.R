@@ -30,7 +30,7 @@ simulateTruncatedData <- function(n, f0, f1, pi0, pi1) {
   d
 }
 
-simTruncData.old <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df=4) {
+simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df=4) {
   #pi0 probability of observing the outcome for Z = 0
   #pi1 probability of observing the outcome for Z = 1
   #CV = coefficient of variation for gamma outcome

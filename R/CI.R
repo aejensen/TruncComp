@@ -34,11 +34,14 @@ confint.TruncComp <- function(object, type = "marginal", muDelta = NULL, logORde
     pct <- paste(format(100 * a, trim = TRUE, scientific = FALSE, digits = 3), "%")
 
     colnames(cMat) <- pct
-    rownames(cMat) <- c("Mean difference:", "Odds ratio:", "log Odds ratio:", "Delta")
+    rownames(cMat) <- c("Difference in means among the observed:",
+                        "Odds ratio of being observed:",
+                        "log Odds ratio of being observed:",
+                        "Delta")
 
     print.default(cMat)
   } else {
-    message("Calculating joint likelihood surface. This may take some time depending on the resolution.")
+    message("Calculating joint likelihood surface.\nThis may take some time depending on the resolution.")
     joint <- jointContrastCI(object, muDelta, logORdelta, conf.level, plot, offset, resolution)
   }
 
@@ -80,10 +83,17 @@ jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL, conf.level = 0
   }
 
   if(plot) {
-    fields::image.plot(muDelta, logORdelta, matOut, xlab="Difference in mean", ylab="log Odds ratio")
-    points(m$muDelta, log(m$alphaDelta), pch=19, cex=3)
-    points(0, 0, cex=3, pch=3)
-    contour(muDelta, logORdelta, matOut, add=TRUE, levels=stats::qchisq(conf.level, 2), lwd=2)
+    #fields::image.plot(muDelta, logORdelta, matOut, useRaster = TRUE,
+    #                   xlab="Mean difference among the observed",
+    #                   ylab="log OR of being observed")
+    image(muDelta, logORdelta, matOut,
+          xlab="Difference in means among the observed",
+          ylab="log OR of being observed",
+          col = fields::tim.colors(128), useRaster = TRUE)
+    points(m$muDelta, log(m$alphaDelta), pch=19, cex=1)
+    #points(0, 0, cex=3, pch=1)
+    contour(muDelta, logORdelta, matOut, add=TRUE,
+            levels=stats::qchisq(conf.level, 2), lwd=1, labels=conf.level)
   }
 
   #Also add the contour itself to the return

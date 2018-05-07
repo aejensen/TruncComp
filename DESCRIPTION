@@ -13,3 +13,6 @@ Imports:
     bbmle,
     EL,
     fields
+Suggests: knitr,
+    rmarkdown
+VignetteBuilder: knitr

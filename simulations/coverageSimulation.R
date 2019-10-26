@@ -115,6 +115,10 @@ LRT.4.200 <- pointEstimateSim(nsim = nSim, n = 200, scenario = 4, method="LRT", 
 SPLRT.4.200 <- pointEstimateSim(nsim = nSim, n = 200, scenario = 4, method="SPLRT", ncores=64)
 
 save(LRT.1.50, SPLRT.1.50, LRT.1.100, SPLRT.1.100, LRT.1.200, SPLRT.1.200,
+     file = "coverageSimTest.RData")
+
+
+save(LRT.1.50, SPLRT.1.50, LRT.1.100, SPLRT.1.100, LRT.1.200, SPLRT.1.200,
      LRT.2.50, SPLRT.2.50, LRT.2.100, SPLRT.2.100, LRT.2.200, SPLRT.2.200,
      LRT.3.50, SPLRT.3.50, LRT.3.100, SPLRT.3.100, LRT.3.200, SPLRT.3.200,
      LRT.4.50, SPLRT.4.50, LRT.4.100, SPLRT.4.100, LRT.4.200, SPLRT.4.200,

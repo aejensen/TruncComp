@@ -32,10 +32,12 @@ powerSim <- function(n, scenario, nSim, alpha = 0.05, ncores=64, seed=12345) {
     } else if(scenario == 4) {
       #f0 <- function(n) stats::rnorm(n, 8, 1)
       #f1 <- function(n) stats::rexp(n, 0.1)
-      f0 <- function(n) stats::rnorm(n, 5, 2)
-      f1 <- function(n) stats::rbeta(n, 0.5, 0.5) + 5
-      pi0 <- 0.4
-      pi1 <- 0.3
+      #f0 <- function(n) stats::rnorm(n, 5, 2)
+      #f1 <- function(n) stats::rbeta(n, 0.5, 0.5) + 5
+      f0 <- function(n) stats::rt(n, 3)^2 + 3
+      f1 <- function(n) stats::rt(n, 3)^2 + 3 + 0.5
+      pi0 <- 0.6
+      pi1 <- 0.5
     }
 
     #Simulate data

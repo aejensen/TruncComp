@@ -89,7 +89,7 @@ jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL, conf.level = 0
     image(muDelta, logORdelta, matOut,
           xlab="Difference in means among the observed",
           ylab="log OR of being observed",
-          col = fields::tim.colors(128), useRaster = TRUE)
+          col = rev(fields::tim.colors(128)), useRaster = TRUE)
     points(m$muDelta, log(m$alphaDelta), pch=19, cex=1)
     #points(0, 0, cex=3, pch=1)
     contour(muDelta, logORdelta, matOut, add=TRUE,

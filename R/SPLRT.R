@@ -10,6 +10,8 @@ SPLRT <- function(data, conf.level = 0.95) {
   muW <- as.numeric(ELRT$statistic)
   #muP <- as.numeric(ELRT$p.value)
 
+  data$R <- as.numeric(data$R) #beware
+  
   #Fit logistic models
   m0 <- stats::glm(A ~ 1, family=stats::binomial(), data=data)
   m1 <- stats::glm(A ~ R, family=stats::binomial(), data=data)

@@ -32,7 +32,7 @@ Patient reported outcomes including quality of life assessments are increasingly
 
 
 \begin{center}
-\textbf{Keywords:} Quality of Life, Randomized Controlled Trials,\\ Truncated Outcomes, Semi-Continuous Outcomes, Empirical Likelihood
+\textbf{Keywords:} Quality of Life, Randomized Controlled Trials,\\ Truncated Outcomes, Semi-Continuous Distributions, Empirical Likelihood
 \end{center}
 
 
@@ -308,7 +308,7 @@ The COVID-STEROID 2 trial was a multi-center study comparing daily dose 6 mg (lo
 
 The distribution of the outcome in each randomization group is presented by histograms in Figure \ref{fig:application} (left and middle panels). In our notation the outcome (days alive without life support) is re-coded such that $A$ takes the value zero if the outcome is zero or one otherwise. $Y$ is said to be the observed number of days without life support.
 
-```{r, echo = FALSE, fig.width = 8, fig.height = 3, fig.cap="\\label{fig:application}Histograms of days alive without life support from the The COVID-STEROID2 trial stratified by treatment dosis (left, middle) and simultaneous confidence regions based on the semi-parametric likelihood ratio test (right).", fig.pos="htbp"}
+```{r, echo = FALSE, fig.width = 8, fig.height = 3, fig.cap="\\label{fig:application}Histograms of days alive without life support from the The COVID-STEROID 2 trial stratified by treatment dosis (left, middle) and simultaneous confidence regions based on the semi-parametric likelihood ratio test (right).", fig.pos="htbp"}
 par(mfrow=c(1,3), mgp=c(2.2,1,0), mar=c(3.2, 3.5, 2, 0))
 hist(subset(d, d$allocation)$dawols28, xlim=c(0,30),
      main="Low dose", ylim=c(0,55), 10, col="gray70", border="gray90",

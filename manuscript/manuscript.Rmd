@@ -240,7 +240,7 @@ To assess the power we vary the sample size between 50 and 350 observations in e
 
 In all scenarios except number two it is clear that we observe a large power gain compared to both the t-test and the Wilcoxon test.
 
-In setup 1 we observe a large power gain compared to the Wilcox test. Here the Wilcox tests gets "confused" by the large number of ties in the atom. In setup 2 Wilcox test has slightly better power profile. This is to be expected as our novel test is here disadvantaged by being a two-degrees-of-freedom test where the Wilcox is only one. It is further observed that Wilcox as expected as very little power when the effects on mortality and among survivors are of opposite sign despite the two distributions being markedly different indicating clear treatment effect (setups 3 and 4). In contrast our novel methods has excellent power. In all settings with a normally distributed outcome among survivors the parametric and semi-parametric approaches are similar, but for the heavy tail setup (no. 4) the semi-parametric approach is clearly superior. 
+In setup 1 we observe a large power gain compared to the Wilcoxon test. Here the Wilcoxon tests gets "confused" by the large number of ties in the atom. In setup 2 Wilcoxon test has slightly better power profile. This is to be expected as our novel test is here disadvantaged by being a two-degrees-of-freedom test where the Wilcoxon is only one. It is further observed that Wilcoxon as expected as very little power when the effects on mortality and among survivors are of opposite sign despite the two distributions being markedly different indicating clear treatment effect (setups 3 and 4). In contrast our novel methods has excellent power. In all settings with a normally distributed outcome among survivors the parametric and semi-parametric approaches are similar, but for the heavy tail setup (no. 4) the semi-parametric approach is clearly superior. 
 
 
 
@@ -304,25 +304,25 @@ sCI <- suppressMessages(TruncComp:::confint.TruncComp(m_SPLRT,
                                      plot = FALSE))
 ```
 
-The COVID-STEROID2 trial was a multi-center study comparing daily dose 6 mg (low) of dexamethasone for up to 10 days vs. 12 mg (high) in patients with severe and critical COVID-19. The full description of the study including all results can be found in @10.1001/jama.2021.18295. The primary outcome of the trial was days alive and without out use of life-support in the period from randomization to day 28. In other words, that outcome is an integer between 0 and 28 with a substantial peak at day 0 corresponding to the atom $\mathcal{E}$ coming from the patients who are never taken off life-support systems. The analyses in the main publications (@10.1001/jama.2021.18295) were conducted using the test proposed in this paper. In the JAMA publication the test is being referred to as the Kryger Jensen and Lange test. In this section we re-analyze the sub-group consisting of patients in need of invasive mechanical ventilation at baseline (n = 206). These can generally be taken to be the most severely ill patients.
+The COVID-STEROID 2 trial was a multi-center study comparing daily dose 6 mg (low) of dexamethasone for up to 10 days vs. 12 mg (high) in patients with severe and critical COVID-19. The full description of the study including all results can be found in @10.1001/jama.2021.18295. The primary outcome of the trial was days alive and without out use of life-support in the period from randomization to day 28. In other words, that outcome is an integer between 0 and 28 with a substantial peak at day 0 corresponding to the atom $\mathcal{E}$ coming from the patients who are never taken off life-support systems. The analyses in the main publications (@10.1001/jama.2021.18295) were conducted using the test proposed in this paper. In the JAMA publication the test is being referred to as the Kryger Jensen and Lange test. In this section we re-analyze the sub-group consisting of patients in need of invasive mechanical ventilation at baseline (n = 206). These can generally be taken to be the most severely ill patients.
 
 The distribution of the outcome in each randomization group is presented by histograms in Figure \ref{fig:application} (left and middle panels). In our notation the outcome (days alive without life support) is re-coded such that $A$ takes the value zero if the outcome is zero or one otherwise. $Y$ is said to be the observed number of days without life support.
 
 ```{r, echo = FALSE, fig.width = 8, fig.height = 3, fig.cap="\\label{fig:application}Histograms of days alive without life support from the The COVID-STEROID2 trial stratified by treatment dosis (left, middle) and simultaneous confidence regions based on the semi-parametric likelihood ratio test (right).", fig.pos="htbp"}
-par(mfrow=c(1,3), mgp=c(2,1,0), mar=c(3, 3, 2, 0))
+par(mfrow=c(1,3), mgp=c(2.2,1,0), mar=c(3.2, 3.5, 2, 0))
 hist(subset(d, d$allocation)$dawols28, xlim=c(0,30),
      main="Low dose", ylim=c(0,55), 10, col="gray70", border="gray90",
-     cex.axis=1.2, cex.main=1.5, cex.lab=1.3, ylab="",
+     cex.axis=1.2, cex.main=1.5, cex.lab=1.5, ylab="",
      xlab="Days alive without life support")
 hist(subset(d, !d$allocation)$dawols28, 10, xlim=c(0,30),
      main="High dose", ylim = c(0,55), col="gray70", border="gray90",
-     cex.axis=1.2, cex.main=1.5, cex.lab=1.3, ylab="",
+     cex.axis=1.2, cex.main=1.5, cex.lab=1.5, ylab="",
      xlab="Days alive without life support")
 image(sCI$muDelta, sCI$logORdelta, sCI$surface,
      col = rev(fields::tim.colors(256)), useRaster = TRUE,
      xlab="Difference in means",
      ylab="log OR",
-     cex.axis=1.2, cex.main=1.5, cex.lab=1.3)
+     cex.axis=1.2, cex.main=1.5, cex.lab=1.5)
 points(m_SPLRT$muDelta, log(m_SPLRT$alphaDelta), pch = 19, cex = 1.5)
 contour(sCI$muDelta, sCI$logORdelta, sCI$surface, add = TRUE, 
         levels = stats::qchisq(0.99, 2), lwd = 1, labels = 0.99, lty=1)
@@ -343,9 +343,9 @@ Comparing the groups by a Wilcoxon test yields a p-value of $0.242$ hence leadin
 
 # Discussion
 
-In this paper we have introduced a novel statistical test to assess treatment effect on continuous outcomes where one value has special meaning (e.g., all diseased are assigned lowest possible value). The procedure in potentially much more power-full than the current best-practice which is to use Wilcox-type tests. The proposed method includes both a fully parametric approach and a semi-parametric where the latter makes no assumptions on the distribution of the continuous part of the outcome. In all settings this new method not only provides an effect measure but also effect parameters with associated confidence intervals. The test is implemented in an R package available on GitHub.
+In this paper we have introduced a novel statistical test to assess treatment effect on continuous outcomes where one value has special meaning (e.g., all diseased are assigned lowest possible value). The procedure in potentially much more power-full than the current best-practice which is to use Wilcoxon-type tests. The proposed method includes both a fully parametric approach and a semi-parametric where the latter makes no assumptions on the distribution of the continuous part of the outcome. In all settings this new method not only provides an effect measure but also effect parameters with associated confidence intervals. The test is implemented in an R package available on GitHub.
 
-The simulation study and in particular the real data example demonstrate the efficiency and power gain. It is noted that unlike the Wilcox test, our proposed method can easily be extended to include covariates [@owen1991empirical]. It is therefore not only useful in RCT settings but also to epidemiological studies.
+The simulation study and in particular the real data example demonstrate the efficiency and power gain. It is noted that unlike the Wilcoxon test, our proposed method can easily be extended to include covariates [@owen1991empirical]. It is therefore not only useful in RCT settings but also to epidemiological studies.
 
 \textbf{[TODO: Do we need something about this is very useful when needing to prespecify a test in an RCT?]}
 

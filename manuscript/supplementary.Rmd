@@ -1,0 +1,120 @@
+---
+title: | 
+  | Supplementary material for
+  | A novel high-power test for continuous outcomes truncated by death
+author: | 
+  | Andreas Kryger Jensen and Theis Lange
+  | Section of Biostatistics, Department of Public Health, University of Copenhagen
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+# Simulation results
+
+```{r, echo = FALSE}
+load("simulations/simulationResults.RData")
+library(kableExtra)
+
+colnames(power1) <- c("Wilcoxon", "t-test", "LRT", "SPLRT")
+colnames(power2) <- c("Wilcoxon", "t-test", "LRT", "SPLRT")
+kbl(cbind(power1, power2)*100, format = "latex", digits = 2, 
+    booktabs = TRUE, linesep = rep("", 5), caption = "Power simulation - scenarios 1 and 2") %>% 
+  kable_styling(latex_options="hold_position") %>%
+  add_header_above(c(" ", "Scenario 1" = 4, "Scenario 2" = 4), bold = TRUE) 
+```
+
+```{r, echo = FALSE}
+colnames(power3) <- c("Wilcoxon", "t-test", "LRT", "SPLRT")
+colnames(power4) <- c("Wilcoxon", "t-test", "LRT", "SPLRT")
+kbl(cbind(power3, power4)*100, format = "latex", digits = 2,
+    booktabs = TRUE, linesep = rep("", 5), caption = "Power simulation - scenarios 3 and 4") %>% 
+  kable_styling(latex_options="hold_position") %>%
+  add_header_above(c(" ", "Scenario 3" = 4, "Scenario 4" = 4), bold = TRUE) 
+```
+
+
+```{r, echo = FALSE}
+tab <- do.call("cbind", null1)*100
+colnames(tab) <- rep(c("Wilcoxon", "t-test", "LRT", "SPLRT"), 4)
+kbl(tab, format = "latex", digits = 2, 
+    booktabs = TRUE, linesep = rep("", 5), caption = "Type I error simulation - scenario 1") %>%
+  kable_styling(latex_options = c("hold_position", "scale_down")) %>%
+  add_header_above(c(" ", "$\\\\pi = 0.2$" = 4, "$\\\\pi = 0.4$" = 4, "$\\\\pi = 0.6$" = 4, "$\\\\pi = 0.8$" = 4), bold = TRUE, escape = FALSE) 
+```
+
+```{r, echo = FALSE}
+tab <- do.call("cbind", null2)*100
+colnames(tab) <- rep(c("Wilcoxon", "t-test", "LRT", "SPLRT"), 4)
+kbl(tab, format = "latex", digits = 2, 
+    booktabs = TRUE, linesep = rep("", 5), caption = "Type I error simulation - scenario 2") %>%
+  kable_styling(latex_options = c("hold_position", "scale_down")) %>%
+  add_header_above(c(" ", "$\\\\pi = 0.2$" = 4, "$\\\\pi = 0.4$" = 4, "$\\\\pi = 0.6$" = 4, "$\\\\pi = 0.8$" = 4), bold = TRUE, escape = FALSE) 
+```
+
+\newpage
+
+# Derivation of semi-parametric test statistic {-}
+
+The empirical likelihood ratio function that compares the empirical maximum likelihood under a constraint set $\mathcal{C}$ to an  unconstrained maximum likelihood is given by
+\begin{align}
+R_{1,n}^\text{E}(\mathcal{C}) &=  \frac{\sup\limits_{\left\{p_i\right\}}\left(\prod_{i \in \mathcal{I}_0} p_i \mid \mathcal{C}\right) \sup\limits_{\left\{q_j\right\}}\left(\prod_{j \in \mathcal{I}_1} q_j \mid \mathcal{C} \right)}{\sup\limits_{F \in \mathcal{F}}\prod_{i \in \mathcal{I}_0} F(\left\{Y_i\right\}) \sup\limits_{G \in \mathcal{F}}\prod_{j \in \mathcal{I}_1} G(\left\{Y_j\right\})}
+\end{align}
+where $\mathcal{F}$ is the family of cadlag functions. This empirical likelihood ratio is simply a comparison between the non-parametric unconstrained maximum likelihood values and a a null-model where the maximum likelihoods in the two treatment groups are constrained according to a constraint set $\mathcal{C}$. The sets of weights, $\left\{p_i\right\}$ and $\left\{q_j\right\}$, form a constrained multinomial distribution over the observations. 
+
+It is well-known that the solutions to the two unconstrained maximizations in the denominator are given by the empirical distribution functions that put equal weight on each observation. From here it follows that the likelihood ratio function can be written as
+\begin{align}
+R_{1,n}^\text{E}(\mathcal{C}) &= \sup\limits_{\left\{p_i\right\}, \left\{q_j\right\}} \left(\prod_{i \in \mathcal{I}_0} |\mathcal{I}_0|p_i  \prod_{j \in \mathcal{I}_1} |\mathcal{I}_1|q_j \mid \mathcal{C}\right)\label{eq:empiricalLik1}
+\end{align}
+where $|\cdot|$ denotes the cardinality of the index set. 
+
+The constraint set is chosen so that $\left\{p_i\right\}$ and $\left\{q_j\right\}$ are bona fide multinomial distributions, and so that the expected value of the observations with indices in $\mathcal{I}_0$ have expectation $\beta$ and the difference between the expectations comparing the observations with indices in $\mathcal{I}_1$ to those with indices in $\mathcal{I}_0$ is given by $\beta_\delta$ similar to the structure of the linear model in Equation (\ref{eq:glm2}). This yields the following set of constraints:
+\begin{alignat}{3}
+ p_i &\geq 0,  &\quad  \sum_{i \in \mathcal{I}_0}p_i &= 1,  &\quad &\sum_{i \in \mathcal{I}_0}p_i (Y_i - \beta) = 0\\	
+ q_j &\geq 0,  &\quad  \sum_{j \in \mathcal{I}_1}q_j &= 1,  &\quad &\sum_{j \in \mathcal{I}_1}q_j (Y_j - \beta - \beta_\delta) = 0
+\end{alignat}
+
+The find the values of $\left\{p_i\right\}$ and $\left\{q_j\right\}$ in Equation (\ref{eq:empiricalLik1}) that satisfies the constraint set we solve the constrained optimization problem through the following objective function
+\begin{align}
+  O(\left\{p_i\right\}, \left\{q_j\right\}) &= \sum_{i \in \mathcal{I}_0}\log(|\mathcal{I}_0|p_i) + \sum_{j \in \mathcal{I}_1}\log(|\mathcal{I}_1|q_j) + \gamma_1\left(\sum_{i \in \mathcal{I}_0} p_i - 1\right) + \gamma_2\left(\sum_{j \in \mathcal{I}_1}q_j - 1\right)\\
+    &- |\mathcal{I}_0|\lambda_1\sum_{i \in \mathcal{I}_0} p_i(Y_i - \beta) - |\mathcal{I}_1|\lambda_2\sum_{j \in \mathcal{I}_1} q_j(Y_j - \beta - \beta_\delta)\nonumber
+\end{align}
+where $\gamma_1$, $\gamma_2$, $\lambda_1$ and $\lambda_2$ are Lagrange multipliers. 
+
+Calculating the partial derivatives of $O(\left\{p_i\right\}, \left\{q_j\right\})$ with respect to $p_i$ and $q_i$ and setting them equal to zero we have that
+\begin{align}
+  0 &= \frac{\partial}{\partial p_i}O(\left\{p_i\right\}, \left\{q_j\right\}) = \frac{1}{p_i} - |\mathcal{I}_0|\lambda_1 (Y_i - \beta) + \gamma_1\label{eq:lambda1}\\
+  0 &= \frac{\partial}{\partial q_j}O(\left\{p_i\right\}, \left\{q_j\right\}) = \frac{1}{q_j} - |\mathcal{I}_1|\lambda_2 (Y_j - \beta - \beta_\delta) + \gamma_2\label{eq:lambda2}
+\end{align}
+and by applying the constrains it follows that
+\begin{align}
+  0 &= \sum_{i \in \mathcal{I}_0} p_i \frac{\partial O(\left\{p_i\right\}, \left\{q_j\right\})}{\partial p_i}\\
+   &= \sum_{i \in \mathcal{I}_0} p_i\left(\frac{1}{p_i} - |\mathcal{I}_0|\lambda_1 (Y_i - \mu) + \gamma_1\right)\nonumber\\
+   &= \sum_{i \in \mathcal{I}_0} 1  - |\mathcal{I}_0| \lambda_1\sum_{i \in \mathcal{I}_0}p_i (Y_i - \beta) + \gamma_1 \sum_{i \in \mathcal{I}_0} p_i\nonumber\\
+   &= |\mathcal{I}_0| + \gamma_1\nonumber
+\end{align}
+Therefore $\gamma_1 = -|\mathcal{I}_0|$ and $\gamma_2 = -|\mathcal{I}_1|$ by similar calculation for $q_j$.  From Equations (\ref{eq:lambda1}) and (\ref{eq:lambda2}) and the previous results we obtain the following solutions
+\begin{align}
+  p_i = \frac{1}{|\mathcal{I}_0|(1 + \lambda_1 (Y_i - \beta))}, \quad q_j = \frac{1}{|\mathcal{I}_1|(1 + \lambda_2 (Y_j - \beta - \beta_\delta))}
+\end{align}
+and by inserting these expressions into the expression for the empirical likelihood ratio we obtain
+\begin{align}
+\log R_{1,n}^E(\beta, \beta_\delta) &= \sum_{i \in \mathcal{I}_0} \log(|\mathcal{I}_0| p_i) + \sum_{j \in \mathcal{I}_1}\log(|\mathcal{I}_1| q_j)\\
+                    &= \sum_{i \in \mathcal{I}_0}\log \frac{1}{1 + \lambda_1 (Y_i - \beta)} + \sum_{j \in \mathcal{I}_1}\log \frac{1}{1 + \lambda_2 (Y_j - \beta - \beta_\delta)}\nonumber\\
+                    &= -\sum_{i \in \mathcal{I}_0}\log \left(1 + \lambda_1 (Y_i - \mu)\right) - \sum_{j \in \mathcal{I}_1}\log\left(1 + \lambda_2 (Y_j - \beta - \beta_\delta)\right)\nonumber
+\end{align}
+The values of $\lambda_1$ and $\lambda_2$ can then be found by combining Equations (\ref{eq:lambda1}) and (\ref{eq:lambda2}) with the constraints leading to the following set of equations
+\begin{align}
+  |\mathcal{I}_0|^{-1}\sum_{i \in \mathcal{I}_0} \frac{Y_i - \beta}{1 + \lambda_1 (Y_i - \beta)} = 0, \quad |\mathcal{I}_1|^{-1}\sum_{j \in \mathcal{I}_1}\frac{Y_j - \beta - \beta_\delta}{1 + \lambda_2 (Y_j - \beta - \beta_\delta)} = 0
+\end{align}
+that in practice can be solved for $\lambda_1$ and $\lambda_2$ using a numerical root finding method.
+
+The empirical LRT statistic is therefore
+\begin{align}
+  W_{1,n}^E(\beta, \beta_\delta) &= -2\log R_{1,n}^E(\beta, \beta_\delta)\\
+                 &= 2\left(\sum_{i \in \mathcal{I}_0}\log \left(1 + \lambda_1 (Y_i - \beta)\right) + \sum_{j \in \mathcal{I}_1}\log\left(1 + \lambda_2 (Y_j - \beta - \beta_\delta)\right)\right)\nonumber
+\end{align}
+where $W_{1,n}^E(\beta_\delta^\ast) = \sup\limits_{\beta} W_{1,n}^E(\beta, \beta_\delta^\ast)$ the profile version testing the difference between treatments.
+

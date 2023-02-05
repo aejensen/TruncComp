@@ -4,7 +4,8 @@ title: |
   | A novel high-power test for continuous outcomes truncated by death
 author: | 
   | Andreas Kryger Jensen and Theis Lange
-  | Section of Biostatistics, Department of Public Health, University of Copenhagen
+  | Section of Biostatistics, Department of Public Health
+  | University of Copenhagen
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 editor_options: 

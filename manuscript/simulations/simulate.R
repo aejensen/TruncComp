@@ -12,7 +12,7 @@ simulatePowerData <- \(scenario, n) {
     d$Y[d$A == 1 & d$R == 1] <- rnorm(sum(d$A == 1 & d$R == 1), 3 + 0.5, 1)
   } else if(scenario == 2) {
     A <- c(sample(0:1, n, replace = TRUE, prob = c(0.5, 0.5)),
-           sample(0:1, n, replace = TRUE, prob = c(0.4, 0.6)))
+           sample(0:1, n, replace = TRUE, prob = c(0.35, 0.65)))
     d <- data.frame(R = R, A = A, Y = NA)
     d$Y[d$A == 0] <- 0
     d$Y[d$A == 1] <- rnorm(sum(d$A == 1), 3.5, 1)

@@ -14,6 +14,7 @@ header-includes:
   - \DeclareMathOperator*{\Beta}{Beta}
   - \usepackage[labelfont=bf]{caption}
   - \usepackage{amsthm}
+  - \usepackage{bbm}
   - \newtheorem{proposition}{Proposition}
 output: 
   pdf_document: 
@@ -26,37 +27,35 @@ editor_options:
 ---
 
 \begin{abstract}
-Patient reported outcomes including quality of life (QoL) assessments are increasingly being included as either primary or secondary outcomes in randomized controlled trials. While making the outcomes more relevant for patients it entails a challenge in cases where death or a similar event makes the outcome of interest undefined. A pragmatic - and much used - solution is to assign diseased patient with the lowest possible QoL score. This makes medical sense, but creates a statistical problem since traditional tests such as t-tests or Wilcox tests potentially looses large amounts of statistical power. In this paper we propose a novel test that can keep the medical relevant composite outcome, but preserve full statistical power. The test is also applicable in other situations where a specific value (say 0 days alive outside hospitals) encodes a special meaning. The test is implemented in an R package which is available for download. The paper includes a simulation study and an application to a COVID-19 trial.
+Patient reported outcomes including quality of life (QoL) assessments are increasingly being included as either primary or secondary outcomes in randomized controlled trials. While making the outcomes more relevant for patients it entails a challenge in cases where death or a similar event makes the outcome of interest undefined. A pragmatic - and much used - solution is to assign diseased patient with the lowest possible QoL score. This makes medical sense, but creates a statistical problem since traditional tests such as t-tests or Wilcoxon tests potentially loses high amounts of statistical power. In this paper we propose a novel test that can keep the medically relevant composite outcome but preserve full statistical power. The test is also applicable in other situations where a specific value (say zero days alive outside hospitals) encodes a special meaning. The test is implemented in an R package which is available for download. The paper includes a simulation study and an application to a COVID-19 trial.
 \end{abstract}
 
 
 \begin{center}
-\textbf{Keywords:} quality of life, RCTs, truncated outcomes, zero-inflation
+\textbf{Keywords:} Quality of Life, RCTs, Truncated Outcomes, Zero-inflation, 
 \end{center}
 
 
 # Introduction 
 
-In medical intervention research including in particular randomized controlled trials (RCTs) there is a trend towards increased use of patient reported outcomes; Quality of Life (QoL) scores are one of the most prominent of these. Established statistical practice is to compare these between treatment groups using non-parametric tests such as Wilcox since distributions are rarely normal. When all patients are alive and able and willing to provide QoL scores at the scheduled measurement time this procedure works very well. Not all clinical settings, however, will have all participants alive at time of scheduled assessment of QoL. This is particular true in trials within intensive care where mortality approximating 30% are not uncommon and which is the setting that have motivated this work. A pragmatic solution which is gaining popularity is to simply give the diseased patient the lowest possible score and then use a Wilcoxon test or similar to compare groups. This paper will demonstrate that this approach can lead to dramatic loss of statistical power. The paper will also presents an alternative and novel statistical test which avoids the power loss. The novel test procedure is implemented in R and made publicly available.
+In medical intervention research including in particular randomized controlled trials (RCTs) there is a trend towards increased use of patient reported outcomes; Quality of Life (QoL) scores being one of the most prominent of these. Established statistical practice is to compare these between treatment groups using non-parametric tests such as Mann–Whitney–Wilcoxon rank-sum test (@wilcoxon3001968individual, @mann1947test), hence henceforth Wilcoxon, since distributions are rarely normal or symmetric. When all patients are alive and able and willing to provide QoL scores at the scheduled measurement time this procedure works very well. Not all clinical settings, however, will have all participants alive at time of scheduled assessment of QoL. This is particularly true in trials within intensive care where mortality of approximately 30% is not uncommon and which is the setting that motivated this work. A pragmatic solution which is gaining popularity is to simply give the deceased patients the lowest possible score and then use a Wilcoxon test or similar to compare groups. This paper will demonstrate that this approach can lead to dramatic loss of statistical power. The paper will also present an alternative and novel statistical test that avoids the power loss. The novel test procedure is implemented in R and made publicly available.
 
-The key-insight in the proposed test is to incorporate that the outcome is actually a two-dimensional outcome of a very special type and that the constructed combined outcome follows a continuous-singular mixture distribution. This unusual distribution is why one cannot resort to non-parametric Wilcoxon (Mann-Whitney) tests since the singular component of the distribution of the combined outcome will get reduced to simple ties. It is noted that the handling of ties in standard statistical software varies and is opaque. However, the handling of ties is not the main reason why Wilcox suffers power loss. The main reason is that the null-hypothesis in these Wilcoxon type tests (stochastic domination) does not handle the empirical fact that treatments might influence mortality and QoL differently. 
+The key-insight in the proposed test is to incorporate that the outcome is actually a two-dimensional outcome of a very special type, and that the constructed combined outcome follows a continuous-singular mixture distribution. This unusual distribution is why one cannot resort to non-parametric Wilcoxon tests since the singular component in the distribution of the combined outcome will get reduced to simple ties. It is noted that the handling of ties in standard statistical software varies and is opaque. However, the handling of ties is not the main reason why the Wilcoxon test suffers power loss. The main reason is that the null-hypothesis in these Wilcoxon type tests (stochastic domination) does not handle the empirical fact that treatments might influence mortality and QoL differently. 
 
-As an alternative we propose to model the binary component (i.e., survival) and the continuous part (i.e., actual QoL) separately but to conduct a single test for no treatment effect on either. We can thus provide a single p-value for the hypothesis of no treatment effect on the extended QoL where death is given the lowest possible score. To accommodate potential non-normality of the recorded QoL scores we include both parametric and a semi-parametric tests where the latter is as widely applicable as the Wilcox test. Simulations indicate that the semi-parametric is preferred as is greatly extends applicability of the test procedure at a very low price in terms of reduced power. Both test procedures will provide effect estimates of mean differences between treatment groups based on the combined outcome along with corresponding confidence intervals. This is also an added benefit compared to the Wilcox-type based testing approach. 
+As an alternative we propose to model the binary component (i.e., survival) and the continuous part (i.e., actual QoL) separately but to construct a single test for no treatment effect on either based on a likelihood ratio. We can thus provide a single p-value for the hypothesis of no treatment effect on the extended QoL where death is given the lowest possible score. To accommodate potential non-normality of the recorded QoL scores we consider both a parametric and a semi-parametric version of the test where the semi-parametric version is as widely applicable as the Wilcoxon test. Both test procedures will provide effect estimates of mean differences between treatment groups based on the combined outcome along with confidence intervals. This is also an added benefit compared to the Wilcoxon-type testing approach. 
 
-It should be noted that while we in this paper exemplifies the procedure using QoL tests and mortality the method is applicable in any setting where a single value of a combined outcome has a special interpretation compared to an otherwise continuous scale. As an example, again from intensive care research, consider the outcome "days alive and out of hospital within 90 days from randomization". Here in-hospital fatalities will all have the value 0, while everybody else will have outcomes ranging from 0 to 90. Such outcomes are also routinely analyzed using Wilcox-type test. Our proposed test would increase power while also providing a mean effect estimate along with confidence bands. Note also that the developed mathematical method allows straightforwardly for the inclusion of confounders variables. The method itself is therefore just as applicable in non-randomized studies or epidemiological studies in general. 
+It should be noted that while we in this paper exemplify the procedure using QoL and mortality the method is applicable in any setting where a single value of a combined outcome has a special interpretation compared to an otherwise continuous scale. Another example from intensive care research consider the outcome "days alive and out of hospital within 90 days from randomization". Here in-hospital fatalities will all have the value 0, while everybody else will have outcomes ranging from 0 to 90. Such outcomes are also routinely analyzed using Wilcoxon-type tests. Our proposed test would increase power while also providing a mean effect estimate along with confidence interval. Note also that the developed mathematical method allows straightforwardly for the inclusion of confounding variables or other adjustment factors. The method itself is therefore just as applicable in non-randomized studies or epidemiological studies in general. 
 
-The rest of the paper is structured as follows. The next section introduces the mathematical setup as well as our novel test procedure. Section 3 describes the R implementation and Section 4 presents a simulation study illustrating the substantial power gains. Section 5 re-analyzes a COVID-19 trial from 2021, and section 6 concludes with a discusses. Mathematical proofs are contained in the supplementary material.
+The rest of the paper is structured as follows. The next section introduces the mathematical setup as well as our novel test procedure. Section 3 describes the R implementation, and Section 4 presents a simulation study illustrating the substantial power gains. Section 5 re-analyzes a COVID-19 trial from 2021, and section 6 concludes with a discusses. Additional simulation results and mathematical proofs are contained in the supplementary material.
 
 
 # Method {#sec:method}
 
-We consider random variables $(Y, A, R, X)$ where $Y$ is the continuous outcome variable, $A$ is a binary variable being equal to $1$ if $Y$ is observed and equal to $0$ if $Y$ is unobserved/undefined, $R$ is a binary treatment indicator, and $X$ is a $p$-dimensional vector of baseline covariates. The statistical objective is to describe the distribution of $((Y \mid A = 1), A) \mid R, X$ where the primary hypothesis of no treatment effect is given by $((Y \mid A = 1), A) \perp R \mid X$.
-
-Even though the outcome is bi-variate, a combined outcome is often used in practice. The combined outcome is derived such that it is equal to $Y$ if $Y$ is observed, and otherwise it is equal to some predetermined value. We can write this combined outcome as  
+We consider random variables $(Y, A, R, X)$ where $Y$ is the continuous outcome, $A$ is a binary variable being equal to $1$ if $Y$ is observed and equal to $0$ if $Y$ is unobserved/undefined, $R$ is a binary treatment indicator, and $X$ is a $p$-dimensional vector of additional covariates. The objective is to focus on the bivariate distribution of $(Y \mid A = 1), A \mid R, X$ under the primary null-hypothesis of no treatment effect given by $(Y \mid A = 1), A \perp R \mid X$. Even though we model the outcome as a bivariate random variable, a combined outcome is often used in practice. The combined outcome is derived such that it is equal to $Y$ if $A = 1$ (and $Y$ is observed), and otherwise (when $A = 0$) it is equal to some predetermined value. The combined outcome can be written as
 \begin{align}
-  \widetilde{Y} =  Y 1_{A = 1} + \mathcal{E} 1_{A = 0}\label{eq:combinedOutcome}
+  \widetilde{Y} =  Y \mathbbm{1}(A = 1) + \mathcal{E} \mathbbm{1}(A = 0)\label{eq:combinedOutcome}
 \end{align}
-where $\mathcal{E}$ is a fixed atom assigned as the outcome value when $Y$ is unobserved. The semi-continuous distribution of $\widetilde{Y}$ is therefore a probabilistic mixture of a singular distribution at $\mathcal{E}$ and a continuous distribution over the domain of the random variable $Y \mid A = 1$. Thus the statistical challenge be be rephrased as assessing if the treatment ($R$) affects the \emph{distribution} of $\widetilde{Y}$. 
+where $\mathcal{E}$ is a fixed atom assigned as the outcome value when $Y$ is unobserved, and $\mathbbm{1}$ denotes the indicator function. The semi-continuous distribution of $\widetilde{Y}$ is therefore a probabilistic mixture of a singular distribution at $\mathcal{E}$ and a continuous distribution over the domain of the random variable $Y \mid A = 1$. Thus the statistical challenge can be rephrased as assert whether the treatment affects the distribution of $\widetilde{Y}$. 
 
 The conditional expected value of the combined outcome in Equation (\ref{eq:combinedOutcome}) is given by
 \begin{align*}
@@ -68,8 +67,6 @@ From this expression one can show that a treatment comparison expressed in terms
         &= \mu(X)\left[P(A = 1 \mid R=1,X) - P(A = 1 \mid R = 0, X)\right] + \mu_{\delta}(X) P(A = 1 \mid R = 1, X)\nonumber
 \end{align}
 If we auspiciously let $\mu_{\delta}(X) = \mu(X)\left[P(A = 1 \mid R = 0, X) P(A = 1 \mid R = 1, X)^{-1} - 1\right]$ then $\Delta(X) = 0$ for all values of $X$ even though $\mu_{\delta}(X) \ne 0$ and $P(A = 1 \mid R = 0, X) \ne P(A = 1 \mid R = 1, X)$. On the other hand, if $\mu_\delta(X) = 0$ and $P(A = 1 \mid R=1,X) = P(A = 1 \mid R = 0, X)$ then $\Delta(X)$ is necessarily equal to zero. This illustrates that a significance test of no treatment effect must have two degrees of freedom. Such a test which we develop in the subsequent sections is conceptually difference than a test for the null-hypothesis $\Delta(X) = 0$. Noe that in RCTs one would typically not include any variables $X$ since these are balanced by design. 
-
-## Likelihood ratio test {-}
 
 We propose to test the null-hypothesis of no treatment effect on the combined outcome by a likelihood ratio test of the joint distribution of $Y_i \mid A_i$ and $A_i$. This has the advantage that it increases the efficiency compared the Wilcoxon test and it yields a single p-value appropriate for testing a primary outcome in a clinical trial. Let $(Y_i, A_i, R_i, X_i)$ for $i = 1, \ldots, n$ be independent and identically distributed random variables. We can write our model in a general form as 
 \begin{align*}
@@ -162,16 +159,16 @@ Assume that $P(A_i = 1 \mid R_i = r) > 0$ for $r = 0,1$ and let $m_j = \sum_{i=1
 
 ## Confidence intervals {-}
 
-Confidence intervals for the treatment effects are readily available by inverting the LRT in Equation (\ref{eq:LRTsum}) utilizing the duality between hypothesis testing and confidence intervals. Specifically, an $(1-\alpha)100\%$ confidence region or interval contains all parameter values that cannot be rejected according to the LRT at level $\alpha$. The bi-variate confidence region for the treatment effect is therefore given by the following point set in $\mathbb{R}^2$
+Confidence intervals for the treatment effects are readily obtained by inverting the likelihood ratio functions in either Equations (\ref{eq:LRTsum}) or (\ref{eq:LRT_SP_total}) for either version of the test utilizing the duality between hypothesis testing and confidence intervals. Specifically, an $(1-\alpha)100\%$ confidence region or interval contains all parameter values that cannot be rejected according to the likelihood ratio test  at level $\alpha$. The bivariate confidence region for the treatment effect is therefore given by the following point set in $\mathbb{R}^2$
 \begin{align*}
-  \text{CI}^{(\mu_\delta, \beta_\delta)}_{1-\alpha} = \left\{(m, b) :  W_{1,n}(m) +  W_{2,n}(b) \leq \chi_2^2(1-\alpha)\right\}
+  \text{CI}^{(\mu_\delta, \beta_\delta)}_{1-\alpha} = \left\{(m, b) \in \mathbb{R}^2 :  W_{1,n}(m) +  W_{2,n}(b) \leq \chi_2^2(1-\alpha)\right\}
 \end{align*}
 and it will asymptotically contain the true difference in means among the observed outcomes and the true log odds-ratio of being observed simultaneously with probability $(1-\alpha)100\%$. Similarly, univariate confidence intervals for $\mu_\delta$ and $\beta_\delta$ can be computed by inversion with respect to a $\chi^2$ distribution with one degree of freedom, e.g.,
 \begin{align*}
-  \text{CI}^{\mu_\delta}_{1 - \alpha} = \left\{m : W_{1,n}(m) \leq \chi_1^2(1-\alpha)\right\}, \quad \text{CI}^{\beta_\delta}_{1 - \alpha} = \left\{b : W_{2,n}(b) \leq \chi_1^2(1-\alpha)\right\}
+  \text{CI}^{\mu_\delta}_{1 - \alpha} = \left\{m \in \mathbb{R} : W_{1,n}(m) \leq \chi_1^2(1-\alpha)\right\}, \quad \text{CI}^{\beta_\delta}_{1 - \alpha} = \left\{b \in \mathbb{R} : W_{2,n}(b) \leq \chi_1^2(1-\alpha)\right\}
 \end{align*}
 
-The exact formula for the confidence interval for the average difference in the combined outcome ($\widetilde{Y}$) depends on the chosen model for the binary component ($A$). However, it can always be calculated using the Delta-method. 
+
 
 
 # Software implementation
@@ -200,10 +197,10 @@ The observed difference in means for the combined outcome, $\Delta$ in Equation 
 model <- truncComp(Y ~ R, atom = 0, data = TruncCompExample, method = "SPLRT")
 ```
 where the formula interface is similar to other regression models implemented in R. The argument \texttt{atom} identifies the value assigned to the truncated outcomes, and \texttt{method} can be \texttt{SPLRT} or \texttt{LRT} for either the semi-parametric or the parametric likelihood ratio test respectively. In this example we have opted for the semi-parametric version to show how easily this additional flexibility is included. We obtain the results of the estimation by a calling the function \texttt{summary} on the model:
-```{r}
+```{r, comment=''}
 summary(model)
 ```
-The output from the call to \texttt{summary} displays the estimates for the two treatment contrasts corresponding to $\mu_\delta$ and $e^{\alpha_\delta}$ in Equations (\ref{eq:glm1}) and (\ref{eq:glm2}). These contrasts quantify the difference in means among the observed outcomes and the odds ratio of being observed respectively in accordance with the model specification. Each estimated treatment contrast is accompanied by a 95\% confidence interval, and finally the output displays the joint likelihood ratio test statistic and the associated $p$-value for the joint null-hypothesis of no treatment effect.  
+The output from the call to \texttt{summary} displays the estimates for the two treatment contrasts corresponding to $\mu_\delta$ and $\exp(\alpha_\delta)$ in Equations (\ref{eq:glm1}) and (\ref{eq:glm2}). These contrasts quantify the difference in means among the observed outcomes and the odds ratio of being observed respectively in accordance with the model specification. Each estimated treatment contrast is accompanied by a 95\% confidence interval, and finally the output displays the joint likelihood ratio test statistic and the associated $p$-value for the joint null-hypothesis of no treatment effect.  
 
 From the output we see that the semi-parametric likelihood ratio analysis reports an extremely low $p$-value for null-hypothesis of no joint treatment effect. This strongly contradicts the conclusions from both the previous t-test and Wilcoxon test. The confidence intervals for the two treatment contrasts indicate that the average value for the observed outcome in the group defined by $R = 1$ is significantly higher than the average value for the observed outcome in the group with $R = 0$.
 
@@ -211,7 +208,7 @@ The confidence intervals can also be obtained by calling the function \texttt{co
 ```{r, eval=FALSE}
 confint(model, type = "simultaneous", plot = TRUE, offset = 1.4, resolution = 50)
 ```
-where \texttt{resolution} is the number of grid points on which the likelihood surface is evaluated. Figure \ref{fig:simultConfidence} shows a heat-map of the semi-parametric likelihood surface as well as the $95\%$ simultaneous confidence region. The point $(0,0)$ is far outside of the joint confidence region which corresponds to the strong rejection of the joint null hypothesis of no treatment effect.
+where \texttt{resolution} is the number of discrete grid points on which the likelihood surface is evaluated for plotting. Figure \ref{fig:simultConfidence} shows a heat-map of the semi-parametric likelihood surface as well as the $95\%$ simultaneous confidence region. The point $(0,0)$ is far outside of the joint confidence region which corresponds to the strong rejection of the joint null hypothesis of no treatment effect.
 
 ```{r, echo = FALSE, fig.width=5, fig.height=4.5, fig.align="center", fig.cap="\\label{fig:simultConfidence}Simultaneous empirical likelihood ratio surface for the two treatment contrasts.", fig.pos="htbp", cache = TRUE}
 par(mgp=c(1.6,0.6,0), cex.axis=0.8, cex.lab=0.8, bty="n")
@@ -222,11 +219,24 @@ abline(h = 0, lty=2)
 
 
 # Simulation study
-To illustrate the power benefit and small sample properties of our proposed procedure we consider four different scenario through a simulation study. In all scenarios it is assumed that treatment (denoted $R$) is randomized one to one and we let the observed outcome be given by the product $Y_i = A_i \widetilde{Y}_i$ where $A_i$ is a binary variable and $\widetilde{Y}_i$ is continuously distributed.
+To illustrate the power benefit and small sample properties of our proposed procedure we consider four different scenario through a simulation study. In all scenarios it is assumed that treatment (denoted $R_i$) is randomized one to one between two groups, and we let the observed combined outcome be given by the product $\widetilde{Y}_i = A_i Y_i$, where $A_i$ is binary and $Y_i$ is continuously distributed. This is equivalent to observing the atom $\mathcal{E} = 0$ when $A_i = 0$ and otherwise $Y_i$ is observed.
 
-In *scenario 1* we let $A_i \sim \Bernoulli(0.35)$ and $\widetilde{Y}_i \mid A_i = 1, R_i \sim N(3 + 0.5R_i, 1)$. This is a case with a point mass at zero that is independent of the treatment but with a continuous part that is shifted between the two groups. In *scenario 2* we let $A_i \mid R_i \sim \Bernoulli(0.5 + 0.1R_i)$ and $\widetilde{Y}_i \mid A_i = 1 \sim N(3.5, 1)$. This is the opposite of scenario 1 where the continuous part is independent of the treatment but the point mass differs. In *scenario 3* we model a treatment effect on both components but in opposite directions as $A_i \mid R_i \sim \Bernoulli(0.4 - 0.1R_i)$ and $\widetilde{Y}_i \mid A_i = 1, R_i \sim N(3 + 0.5 R_i, 1)$. Finally, in *scenario 4* we consider a setting similar to scenario 1 but where the continuous part is non-normal distribution. This is given by the model $A_i \sim \Bernoulli(0.35)$ and $\widetilde{Y}_i \mid A_i = 1, R_i \sim \Beta(1, 1-0.7R_i)$.
+Table \ref{tab:simulation} shows the distributions of $A_i \mid R_i$ and $Y_i \mid A_i = 1, R_i$ for each of the four simulation scenarios. Scenario 1 represents the case where the point mass at zero is independent of the treatment but with a continuous component that is shifted between the groups. Scenario 2 is the opposite of scenario 1 where the continuous component is independent of the treatment but the probability of the point mass at zero differs between treatment groups. In scenario 3 we model a treatment effect on both components but in opposite directions of each other, and scenario 4 is similar to scenario 1 but where the continuous component is non-normal distributed.
 
-To assess the power we vary the sample size between 50 to 350 observations in each group and for each scenario we perform 25,000 simulations and estimate the power by the proportion of rejected null hypotheses at the 5\% level. We compare the power of both our parametric and semi-parametric likelihood ratio tests to the two-sample t-test and the Wilcoxon test. Figure \ref{fig:powerCurves} shows the estimated power functions. The results are also presented in table form in the supplementary material.
+\begin{table}[htb]
+\centering
+\begin{tabular}{r|r|r}
+Scenario & $A_i \mid R_i$ & $Y_i \mid A_i = 1, R_i$\\ \hline
+1 & $\Bernoulli(0.35)$ & $N(3 + 0.5R_i, 1)$\\
+2 & $\Bernoulli(0.5 + 0.15R_i)$ & $N(3.5, 1)$\\
+3 & $\Bernoulli(0.4 - 0.1R_i)$ & $N(3 + 0.5 R_i, 1)$\\
+4 & $\Bernoulli(0.35)$ & $\Beta(1, 1-0.7R_i)$
+\end{tabular}
+\caption{Power simulation scenarios}
+\label{tab:simulation}
+\end{table}
+
+To assess the power we vary the sample size between 50 to 350 observations in each group with increments of 25, and for each scenario we perform 25,000 simulations and estimate the power by the proportion of rejected null hypotheses at the 5\% level. We compare the power of both our parametric and semi-parametric likelihood ratio tests to the two-sample t-test and the Wilcoxon test. Figure \ref{fig:powerCurves} shows the estimated power functions. The results are also presented in table form in the supplementary material.
 
 In all scenarios except number two it is clear that we observe a large power gain compared to both the t-test and the Wilcoxon test.
 
@@ -242,7 +252,7 @@ cols <- c("firebrick1", "forestgreen", "cornflowerblue", "black")
 par(mfrow=c(2,2), bty="n", mgp=c(1.6,0.6,0), mar=c(3,3,2,0))
 plot(nSeq, power1[,"Wilcoxon"], ylim=c(0,1), type="l", col = cols[4],
      xlab="# observations pr group", ylab="Power", lwd = 2,
-     cex.axis=0.8, cex.lab=1)
+     cex.axis=0.85, cex.lab=1.1)
 title("Scenario 1")
 lines(nSeq, power1[,"T-test"], col = cols[3], lwd = 2)
 lines(nSeq, power1[,"LRT"], col = cols[1], lwd = 2)
@@ -252,7 +262,7 @@ legend("topleft", c("Parametric LRT", "Semi-parametric LRT", "t-test", "Wilcoxon
 
 plot(nSeq, power2[,"Wilcoxon"], ylim=c(0,1), type="l", col = cols[4],
      xlab="#observations pr group", ylab="Power", lwd = 2,
-     cex.axis=0.8, cex.lab=1)
+     cex.axis=0.85, cex.lab=1.1)
 title("Scenario 2")
 lines(nSeq, power2[,"T-test"], col = cols[3], lwd = 2)
 lines(nSeq, power2[,"LRT"], col = cols[1], lwd = 2)
@@ -260,7 +270,7 @@ lines(nSeq, power2[,"SPLRT"], col = cols[2], lwd = 2)
 
 plot(nSeq, power3[,"Wilcoxon"], ylim=c(0,1), type="l", col = cols[4],
      xlab="#observations pr group", ylab="Power", lwd = 2,
-     cex.axis=0.8, cex.lab=1)
+     cex.axis=0.85, cex.lab=1.1)
 title("Scenario 3")
 lines(nSeq, power3[,"T-test"], col = cols[3], lwd = 2)
 lines(nSeq, power3[,"LRT"], col = cols[1], lwd = 2)
@@ -268,14 +278,14 @@ lines(nSeq, power3[,"SPLRT"], col = cols[2], lwd = 2)
 
 plot(nSeq, power4[,"Wilcoxon"], ylim=c(0,1), type="l", col = cols[4],
      xlab="#observations pr group", ylab="Power", lwd = 2,
-     cex.axis=0.8, cex.lab=1)
+     cex.axis=0.85, cex.lab=1.1)
 title("Scenario 4")
 lines(nSeq, power4[,"T-test"], col = cols[3], lwd = 2)
 lines(nSeq, power4[,"LRT"], col = cols[1], lwd = 2)
 lines(nSeq, power4[,"SPLRT"], col = cols[2], lwd = 2)
 ```
 
-In addition to the power simulations we also performed a simulation study for the type I error. We considered two scenarios similar to scenarios 1 and 4 described above but under the null-hypothesis. Specifically we considered $A_i \sim \Bernoulli(\pi)$, $\widetilde{Y}_i \mid A_i = 1 \sim N(3,1)$ and $A_i \sim \Bernoulli(\pi)$, $\widetilde{Y}_i \mid A_i = 1 \sim \Beta(1, 1)$. We estimated the type I error for different sample sizes and $\pi \in \left\{0.2, 0.4, 0.6, 0.8\right\}$. The results are shown in the supplementary material.
+In addition to the power simulations we also performed a simulation study for the type I error. We considered two scenarios similar to scenarios 1 and 4 in Table \ref{tab:simulation} under a null-hypothesis of no treatment effect. Specifically, we considered $A_i \sim \Bernoulli(\pi)$, $\widetilde{Y}_i \mid A_i = 1 \sim N(3,1)$ and $A_i \sim \Bernoulli(\pi)$, $\widetilde{Y}_i \mid A_i = 1 \sim \Beta(1, 1)$. We estimated the type I error through simulation for different sample sizes and $\pi \in \left\{0.2, 0.4, 0.6, 0.8\right\}$. The results are shown in the supplementary material.
 
 
 
@@ -302,17 +312,17 @@ The distribution of the outcome in each randomization group is presented by hist
 par(mfrow=c(1,3), mgp=c(2,1,0), mar=c(3, 3, 2, 0))
 hist(subset(d, !d$allocation)$dawols28, 10, xlim=c(0,30),
      main="High dose", ylim = c(0,55), col="gray70", border="gray90",
-     cex.axis=1, cex.main=1.5, cex.lab=1, ylab="",
+     cex.axis=1.2, cex.main=1.5, cex.lab=1.3, ylab="",
      xlab="Days alive without life support")
 hist(subset(d, d$allocation)$dawols28, xlim=c(0,30),
      main="Low dose", ylim=c(0,55), 10, col="gray70", border="gray90",
-     cex.axis=1, cex.main=1.5, cex.lab=1, ylab="",
+     cex.axis=1.2, cex.main=1.5, cex.lab=1.3, ylab="",
      xlab="Days alive without life support")
 image(sCI$muDelta, sCI$logORdelta, sCI$surface,
      col = rev(fields::tim.colors(256)), useRaster = TRUE,
      xlab="Difference in means",
      ylab="log OR",
-     cex.axis=1, cex.main=1.5, cex.lab=1)
+     cex.axis=1.2, cex.main=1.5, cex.lab=1.3)
 points(m_SPLRT$muDelta, log(m_SPLRT$alphaDelta), pch = 19, cex = 1.5)
 contour(sCI$muDelta, sCI$logORdelta, sCI$surface, add = TRUE, 
         levels = stats::qchisq(0.99, 2), lwd = 1, labels = 0.99, lty=1)
@@ -327,7 +337,7 @@ abline(v = 0, lty=2)
 abline(h = 0, lty=2)
 ```
 
-Comparing the groups by a Wilcoxon test yields a p-value of $0.2422$ hence non-significant at the pre-specified 5\% level. Using our proposed parametric likelihood ratio test yields a p-value of $0.0186$ and thus leading to a rejection of the null-hypothesis. From the histograms it could be questioned whether the continuous part of the distributions are normal distributed. Accordingly, we also apply our proposed semi-parametric version of the likelihood ratio test. This yields a p-value of $0.0206$. In conclusion, our proposed method is able to detect the difference between the groups. Further and in contrast to the Wilcoxon test, our method also provides a way to interpret the difference between the groups. This is illustrated in the right panel of Figure \ref{fig:application} showing simultaneous confidence regions for the two effect parameters. In this case it is clear that the primary effect of the intervention is not on the discrete component (i.e., the proportion of patients who never get off life support). Instead, the effect appears to be on the continuous part and is between half a day and seven days.
+Comparing the groups by a Wilcoxon test yields a p-value of $0.242$ hence non-significant at the pre-specified 5\% level. Using our proposed parametric likelihood ratio test yields a p-value of $0.019$ and thus leading to a rejection of the null-hypothesis. From the histograms it could be questioned whether the continuous part of the distributions are normal distributed. Accordingly, we also apply our proposed semi-parametric version of the likelihood ratio test. This yields a p-value of $0.021$. In conclusion, our proposed method is able to detect the difference between the groups. Further and in contrast to the Wilcoxon test, our method also provides a way to interpret the difference between the groups. This is illustrated in the right panel of Figure \ref{fig:application} showing simultaneous confidence regions for the two effect parameters. In this case it is clear that the primary effect of the intervention is not on the discrete component (i.e., the proportion of patients who never get off life support). Instead, the effect appears to be on the continuous part and is between half a day and seven days.
 
 
 

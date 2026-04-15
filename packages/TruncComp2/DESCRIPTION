@@ -1,0 +1,19 @@
+Package: TruncComp2
+Type: Package
+Title: Two-sample comparison of truncated continuous outcome by parametric or semi-parametric maximum likelihood
+Version: 0.2.0
+Author: Andreas Kryger Jensen
+Maintainer: Andreas Kryger Jensen <aeje@sund.ku.dk>
+Description: Implements likelihood-ratio methods for comparing two groups when
+    a continuous outcome has a distinguished atom value representing an
+    unobserved or undefined outcome. The package provides both a fully
+    parametric approach and a semi-parametric approach based on an internal
+    empirical-likelihood routine for the observed-outcome mean difference.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports:
+    fields
+Suggests:
+    testthat
+Config/testthat/edition: 3

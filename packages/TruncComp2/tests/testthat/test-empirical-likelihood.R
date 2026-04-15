@@ -1,15 +1,15 @@
 test_that("el_one_sample_lambda handles degenerate and infeasible inputs", {
-  zero_fit <- TruncComp:::el_one_sample_lambda(c(0, 0, 0))
+  zero_fit <- TruncComp2:::el_one_sample_lambda(c(0, 0, 0))
   expect_true(zero_fit$feasible)
   expect_equal(zero_fit$lambda, 0)
   expect_equal(zero_fit$statistic, 0)
   expect_equal(zero_fit$gradient, 0)
 
-  expect_false(TruncComp:::el_one_sample_lambda(c(1, 2, 3))$feasible)
-  expect_false(TruncComp:::el_one_sample_lambda(c(-3, -2, 0))$feasible)
+  expect_false(TruncComp2:::el_one_sample_lambda(c(1, 2, 3))$feasible)
+  expect_false(TruncComp2:::el_one_sample_lambda(c(-3, -2, 0))$feasible)
 
   residuals <- c(-1.5, -0.25, 0.5, 2)
-  fit <- TruncComp:::el_one_sample_lambda(residuals)
+  fit <- TruncComp2:::el_one_sample_lambda(residuals)
   root_value <- sum(residuals / (1 + fit$lambda * residuals))
   expect_true(fit$feasible)
   expect_lt(abs(root_value), 1e-8)
@@ -20,19 +20,19 @@ test_that("el_mean_diff_statistic respects feasibility and point-mass cases", {
   x <- c(1, 2, 3)
   y <- c(2, 3, 4, 5)
   estimate <- mean(x) - mean(y)
-  delta_range <- TruncComp:::el_mean_diff_delta_range(x, y)
+  delta_range <- TruncComp2:::el_mean_diff_delta_range(x, y)
 
-  expect_equal(TruncComp:::el_mean_diff_statistic(x, y, estimate), 0, tolerance = 1e-12)
-  expect_gte(TruncComp:::el_mean_diff_statistic(x, y, estimate + 0.25), 0)
-  expect_true(is.infinite(TruncComp:::el_mean_diff_statistic(x, y, delta_range[1] - 0.1)))
-  expect_true(is.infinite(TruncComp:::el_mean_diff_statistic(x, y, delta_range[2] + 0.1)))
+  expect_equal(TruncComp2:::el_mean_diff_statistic(x, y, estimate), 0, tolerance = 1e-12)
+  expect_gte(TruncComp2:::el_mean_diff_statistic(x, y, estimate + 0.25), 0)
+  expect_true(is.infinite(TruncComp2:::el_mean_diff_statistic(x, y, delta_range[1] - 0.1)))
+  expect_true(is.infinite(TruncComp2:::el_mean_diff_statistic(x, y, delta_range[2] + 0.1)))
 
-  same_fit <- TruncComp:::el_mean_diff_fit(c(1, 1, 1), c(1, 1, 1))
+  same_fit <- TruncComp2:::el_mean_diff_fit(c(1, 1, 1), c(1, 1, 1))
   expect_equal(as.numeric(same_fit$estimate), 0)
   expect_equal(as.numeric(same_fit$statistic), 0)
   expect_equal(as.numeric(same_fit$conf.int), c(0, 0))
 
-  separated_fit <- TruncComp:::el_mean_diff_fit(c(1, 1, 1), c(2, 2, 2))
+  separated_fit <- TruncComp2:::el_mean_diff_fit(c(1, 1, 1), c(2, 2, 2))
   expect_equal(as.numeric(separated_fit$estimate), -1)
   expect_true(is.infinite(as.numeric(separated_fit$statistic)))
   expect_equal(as.numeric(separated_fit$conf.int), c(-1, -1))
@@ -45,7 +45,7 @@ test_that("custom engine matches frozen upstream EL fixtures", {
   expect_equal(fixture$upstream_package, "EL")
 
   for(case in fixture$cases) {
-    fit <- TruncComp:::el_mean_diff_fit(case$x, case$y)
+    fit <- TruncComp2:::el_mean_diff_fit(case$x, case$y)
     ref <- case$reference
 
     expect_true(abs(as.numeric(fit$estimate) - ref$estimate) < 1e-4,
@@ -72,17 +72,17 @@ test_that("empirical-likelihood engine satisfies symmetry and distributional pro
     x <- stats::rnorm(sample(3:8, 1), mean = stats::runif(1, -0.5, 0.5))
     y <- stats::rnorm(sample(3:8, 1), mean = stats::runif(1, -0.5, 0.5))
 
-    fit_xy <- TruncComp:::el_mean_diff_fit(x, y)
-    fit_yx <- TruncComp:::el_mean_diff_fit(y, x)
+    fit_xy <- TruncComp2:::el_mean_diff_fit(x, y)
+    fit_yx <- TruncComp2:::el_mean_diff_fit(y, x)
 
     expect_equal(as.numeric(fit_xy$estimate), -as.numeric(fit_yx$estimate), tolerance = 1e-12)
 
-    delta_range <- TruncComp:::el_mean_diff_delta_range(x, y)
+    delta_range <- TruncComp2:::el_mean_diff_delta_range(x, y)
     margin <- 0.1 * (delta_range[2] - delta_range[1])
     delta <- stats::runif(1, delta_range[1] + margin, delta_range[2] - margin)
 
-    stat_xy <- TruncComp:::el_mean_diff_statistic(x, y, delta)
-    stat_yx <- TruncComp:::el_mean_diff_statistic(y, x, -delta)
+    stat_xy <- TruncComp2:::el_mean_diff_statistic(x, y, delta)
+    stat_yx <- TruncComp2:::el_mean_diff_statistic(y, x, -delta)
     expect_equal(stat_xy, stat_yx, tolerance = 1e-8)
 
     ci <- as.numeric(fit_xy$conf.int)
@@ -100,8 +100,8 @@ test_that("empirical-likelihood engine satisfies symmetry and distributional pro
 })
 
 test_that("empirical-likelihood helpers reject invalid inputs", {
-  expect_error(TruncComp:::el_mean_diff_fit("a", 1:3), "numeric")
-  expect_error(TruncComp:::el_mean_diff_fit(c(1, NA), 1:3), "finite")
-  expect_error(TruncComp:::el_mean_diff_fit(1, 1:3), "at least two")
-  expect_error(TruncComp:::el_mean_diff_fit(1:3, 1:3, conf.level = 1), "strictly between 0 and 1")
+  expect_error(TruncComp2:::el_mean_diff_fit("a", 1:3), "numeric")
+  expect_error(TruncComp2:::el_mean_diff_fit(c(1, NA), 1:3), "finite")
+  expect_error(TruncComp2:::el_mean_diff_fit(1, 1:3), "at least two")
+  expect_error(TruncComp2:::el_mean_diff_fit(1:3, 1:3, conf.level = 1), "strictly between 0 and 1")
 })

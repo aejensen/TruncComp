@@ -56,7 +56,7 @@ parametric_alt_nll <- function(par, data) {
 }
 
 optim_parametric_lrt <- function(data) {
-  analytic <- TruncComp:::parametric_lrt_fit(data)
+  analytic <- TruncComp2:::parametric_lrt_fit(data)
   start_null <- c(stats::qlogis(analytic$bernoulli$pi),
                   analytic$normal$mu,
                   log(sqrt(analytic$normal$sigma2_hat)))
@@ -81,13 +81,13 @@ optim_parametric_lrt <- function(data) {
 }
 
 test_that("parametric helpers handle safe logs and grouped Bernoulli likelihoods", {
-  expect_equal(TruncComp:::parametric_safe_xlogy(c(0, 2), c(0, 0.5)),
+  expect_equal(TruncComp2:::parametric_safe_xlogy(c(0, 2), c(0, 0.5)),
                c(0, 2 * log(0.5)))
-  expect_true(is.infinite(TruncComp:::parametric_safe_xlogy(1, 0)))
+  expect_true(is.infinite(TruncComp2:::parametric_safe_xlogy(1, 0)))
 
   a <- c(rep(1, 3), rep(0, 7), rep(1, 6), rep(0, 6))
   r <- c(rep(0, 10), rep(1, 12))
-  fit <- TruncComp:::parametric_bernoulli_summary(a, r, conf.level = 0.95)
+  fit <- TruncComp2:::parametric_bernoulli_summary(a, r, conf.level = 0.95)
 
   pi0 <- 3 / 10
   pi1 <- 6 / 12
@@ -104,7 +104,7 @@ test_that("parametric helpers handle safe logs and grouped Bernoulli likelihoods
 test_that("parametric normal helper matches the closed-form LR and boundary rules", {
   y0 <- c(1, 2, 4)
   y1 <- c(2, 3, 5)
-  fit <- TruncComp:::parametric_normal_summary(y0, y1, conf.level = 0.95)
+  fit <- TruncComp2:::parametric_normal_summary(y0, y1, conf.level = 0.95)
 
   sse1 <- sum((y0 - mean(y0))^2) + sum((y1 - mean(y1))^2)
   sse0 <- sum((c(y0, y1) - mean(c(y0, y1)))^2)
@@ -113,15 +113,15 @@ test_that("parametric normal helper matches the closed-form LR and boundary rule
   expect_equal(fit$W, expected, tolerance = 1e-12)
   expect_equal(fit$muDelta, mean(y1) - mean(y0), tolerance = 1e-12)
 
-  swapped <- TruncComp:::parametric_normal_summary(y1, y0, conf.level = 0.95)
+  swapped <- TruncComp2:::parametric_normal_summary(y1, y0, conf.level = 0.95)
   expect_equal(swapped$W, fit$W, tolerance = 1e-12)
   expect_equal(swapped$muDelta, -fit$muDelta, tolerance = 1e-12)
 
-  same_constants <- TruncComp:::parametric_normal_summary(c(1, 1), c(1, 1), conf.level = 0.95)
+  same_constants <- TruncComp2:::parametric_normal_summary(c(1, 1), c(1, 1), conf.level = 0.95)
   expect_equal(same_constants$W, 0)
   expect_true(all(is.na(same_constants$muDeltaCI)))
 
-  separated_constants <- TruncComp:::parametric_normal_summary(c(1, 1), c(2, 2), conf.level = 0.95)
+  separated_constants <- TruncComp2:::parametric_normal_summary(c(1, 1), c(2, 2), conf.level = 0.95)
   expect_true(is.infinite(separated_constants$W))
   expect_true(all(is.na(separated_constants$muDeltaCI)))
 })
@@ -134,7 +134,7 @@ test_that("analytic parametric engine matches direct numerical optimization", {
   )
 
   for(case in cases) {
-    analytic <- TruncComp:::parametric_lrt_fit(case)
+    analytic <- TruncComp2:::parametric_lrt_fit(case)
     numeric_lrt <- optim_parametric_lrt(case)
 
     expect_equal(analytic$W, numeric_lrt, tolerance = 1e-6)
@@ -171,7 +171,7 @@ test_that("public LRT path returns the expected object and keeps init compatible
 
   fit <- truncComp(Y ~ R, atom = 0, data = case$data, method = "LRT", init = custom_init)
 
-  expect_s3_class(fit, "TruncComp")
+  expect_s3_class(fit, "TruncComp2")
   expect_true(fit$success)
   expect_equal(fit$method, "Parametric Likelihood Ratio Test")
   expect_equal(fit$DeltaCI, c(NA_real_, NA_real_))
@@ -225,7 +225,7 @@ test_that("LRT boundary cases keep the statistic even when Wald intervals are un
   expect_true(is.finite(boundary_fit$W) || is.infinite(boundary_fit$W))
 })
 
-test_that("LRT still returns a failed TruncComp object on invalid data", {
+test_that("LRT still returns a failed TruncComp2 object on invalid data", {
   expect_warning(
     fit <- truncComp.default(c(0, 1, 0, 2),
                              c(0, 1, 0, 1),
@@ -234,7 +234,7 @@ test_that("LRT still returns a failed TruncComp object on invalid data", {
     "data error"
   )
 
-  expect_s3_class(fit, "TruncComp")
+  expect_s3_class(fit, "TruncComp2")
   expect_false(fit$success)
   expect_error(confint(fit), "Estimation failed")
 })

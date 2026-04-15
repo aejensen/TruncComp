@@ -116,40 +116,47 @@ build_power_curves_figure <- function(simulation_results, path) {
 
 build_application_figure <- function(application_results, path) {
   d <- application_results$data
+  metadata <- application_results$metadata
   s_ci <- application_results$surface
   m_splrt <- application_results$model_splrt
+  display_y <- if (is.null(metadata$histogram_cap)) d$Y else pmin(d$Y, metadata$histogram_cap)
+  display_breaks <- metadata$histogram_breaks
+  count_max <- max(
+    graphics::hist(display_y[d$R == 0], breaks = display_breaks, plot = FALSE)$counts,
+    graphics::hist(display_y[d$R == 1], breaks = display_breaks, plot = FALSE)$counts
+  )
 
   save_pdf_plot(path, width = 8, height = 3, expr = {
     op <- graphics::par(mfrow = c(1, 3), mgp = c(2.2, 1, 0), mar = c(3.2, 3.5, 2, 0))
     on.exit(graphics::par(op), add = TRUE)
 
     graphics::hist(
-      subset(d, d$allocation)$dawols28,
-      xlim = c(0, 30),
-      main = "Low dose",
-      ylim = c(0, 55),
-      breaks = 10,
+      display_y[d$R == 0],
+      breaks = display_breaks,
+      xlim = metadata$histogram_xlim,
+      main = metadata$group_labels[[1]],
+      ylim = c(0, count_max),
       col = "gray70",
       border = "gray90",
       cex.axis = 1.2,
       cex.main = 1.5,
       cex.lab = 1.5,
       ylab = "",
-      xlab = "Days alive without life support"
+      xlab = metadata$display_x_label
     )
     graphics::hist(
-      subset(d, !d$allocation)$dawols28,
-      breaks = 10,
-      xlim = c(0, 30),
-      main = "High dose",
-      ylim = c(0, 55),
+      display_y[d$R == 1],
+      breaks = display_breaks,
+      xlim = metadata$histogram_xlim,
+      main = metadata$group_labels[[2]],
+      ylim = c(0, count_max),
       col = "gray70",
       border = "gray90",
       cex.axis = 1.2,
       cex.main = 1.5,
       cex.lab = 1.5,
       ylab = "",
-      xlab = "Days alive without life support"
+      xlab = metadata$display_x_label
     )
     graphics::image(
       s_ci$muDelta,

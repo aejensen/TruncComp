@@ -1,4 +1,7 @@
 build/
+application-data/*
+!application-data/README.md
+.DS_Store
 *.aux
 *.bbl
 *.bcf

@@ -11,6 +11,16 @@ format_fixed <- function(x, digits = 3) {
   formatC(round(x, digits), format = "f", digits = digits)
 }
 
+format_number <- function(x, digits = 1) {
+  stopifnot(length(x) == 1, is.numeric(x), is.finite(x))
+  formatC(round(x, digits), format = "f", digits = digits, big.mark = ",")
+}
+
+format_count <- function(x) {
+  stopifnot(length(x) == 1, is.numeric(x), is.finite(x))
+  formatC(as.integer(round(x)), format = "d", big.mark = ",")
+}
+
 latex_escape <- function(x) {
   x <- gsub("([#$%&_{}])", "\\\\\\1", x, perl = TRUE)
   x

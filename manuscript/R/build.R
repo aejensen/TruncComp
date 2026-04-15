@@ -20,11 +20,27 @@ build_manuscript_assets <- function(output_dir, repo_root) {
     ExampleDelta = format_fixed(example_results$delta, digits = 3),
     ExampleTTestP = format_fixed(example_results$ttest_p, digits = 3),
     ExampleWilcoxP = format_fixed(example_results$wilcox_p, digits = 3),
+    ApplicationDatasetName = application_results$metadata$dataset_name,
+    ApplicationDatasetDescription = application_results$metadata$dataset_description,
+    ApplicationOutcomeLabel = application_results$metadata$outcome_label,
+    ApplicationOutcomeShort = application_results$metadata$outcome_short,
+    ApplicationAtomMeaning = application_results$metadata$atom_meaning,
+    ApplicationObservedMeaning = application_results$metadata$observed_event_label,
+    ApplicationGroupControl = application_results$metadata$group_labels[[1]],
+    ApplicationGroupTreatment = application_results$metadata$group_labels[[2]],
+    ApplicationN = format_count(nrow(application_results$data)),
+    ApplicationTTestP = format_fixed(application_results$ttest_p, digits = 3),
     ApplicationWilcoxP = format_fixed(application_results$wilcox_p, digits = 3),
     ApplicationLRTP = format_fixed(application_results$model_lrt$p, digits = 3),
-    ApplicationSPLRTP = format_fixed(application_results$model_splrt$p, digits = 3)
+    ApplicationSPLRTP = format_fixed(application_results$model_splrt$p, digits = 3),
+    ApplicationMuDelta = format_number(application_results$model_splrt$muDelta, digits = 1),
+    ApplicationAlphaDelta = format_fixed(unname(as.numeric(application_results$model_splrt$alphaDelta)), digits = 3),
+    ApplicationDelta = format_number(application_results$model_splrt$Delta, digits = 1),
+    ApplicationConclusionSummary = application_results$conclusion_summary,
+    ApplicationComponentSummary = application_results$component_summary
   )
   write_generated_values_tex(file.path(output_dir, "generated-values.tex"), values)
+  unlink(file.path(manuscript_dir, "Rplots.pdf"), force = TRUE)
 
   invisible(list(
     example_results = example_results,

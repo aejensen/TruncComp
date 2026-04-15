@@ -6,7 +6,18 @@ The package implements:
 - a parametric likelihood-ratio test (`method = "LRT"`)
 - a semi-parametric likelihood-ratio test (`method = "SPLRT"`)
 
-The semi-parametric method now uses an internal pure-R empirical-likelihood implementation for the two-sample mean-difference problem, so the package no longer depends on `EL` at runtime.
+The current implementation keeps the same public API for both methods, but now computes both paths internally:
+
+- the parametric method uses a closed-form likelihood-ratio calculation built from the Bernoulli and Normal sufficient statistics
+- the semi-parametric method uses an internal pure-R empirical-likelihood implementation for the observed-outcome mean difference
+
+As a result, the package no longer depends on `EL` or `bbmle` at runtime.
+
+The currently supported scope is:
+
+- one binary treatment indicator coded `0/1`
+- one atom value representing the unobserved or undefined outcome
+- no additional covariates in the public interface
 
 To install the development version of TruncComp run the following commands from within R
 
@@ -19,6 +30,24 @@ install_github('aejensen/TruncComp')
 
 - Statistical model specification: [MODEL.md](MODEL.md)
 - Implementation walkthrough: [IMPLEMENTATION.md](IMPLEMENTATION.md)
+
+# Main Interface
+
+The primary entry point is:
+
+```r
+truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+```
+
+The fitted object reports:
+
+- `muDelta`: difference in means among the observed
+- `alphaDelta`: odds ratio of being observed
+- `W`: joint likelihood-ratio test statistic
+- `p`: joint p-value
+
+For `method = "SPLRT"`, simultaneous confidence-region surfaces are available through `confint(..., type = "simultaneous")`.
 
 # Example
 ```r
@@ -35,15 +64,17 @@ pi1 <- 0.6
 #Simulate data
 d <- TruncComp::simulateTruncatedData(25, f0, f1, pi0, pi1)
 
-#Estimate parameters using the semi-parametric method
-model <- truncComp(Y ~ R, atom = 0, data = d, method="SPLRT")
-summary(model)
+#Estimate parameters using the parametric method
+fit_lrt <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+summary(fit_lrt)
+confint(fit_lrt, type = "marginal")
 
-#Get marginal confidence intervals
-confint(model, type="marginal")
+#Estimate parameters using the semi-parametric method
+fit_splrt <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+summary(fit_splrt)
 
 #Get simultaneous confidence region
-confint(model, type="simultaneous", plot=TRUE, resolution = 10)
+confint(fit_splrt, type = "simultaneous", plot = TRUE, resolution = 10)
 ```
 
 # Development

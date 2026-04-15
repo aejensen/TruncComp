@@ -11,8 +11,9 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     bbmle,
-    EL,
     fields
 Suggests: knitr,
-    rmarkdown
+    rmarkdown,
+    testthat
+Config/testthat/edition: 3
 VignetteBuilder: knitr

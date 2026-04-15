@@ -3,7 +3,7 @@ SPLRT <- function(data, conf.level = 0.95) {
   yAlive2 <- data[data$R == 1 & data$A == 1, "Y"]
 
   #Empirical likelihood ratio test
-  ELRT <- EL::EL.means(yAlive2, yAlive1, conf.level = conf.level)
+  ELRT <- el_mean_diff_fit(yAlive2, yAlive1, conf.level = conf.level)
 
   muDelta <- as.numeric(ELRT$estimate)
   muDeltaCI <- as.numeric(ELRT$conf.int)
@@ -50,4 +50,3 @@ SPLRT <- function(data, conf.level = 0.95) {
   class(out) <- append(class(out), "TruncComp")
   out
 }
-

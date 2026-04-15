@@ -52,14 +52,14 @@ confint.TruncComp <- function(object, type = "marginal", muDelta = NULL, logORde
   }
 }
 
-jointContrastLRT <- function(data, muDelta, alphaDelta) {
+jointContrastLRT <- function(data, muDelta, logORdelta) {
   yAlive1 <- data[data$R == 0 & data$A == 1, "Y"]
   yAlive2 <- data[data$R == 1 & data$A == 1, "Y"]
-  ELRT <- EL::EL.means(yAlive2, yAlive1, mu = muDelta)
+  muW <- el_mean_diff_statistic(yAlive2, yAlive1, muDelta)
 
-  binom <- TruncComp:::logit.LRT(data, alphaDelta)
+  binom <- logit.LRT(data, logORdelta)
 
-  as.numeric(ELRT$statistic + binom)
+  as.numeric(muW + binom)
 }
 
 jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL, conf.level = 0.95, plot=TRUE, offset, resolution) {
@@ -99,6 +99,4 @@ jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL, conf.level = 0
   #Also add the contour itself to the return
   list(muDelta = muDelta, logORdelta = logORdelta, surface = matOut)
 }
-
-
 

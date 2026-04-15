@@ -1,12 +1,24 @@
 # TruncComp
 Development version of the R package TruncComp for two-sample comparison of truncated continuous outcomes.
 
+The package implements:
+
+- a parametric likelihood-ratio test (`method = "LRT"`)
+- a semi-parametric likelihood-ratio test (`method = "SPLRT"`)
+
+The semi-parametric method now uses an internal pure-R empirical-likelihood implementation for the two-sample mean-difference problem, so the package no longer depends on `EL` at runtime.
+
 To install the development version of TruncComp run the following commands from within R
 
 ```{r}
 library(devtools)
 install_github('aejensen/TruncComp')
 ```
+
+# Documentation
+
+- Statistical model specification: [MODEL.md](MODEL.md)
+- Implementation walkthrough: [IMPLEMENTATION.md](IMPLEMENTATION.md)
 
 # Example
 ```{r}

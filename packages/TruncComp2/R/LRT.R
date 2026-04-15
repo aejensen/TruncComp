@@ -76,7 +76,7 @@ parametric_fit_models <- function(data, adjust = NULL) {
   if(!is.null(adjust)) {
     observed_variables <- unique(c(observed_variables, all.vars(adjust)))
   }
-  observed_data <- data[data$A == 1, observed_variables, drop = FALSE]
+  observed_data <- droplevels(data[data$A == 1, observed_variables, drop = FALSE])
 
   list(
     formulas = formulas,

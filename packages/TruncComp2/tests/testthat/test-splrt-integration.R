@@ -156,6 +156,33 @@ test_that("cached logistic profile matches the uncached helper", {
                tolerance = 1e-10)
 })
 
+test_that("cached logistic profile adapts to extreme observation rates", {
+  n <- 400
+  a <- integer(2 * n)
+  a[c(1, 2, n + 1, n + 2)] <- 1
+  y <- numeric(2 * n)
+  y[c(1, 2, n + 1, n + 2)] <- c(1.0, 1.2, 1.0, 1.2)
+  r <- c(rep(0, n), rep(1, n))
+
+  fit <- truncComp.default(y, a, r, method = "SPLRT")
+  expect_true(fit$success)
+
+  logit_reference <- TruncComp2:::logit.prepare(fit$data)
+  wide_profile <- stats::optimize(
+    function(b0) TruncComp2:::logit.likelihood.prepared(logit_reference, c(b0, 0)),
+    interval = c(-20, 20),
+    maximum = FALSE
+  )
+
+  expect_equal(TruncComp2:::logit.likelihood.profile.prepared(logit_reference, 0),
+               wide_profile$objective,
+               tolerance = 1e-10)
+  expect_equal(TruncComp2:::logit.LRT.prepared(logit_reference, 0), 0, tolerance = 1e-10)
+  expect_equal(TruncComp2:::jointContrastLRT(fit$data, fit$muDelta, log(as.numeric(fit$alphaDelta))),
+               0,
+               tolerance = 1e-10)
+})
+
 test_that("loadTruncComp2Example returns the packaged example data", {
   example_data <- loadTruncComp2Example()
 

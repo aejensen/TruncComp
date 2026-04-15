@@ -456,6 +456,14 @@ test_that("adjusted interface validates formulas and default adjustment shapes",
     truncComp(Y ~ R, atom = 0, data = formula_data, method = "LRT", adjust = ~ R + L1),
     "must not include the outcome or treatment variable"
   )
+  expect_error(
+    truncComp(Y ~ R, atom = 0, data = formula_data, method = "LRT", adjust = ~ L1 * L2),
+    "additive"
+  )
+  expect_error(
+    truncComp(Y ~ R, atom = 0, data = formula_data, method = "SPLRT", adjust = ~ L1:L2),
+    "additive"
+  )
 
   missing_outcome <- formula_data
   missing_outcome$Y[1] <- NA_real_
@@ -475,6 +483,26 @@ test_that("adjusted interface validates formulas and default adjustment shapes",
     truncComp.default(case$Y, case$A, case$R, method = "LRT", adjust = case["L1"][1:5, , drop = FALSE]),
     "same number of rows"
   )
+})
+
+test_that("observed-only factor levels are dropped before adjusted observed-outcome fits", {
+  data <- data.frame(
+    Y = c(1.1, 1.3, 0, 0, 2.1, 2.4, 0, 0, 0, 0),
+    A = c(1, 1, 0, 0, 1, 1, 0, 0, 0, 0),
+    R = c(0, 0, 0, 0, 1, 1, 1, 1, 0, 1),
+    L = factor(c("a", "b", "c", "c", "a", "b", "c", "c", "c", "c"),
+               levels = c("a", "b", "c"))
+  )
+
+  fits <- TruncComp2:::parametric_fit_models(data, adjust = ~ L)
+
+  expect_equal(levels(fits$normal_data$L), c("a", "b"))
+
+  normal_matrix <- stats::model.matrix(fits$formulas$normal_alt, fits$normal_data)
+  expect_equal(qr(normal_matrix)$rank, ncol(normal_matrix))
+
+  el_design <- TruncComp2:::el_regression_design(fits$formulas$normal_alt, fits$normal_data)
+  expect_true(el_design$success)
 })
 
 test_that("adjusted fits fail cleanly when treatment is aliased or the logistic model separates", {

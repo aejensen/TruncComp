@@ -9,8 +9,13 @@ normalizeFormulaAdjust <- function(adjust, outcome_name, treatment_name) {
 
   adjust_terms <- stats::terms(adjust)
   labels <- attr(adjust_terms, "term.labels")
+  orders <- attr(adjust_terms, "order")
   if("." %in% labels) {
     stop("adjust must not use '.'. Please list adjustment covariates explicitly.")
+  }
+
+  if(any(orders > 1)) {
+    stop("adjust must be additive and must not contain interaction terms.")
   }
 
   adjust_vars <- all.vars(adjust)

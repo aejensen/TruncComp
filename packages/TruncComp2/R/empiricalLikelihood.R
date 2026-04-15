@@ -245,6 +245,7 @@ el_mean_diff_fit <- function(x, y, mu = 0, conf.level = 0.95) {
 
 el_regression_design <- function(formula, data, term = "R") {
   model_frame <- stats::model.frame(formula, data = data, na.action = stats::na.fail)
+  model_frame <- droplevels(model_frame)
   y <- stats::model.response(model_frame)
   X <- stats::model.matrix(stats::terms(model_frame), model_frame)
   term_index <- match(term, colnames(X))

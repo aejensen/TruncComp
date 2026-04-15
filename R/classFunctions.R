@@ -1,10 +1,8 @@
 summary.TruncComp <- function(object, ...) {
-  #cat("Composite Estimation Output\n\n")
-
   cat("Estimation method:", object$method, "\n")
   cat("Confidence level = ", object$conf.level * 100, "%\n\n", sep="")
 
-  if (object$success == TRUE) {
+  if (isTRUE(object$success)) {
     cMat <- matrix(NA, 2, 3)
     cMat[1,1] <- object$muDelta
     cMat[1, 2:3] <- object$muDeltaCI
@@ -12,13 +10,9 @@ summary.TruncComp <- function(object, ...) {
     cMat[2, 1] <- object$alphaDelta
     cMat[2, 2:3] <- object$alphaDeltaCI
 
-    #cMat[3, 1] <- object$Delta
-    #cMat[3, 2:3] <- object$DeltaCI
-
     colnames(cMat) <- c("Estimate", "CI Lower", "CI Upper")
     rownames(cMat) <- c("Difference in means among the observed:",
                         "Odds ratio of being observed:")
-                        #"Delta:")
 
     cat("Treatment contrasts\n")
     print.default(cMat)
@@ -35,7 +29,6 @@ summary.TruncComp <- function(object, ...) {
 }
 
 print.TruncComp <- function(x, ...) {
-  summary(x)
+  summary(x, ...)
 }
-
 

@@ -58,6 +58,11 @@ Failed fits use the same top-level S3 class as successful fits, so
 \code{print()}, \code{summary()}, and \code{confint()} dispatch consistently
 even when estimation does not succeed.
 
+For marginal confidence intervals, the fitted object stores the intervals at
+its original `conf.level`. The `confint()` method now uses that fitted level by
+default and treats a different requested marginal level as a refit request
+rather than silently pretending it can recompute the stored intervals.
+
 ## Parametric Path
 
 The parametric likelihood-ratio implementation in [R/LRT.R](/Users/czv146/Documents/GitHub/TruncComp/R/LRT.R) is organized around two nested likelihoods:
@@ -323,11 +328,20 @@ The default grids are also guarded so that non-finite odds-ratio confidence
 limits fall back to a finite centered grid rather than propagating `log(0)` or
 `log(Inf)` into plotting and surface evaluation.
 
+The exported helper now has its own default `conf.level`, `offset`, and
+`resolution`, so it can be called directly without routing through
+`confint.TruncComp()`.
+
 When `plot = TRUE`, it renders the heat map and contour using the joint `chisq(df = 2)` threshold.
 
 To avoid repeated work in the inner loop, `jointContrastCI()` caches the
 unconstrained logistic fit and the alive-only outcome splits before evaluating
 the grid.
+
+For the marginal path, `confint.TruncComp()` now prints only the implemented
+intervals. The stored `DeltaCI` placeholder remains on the fit object for API
+compatibility, but it is omitted from the printed matrix until a real interval
+is implemented.
 
 ## Numerical Stability Choices
 

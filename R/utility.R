@@ -4,7 +4,7 @@ isDataOkay <- function(d) {
   yAlive1 <- dAlive$Y[dAlive$R == 0]
   yAlive2 <- dAlive$Y[dAlive$R == 1]
 
-  if(length(yAlive1) < 2 | length(yAlive2) < 2) {
+  if(length(yAlive1) < 2 || length(yAlive2) < 2) {
     return(FALSE)
   }
 
@@ -12,7 +12,7 @@ isDataOkay <- function(d) {
 }
 
 isValid <- function(truncCompObj) {
-  truncCompObj$success
+  isTRUE(truncCompObj$success)
 }
 
 truncCompMethod <- function(method) {

@@ -1,76 +1,70 @@
+.validateSimulationInputs <- function(n, f0, f1, pi0, pi1) {
+  if(!(length(n) == 1 && is.numeric(n) && is.finite(n) && n > 0 && n == as.integer(n))) {
+    stop("n must be a single positive integer.")
+  }
+
+  if(!is.function(f0) || !is.function(f1)) {
+    stop("f0 and f1 must be functions.")
+  }
+
+  for(probability in list(pi0 = pi0, pi1 = pi1)) {
+    value <- probability[[1]]
+    name <- names(probability)
+    if(!(length(value) == 1 && is.numeric(value) && is.finite(value) && value >= 0 && value <= 1)) {
+      stop(name, " must be a single number between 0 and 1.")
+    }
+  }
+}
+
+.drawObservedOutcome <- function(generator, n, label) {
+  values <- generator(n)
+
+  if(is.numeric(values) && length(values) == 1 && is.finite(values)) {
+    values <- vapply(seq_len(n), function(i) generator(1), numeric(1))
+  }
+
+  if(!(is.numeric(values) && length(values) == n && all(is.finite(values)))) {
+    stop(label, " must return either a numeric vector of length n or a single finite numeric value when called with 1.")
+  }
+
+  as.numeric(values)
+}
+
+.simulateTruncatedGroup <- function(n, r, generator, probability, label) {
+  alive <- stats::rbinom(n, 1, probability)
+  observed <- .drawObservedOutcome(generator, n, label)
+
+  data.frame(R = rep.int(r, n),
+             A = alive,
+             Y = observed * alive)
+}
+
 simulateTruncatedData <- function(n, f0, f1, pi0, pi1) {
-  #pi0 probability of observing the outcome for Z = 0
-  #pi1 probability of observing the outcome for Z = 1
+  .validateSimulationInputs(n, f0, f1, pi0, pi1)
+  n <- as.integer(n)
 
-  #Number of random treatment allocations
-  #nTreatment <- rbinom(1, n, 0.5)
-  #nControl <- n - nTreatment
-  nTreatment <- n
-  nControl <- n
+  d0 <- .simulateTruncatedGroup(n, 0, f0, pi0, "f0")
+  d1 <- .simulateTruncatedGroup(n, 1, f1, pi1, "f1")
 
-  #Control group
-  d0 <- t(sapply(1:nControl, function(i) {
-    alive <- stats::rbinom(1, 1, pi0)
-    y <- f0(1)
-    c(alive, y * as.numeric(alive == 1))
-  }))
-  d0 <- as.data.frame(cbind(0, d0))
-
-  #Intervention group
-  d1 <- t(sapply(1:nTreatment, function(i) {
-    alive <- stats::rbinom(1, 1, pi1)
-    y <- f1(1)
-    c(alive, y * as.numeric(alive == 1))
-  }))
-  d1 <- as.data.frame(cbind(1, d1))
-
-  d <- rbind(d0, d1)
-  colnames(d) <- c("R", "A", "Y")
-
-  d
+  rbind(d0, d1)
 }
 
 simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df=4) {
-  #pi0 probability of observing the outcome for Z = 0
-  #pi1 probability of observing the outcome for Z = 1
-  #CV = coefficient of variation for gamma outcome
-
-  #Number of random treatment allocations
-  #nTreatment <- rbinom(1, n, 0.5)
-  #nControl <- n - nTreatment
-  nTreatment <- n
-  nControl <- n
-
-  #Control group
-  d0 <- t(sapply(1:nControl, function(i) {
-    alive <- stats::rbinom(1, 1, pi0)
-    if(dist == "norm") {
-      y <- stats::rnorm(1, mu0, sigma)
-    } else if(dist == "t-sq") {
-      y <- stats::rt(1, df = df) + mu0
-    } else {
-      stop("Invalid distribution")
+  generator <- function(mu) {
+    function(n) {
+      if(dist == "norm") {
+        stats::rnorm(n, mu, sigma)
+      } else if(dist == "t-sq") {
+        stats::rt(n, df = df) + mu
+      } else {
+        stop("Invalid distribution")
+      }
     }
-    c(alive, y * as.numeric(alive == 1))
-  }))
-  d0 <- as.data.frame(cbind(0, d0))
+  }
 
-  #Intervention group
-  d1 <- t(sapply(1:nTreatment, function(i) {
-    alive <- stats::rbinom(1, 1, pi1)
-    if(dist == "norm") {
-      y <- stats::rnorm(1, mu1, sigma)
-    } else if(dist == "t-sq") {
-      y <- stats::rt(1, df = df) + mu1
-    } else {
-      stop("Invalid distribution")
-    }
-    c(alive, y * as.numeric(alive == 1))
-  }))
-  d1 <- as.data.frame(cbind(1, d1))
-
-  d <- rbind(d0, d1)
-  colnames(d) <- c("R", "A", "Y")
-
-  d
+  simulateTruncatedData(n = n,
+                        f0 = generator(mu0),
+                        f1 = generator(mu1),
+                        pi0 = pi0,
+                        pi1 = pi1)
 }

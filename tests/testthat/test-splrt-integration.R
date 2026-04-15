@@ -19,11 +19,19 @@ test_that("marginal and simultaneous confidence helpers still work", {
   model <- truncComp(Y ~ R, atom = 0, data = TruncCompExample, method = "SPLRT")
 
   capture.output(ci <- confint(model, type = "marginal"))
+  expect_equal(rownames(ci),
+               c("Difference in means among the observed:",
+                 "Odds ratio of being observed:",
+                 "log Odds ratio of being observed:"))
   expect_equal(unname(ci["Difference in means among the observed:", ]), model$muDeltaCI)
   expect_equal(unname(ci["Odds ratio of being observed:", ]), model$alphaDeltaCI)
+  expect_equal(unname(ci["log Odds ratio of being observed:", ]), log(model$alphaDeltaCI))
 
-  joint <- jointContrastCI(model, plot = FALSE, resolution = 5, offset = 1)
-  expect_equal(dim(joint$surface), c(5, 5))
+  expect_error(confint(model, type = "marginal", conf.level = 0.9),
+               "stored at the fitted confidence level")
+
+  joint <- jointContrastCI(model, plot = FALSE)
+  expect_equal(dim(joint$surface), c(35, 35))
   expect_true(all(is.finite(joint$surface)))
 })
 
@@ -102,6 +110,37 @@ test_that("jointContrastCI falls back to finite default grids", {
   joint_mu <- jointContrastCI(mu_fallback, plot = FALSE, offset = 1.25, resolution = 5)
   expect_equal(joint_mu$muDelta,
                seq(model$muDelta - 1.25, model$muDelta + 1.25, length.out = 5))
+})
+
+test_that("simulateTruncatedData validates inputs and returns the canonical shape", {
+  f0 <- function(n) rep(1, n)
+  f1 <- function(n) rep(2, n)
+
+  simulated <- simulateTruncatedData(5, f0 = f0, f1 = f1, pi0 = 0.4, pi1 = 0.7)
+  expect_equal(names(simulated), c("R", "A", "Y"))
+  expect_equal(nrow(simulated), 10)
+  expect_true(all(simulated$A %in% c(0, 1)))
+  expect_true(all(simulated$Y[simulated$A == 0] == 0))
+
+  scalar_simulated <- simulateTruncatedData(4,
+                                            f0 = function(n) 1,
+                                            f1 = function(n) 2,
+                                            pi0 = 1,
+                                            pi1 = 1)
+  expect_equal(scalar_simulated$Y, c(rep(1, 4), rep(2, 4)))
+
+  expect_error(simulateTruncatedData(0, f0 = f0, f1 = f1, pi0 = 0.4, pi1 = 0.7),
+               "positive integer")
+  expect_error(simulateTruncatedData(5, f0 = 1, f1 = f1, pi0 = 0.4, pi1 = 0.7),
+               "must be functions")
+  expect_error(simulateTruncatedData(5, f0 = f0, f1 = f1, pi0 = 1.4, pi1 = 0.7),
+               "between 0 and 1")
+  expect_error(simulateTruncatedData(5,
+                                     f0 = function(n) c(1, 2),
+                                     f1 = f1,
+                                     pi0 = 0.4,
+                                     pi1 = 0.7),
+               "length n")
 })
 
 test_that("cached logistic profile matches the uncached helper", {

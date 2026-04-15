@@ -5,8 +5,8 @@
 
 \usage{
 \method{confint}{TruncComp}(object, type = "marginal", muDelta = NULL,
-  logORdelta = NULL, conf.level = 0.95, plot = TRUE, offset = 1,
-  resolution = 35, ...)
+  logORdelta = NULL, conf.level = object$conf.level, plot = TRUE,
+  offset = 1, resolution = 35, ...)
 }
 
 \description{
@@ -31,7 +31,9 @@ expanded beyond the marginal interval or centered estimate.}
 
 \value{
 If \code{type = "marginal"}, a matrix of reported marginal confidence
-intervals, returned invisibly.
+intervals, returned invisibly. The matrix includes only intervals that are
+currently implemented, so the unimplemented \code{DeltaCI} placeholder is not
+printed.
 
 If \code{type = "simultaneous"}, a list with components \code{muDelta},
 \code{logORdelta}, and \code{surface}, returned invisibly.
@@ -40,6 +42,10 @@ If \code{type = "simultaneous"}, a list with components \code{muDelta},
 \details{
 Simultaneous confidence regions are only implemented for fits obtained with
 \code{method = "SPLRT"}.
+
+Marginal confidence intervals are stored on the fitted object. For
+\code{type = "marginal"}, the requested \code{conf.level} must therefore match
+the fitted \code{object$conf.level}; otherwise the model must be refit.
 }
 
 \examples{

@@ -273,6 +273,7 @@ For both methods, the returned model object contains:
 - marginal confidence intervals for `muDelta` and `alphaDelta` are implemented for both methods
 - simultaneous confidence regions are implemented only for the semi-parametric method
 - `jointContrastCI()` is exported for compatibility but is only defined for successful `SPLRT` fits
+- `confint()` uses the fitted model's `conf.level` by default and treats a different requested marginal confidence level as requiring a refit
 
 ### Current implementation detail: `DeltaCI`
 

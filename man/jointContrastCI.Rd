@@ -4,8 +4,8 @@
 \title{Joint confidence-region surface for the semi-parametric fit}
 
 \usage{
-jointContrastCI(m, muDelta = NULL, logORdelta = NULL, conf.level = 0.95,
-  plot = TRUE, offset, resolution)
+jointContrastCI(m, muDelta = NULL, logORdelta = NULL,
+  conf.level = m$conf.level, plot = TRUE, offset = 1, resolution = 35)
 }
 
 \description{
@@ -18,7 +18,8 @@ Evaluates the simultaneous confidence-region surface for a fitted
 \code{method = "SPLRT"}.}
 \item{muDelta}{Optional grid values for the mean-difference axis.}
 \item{logORdelta}{Optional grid values for the log-odds-ratio axis.}
-\item{conf.level}{Confidence level used for the plotted contour.}
+\item{conf.level}{Confidence level used for the plotted contour. Defaults to
+the fitted \code{m$conf.level}.}
 \item{plot}{Logical; if \code{TRUE}, plot the surface and contour.}
 \item{offset}{Amount by which the default grid is expanded beyond the marginal
 interval or centered estimate.}

@@ -15,8 +15,14 @@ zero in the returned \code{Y} column.
 
 \arguments{
 \item{n}{Number of observations per group.}
-\item{f0}{Function that generates observed outcomes for group \code{R = 0}.}
-\item{f1}{Function that generates observed outcomes for group \code{R = 1}.}
+\item{f0}{Function that generates observed outcomes for group \code{R = 0}.
+It may return a finite numeric vector of length \code{n} when called with
+\code{n}, or a single finite numeric value when called repeatedly with
+\code{1}.}
+\item{f1}{Function that generates observed outcomes for group \code{R = 1}.
+It may return a finite numeric vector of length \code{n} when called with
+\code{n}, or a single finite numeric value when called repeatedly with
+\code{1}.}
 \item{pi0}{Probability that the outcome is observed in group \code{R = 0}.}
 \item{pi1}{Probability that the outcome is observed in group \code{R = 1}.}
 }

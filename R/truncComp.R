@@ -61,7 +61,6 @@ truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL) {
       out <- returnErrorData(error, method, conf.level, init = init, data = d)
     }
   } else if(method == "SPLRT") {
-    #SPLRT cannot fail? Yes it can.
     out <- SPLRT(d, conf.level)
   }
 

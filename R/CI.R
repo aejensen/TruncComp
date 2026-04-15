@@ -19,47 +19,63 @@ jointContrastGrid <- function(interval = NULL, center = NULL, offset = 1, resolu
   seq(-offset, offset, length.out = resolution)
 }
 
-confint.TruncComp <- function(object, type = "marginal", muDelta = NULL, logORdelta = NULL, conf.level = 0.95, plot=TRUE, offset = 1, resolution = 35,  ...) {
-  if(!(type == "marginal" | type == "simultaneous")) {
+validateConfidenceLevel <- function(conf.level) {
+  if(!(length(conf.level) == 1 &&
+       is.numeric(conf.level) &&
+       is.finite(conf.level) &&
+       conf.level > 0 &&
+       conf.level < 1)) {
+    stop("conf.level must be a single number strictly between 0 and 1.")
+  }
+
+  conf.level
+}
+
+buildMarginalCIMatrix <- function(object) {
+  cMat <- do.call(rbind, list(
+    "Difference in means among the observed:" = object$muDeltaCI,
+    "Odds ratio of being observed:" = object$alphaDeltaCI,
+    "log Odds ratio of being observed:" = suppressWarnings(log(object$alphaDeltaCI))
+  ))
+
+  deltaCI <- object$DeltaCI
+  if(length(deltaCI) >= 2 && all(is.finite(deltaCI[1:2]))) {
+    cMat <- rbind(cMat, "Delta" = deltaCI[1:2])
+  }
+
+  a <- (1 - object$conf.level)/2
+  a <- c(a, 1 - a)
+  pct <- paste(format(100 * a, trim = TRUE, scientific = FALSE, digits = 3), "%")
+
+  colnames(cMat) <- pct
+  cMat
+}
+
+confint.TruncComp <- function(object, type = "marginal", muDelta = NULL, logORdelta = NULL,
+                              conf.level = object$conf.level, plot = TRUE,
+                              offset = 1, resolution = 35,  ...) {
+  if(!(type %in% c("marginal", "simultaneous"))) {
     stop("Type of confidence interval must be either marginal or simultaneous.")
   }
 
-  if(!object$success) {
+  conf.level <- validateConfidenceLevel(conf.level)
+
+  if(!isTRUE(object$success)) {
     stop("Estimation failed. Cannot display confidence intervals.")
   }
 
-  if(object$method == "Parametric Likelihood Ratio Test" & type == "simultaneous") {
-    stop("Simultaneous confidence regions is only implemented for the semi-parametric likelihood ratio model.")
+  if(object$method == "Parametric Likelihood Ratio Test" && type == "simultaneous") {
+    stop("Simultaneous confidence regions are only implemented for the semi-parametric likelihood ratio model.")
   }
-
-  if(length(conf.level) > 1) {
-    message("More than one confidence level given. Using only the first")
-    conf.level <- conf.level[1]
-  }
-
 
   if (type == "marginal") {
-    if(conf.level != object$conf.level) {
-      #Fix this to be done automatically
-      stop("Please refit model with the chosen confidence level and call again.")
+    if(!isTRUE(all.equal(conf.level, object$conf.level, tolerance = sqrt(.Machine$double.eps)))) {
+      stop(paste0("Marginal confidence intervals are stored at the fitted confidence level (",
+                  format(object$conf.level),
+                  "). Refit the model with the desired conf.level to change them."))
     }
 
-    cMat <- matrix(NA, 4, 2)
-    cMat[1,] <- object$muDeltaCI
-    cMat[2,] <- object$alphaDeltaCI
-    cMat[3,] <- log(object$alphaDeltaCI)
-    cMat[4,] <- object$DeltaCI
-
-    a <- (1 - object$conf.level)/2
-    a <- c(a, 1 - a)
-    pct <- paste(format(100 * a, trim = TRUE, scientific = FALSE, digits = 3), "%")
-
-    colnames(cMat) <- pct
-    rownames(cMat) <- c("Difference in means among the observed:",
-                        "Odds ratio of being observed:",
-                        "log Odds ratio of being observed:",
-                        "Delta")
-
+    cMat <- buildMarginalCIMatrix(object)
     print.default(cMat)
   } else {
     message("Calculating joint likelihood surface.\nThis may take some time depending on the resolution.")
@@ -88,10 +104,14 @@ jointContrastLRT <- function(data, muDelta, logORdelta) {
   jointContrastLRT.cached(yAlive1, yAlive2, muDelta, logORdelta, logitReference)
 }
 
-jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL, conf.level = 0.95, plot=TRUE, offset, resolution) {
+jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL,
+                            conf.level = m$conf.level, plot = TRUE,
+                            offset = 1, resolution = 35) {
   if(!inherits(m, "TruncComp")) {
     stop("m must be an object of type TruncComp")
   }
+
+  conf.level <- validateConfidenceLevel(conf.level)
 
   if(!isTRUE(m$success)) {
     stop("Estimation failed. Cannot calculate simultaneous confidence regions.")

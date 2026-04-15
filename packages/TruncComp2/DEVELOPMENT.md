@@ -66,3 +66,16 @@ Rscript tools/validate-adjusted-splrt.R
 That script runs fixed-seed mini-simulation checks for approximate null
 calibration and basic power. It is intended for methodological validation, not
 for routine CI.
+
+The optimizer-backed `Delta` interval cross-checks are also available as a
+separate package-local validation script:
+
+```sh
+Rscript tools/validate-delta-optimization.R
+```
+
+That script compares the slower optimizer-based `DeltaProjectedCI` and
+`DeltaProfileCI` alternatives against grid-based references for both the
+parametric and semi-parametric methods. It is intentionally kept out of routine
+package checks because those optimizer paths are materially slower than the
+default grid-based intervals.

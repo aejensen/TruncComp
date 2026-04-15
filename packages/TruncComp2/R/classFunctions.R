@@ -13,9 +13,27 @@ summary.TruncComp2 <- function(object, ...) {
     cMat[2, 1] <- object$alphaDelta
     cMat[2, 2:3] <- object$alphaDeltaCI
 
+    if(is.finite(object$Delta)) {
+      delta_rows <- list()
+      if(length(object$DeltaMarginalCI) >= 2 && all(is.finite(object$DeltaMarginalCI[1:2]))) {
+        delta_rows[["Delta (marginal):"]] <- c(object$Delta, object$DeltaMarginalCI)
+      }
+      if(length(object$DeltaProjectedCI) >= 2 && all(is.finite(object$DeltaProjectedCI[1:2]))) {
+        delta_rows[["Delta (projected):"]] <- c(object$Delta, object$DeltaProjectedCI)
+      }
+      if(length(object$DeltaProfileCI) >= 2 && all(is.finite(object$DeltaProfileCI[1:2]))) {
+        delta_rows[["Delta (profile likelihood):"]] <- c(object$Delta, object$DeltaProfileCI)
+      }
+
+      if(length(delta_rows) > 0) {
+        cMat <- rbind(cMat, do.call(rbind, delta_rows))
+      }
+    }
+
     colnames(cMat) <- c("Estimate", "CI Lower", "CI Upper")
     rownames(cMat) <- c("Difference in means among the observed:",
-                        "Odds ratio of being observed:")
+                        "Odds ratio of being observed:",
+                        rownames(cMat)[-(1:2)])
 
     cat("Treatment contrasts\n")
     print.default(cMat)

@@ -1,4 +1,4 @@
-.validateSimulationInputs <- function(n, f0, f1, pi0, pi1) {
+.validateSimulationInputs <- function(n, f0, f1, pi0, pi1, atom = 0) {
   if(!(length(n) == 1 && is.numeric(n) && is.finite(n) && n > 0 && n == as.integer(n))) {
     stop("n must be a single positive integer.")
   }
@@ -13,6 +13,10 @@
     if(!(length(value) == 1 && is.numeric(value) && is.finite(value) && value >= 0 && value <= 1)) {
       stop(name, " must be a single number between 0 and 1.")
     }
+  }
+
+  if(!(length(atom) == 1 && is.numeric(atom) && is.finite(atom))) {
+    stop("atom must be a single finite numeric value.")
   }
 }
 
@@ -30,26 +34,27 @@
   as.numeric(values)
 }
 
-.simulateTruncatedGroup <- function(n, r, generator, probability, label) {
+.simulateTruncatedGroup <- function(n, r, generator, probability, label, atom = 0) {
   alive <- stats::rbinom(n, 1, probability)
   observed <- .drawObservedOutcome(generator, n, label)
 
   data.frame(R = rep.int(r, n),
              A = alive,
-             Y = observed * alive)
+             Y = ifelse(alive == 1, observed, atom))
 }
 
-simulateTruncatedData <- function(n, f0, f1, pi0, pi1) {
-  .validateSimulationInputs(n, f0, f1, pi0, pi1)
+simulateTruncatedData <- function(n, f0, f1, pi0, pi1, atom = 0) {
+  .validateSimulationInputs(n, f0, f1, pi0, pi1, atom = atom)
   n <- as.integer(n)
 
-  d0 <- .simulateTruncatedGroup(n, 0, f0, pi0, "f0")
-  d1 <- .simulateTruncatedGroup(n, 1, f1, pi1, "f1")
+  d0 <- .simulateTruncatedGroup(n, 0, f0, pi0, "f0", atom = atom)
+  d1 <- .simulateTruncatedGroup(n, 1, f1, pi1, "f1", atom = atom)
 
   rbind(d0, d1)
 }
 
-simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df=4) {
+simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df=4,
+                         atom = 0) {
   generator <- function(mu) {
     function(n) {
       if(dist == "norm") {
@@ -66,5 +71,6 @@ simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df=4) 
                         f0 = generator(mu0),
                         f1 = generator(mu1),
                         pi0 = pi0,
-                        pi1 = pi1)
+                        pi1 = pi1,
+                        atom = atom)
 }

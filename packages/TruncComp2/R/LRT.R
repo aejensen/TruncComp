@@ -391,7 +391,10 @@ parametric_adjusted_lrt_fit <- function(data, adjust, conf.level = 0.95,
     alphaDelta = exp(log_alpha_delta),
     alphaDeltaCI = alpha_delta_ci,
     Delta = NA_real_,
-    DeltaCI = c(NA_real_, NA_real_),
+    DeltaCI = delta_na_interval(),
+    DeltaMarginalCI = delta_na_interval(),
+    DeltaProjectedCI = delta_na_interval(),
+    DeltaProfileCI = delta_na_interval(),
     W_A = W_A,
     W_Y = W_Y,
     W = W,
@@ -438,8 +441,11 @@ parametric_lrt_fit <- function(data, conf.level = 0.95, adjust = NULL,
     muDeltaCI = normal$muDeltaCI,
     alphaDelta = bernoulli$alphaDelta,
     alphaDeltaCI = bernoulli$alphaDeltaCI,
-    Delta = mean(data$Y[data$R == 1]) - mean(data$Y[data$R == 0]),
-    DeltaCI = c(NA_real_, NA_real_),
+    Delta = NA_real_,
+    DeltaCI = delta_na_interval(),
+    DeltaMarginalCI = delta_na_interval(),
+    DeltaProjectedCI = delta_na_interval(),
+    DeltaProfileCI = delta_na_interval(),
     W_A = bernoulli$W,
     W_Y = normal$W,
     W = W,
@@ -449,7 +455,8 @@ parametric_lrt_fit <- function(data, conf.level = 0.95, adjust = NULL,
   )
 }
 
-LRT <- function(data, init = NULL, conf.level = 0.95, adjust = NULL, adjust_spec = NULL) {
+LRT <- function(data, init = NULL, conf.level = 0.95, adjust = NULL, adjust_spec = NULL,
+                atom = NULL) {
   if(is.null(adjust_spec)) {
     adjust_spec <- adjustmentSpecification(adjust)
   }
@@ -462,20 +469,28 @@ LRT <- function(data, init = NULL, conf.level = 0.95, adjust = NULL, adjust_spec
                            conf.level = conf.level,
                            init = init,
                            data = data,
-                           adjust = adjust_spec))
+                           adjust = adjust_spec,
+                           atom = atom))
   }
 
-  newTruncComp2(muDelta = fit$muDelta,
-                muDeltaCI = fit$muDeltaCI,
-                alphaDelta = fit$alphaDelta,
-                alphaDeltaCI = fit$alphaDeltaCI,
-                Delta = fit$Delta,
-                DeltaCI = fit$DeltaCI,
-                W = fit$W,
-                p = fit$p,
-                method = "LRT",
-                conf.level = conf.level,
-                success = TRUE,
-                init = init,
-                adjust = adjust_spec)
+  out <- newTruncComp2(muDelta = fit$muDelta,
+                       muDeltaCI = fit$muDeltaCI,
+                       alphaDelta = fit$alphaDelta,
+                       alphaDeltaCI = fit$alphaDeltaCI,
+                       Delta = fit$Delta,
+                       DeltaCI = fit$DeltaCI,
+                       DeltaMarginalCI = fit$DeltaMarginalCI,
+                       DeltaProjectedCI = fit$DeltaProjectedCI,
+                       DeltaProfileCI = fit$DeltaProfileCI,
+                       W = fit$W,
+                       p = fit$p,
+                       method = "LRT",
+                       conf.level = conf.level,
+                       success = TRUE,
+                       init = init,
+                       data = data,
+                       adjust = adjust_spec,
+                       atom = atom)
+
+  augmentDeltaInference(out)
 }

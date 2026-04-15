@@ -97,7 +97,10 @@ For unadjusted fits, the package also computes
 \Delta = E[\tilde Y \mid R = 1] - E[\tilde Y \mid R = 0],
 ```
 
-implemented as the empirical difference in sample means of the observed combined outcome values in the two groups.
+using the fitted atom value `atom = \mathcal{E}` stored on the model object. In
+the unadjusted case this model-implied contrast agrees exactly with the
+empirical difference in sample means of the combined outcome values in the two
+groups.
 
 Important: the main package hypothesis test is **not** a direct test of `\Delta = 0`. A treatment can change the observation probability and the observed-outcome mean in offsetting directions, making `\Delta` close to zero even when the treatment clearly affects the joint distribution.
 
@@ -372,22 +375,245 @@ For both methods, the returned model object contains:
 ### What is currently implemented
 
 - `muDelta` and `alphaDelta` are estimated for both `LRT` and `SPLRT`
-- marginal confidence intervals for `muDelta` and `alphaDelta` are implemented for both methods
+- one-dimensional marginal confidence intervals for `muDelta` and `alphaDelta` are implemented for both methods
 - simultaneous confidence regions are implemented for successful unadjusted `LRT` and `SPLRT` fits
 - `jointContrastCI()` is exported for compatibility and is defined for successful unadjusted fits from either method
+- for successful unadjusted fits, the package also reports `Delta` together with three different confidence intervals targeting different inferential questions
 - `confint()` uses the fitted model's `conf.level` by default and treats a different requested marginal confidence level as requiring a refit
 
-### Current implementation detail: `DeltaCI`
+### Componentwise marginal intervals
 
-For unadjusted fits, `Delta` is computed as the empirical difference in sample means of the combined outcome, but `DeltaCI` is not currently implemented. In both `R/LRT.R` and `R/SPLRT.R`, it is set to:
+The package's first layer of inference is componentwise.
 
-```r
-c(NA, NA)
+For `muDelta`, the marginal confidence interval is a one-dimensional interval
+for the observed-outcome treatment effect:
+
+```math
+CI_\mu = \{ \delta : W_\mu(\delta) \le q_{\chi^2_1}(\texttt{conf.level}) \}
 ```
 
-The summary and confidence-interval methods also omit `Delta` from the displayed treatment-contrast table.
+for the semi-parametric path, and the corresponding fitted-model interval for
+the parametric path.
 
-For adjusted fits, both `Delta` and `DeltaCI` are stored as `NA` because no standardized marginal combined-outcome contrast is currently implemented for the conditional model.
+In practice:
+
+- unadjusted `LRT` uses the treatment coefficient and fitted variance from the
+  observed-outcome `lm`
+- unadjusted `SPLRT` uses empirical-likelihood inversion for the two-sample mean
+  difference
+- adjusted `LRT` uses the treatment coefficient from the adjusted observed-outcome
+  `lm`
+- adjusted `SPLRT` uses empirical-likelihood inversion for the adjusted
+  regression coefficient
+
+For `alphaDelta`, the package works on the log-odds-ratio scale
+`\psi = \log(\alpha_\delta)` and reports the interval on the odds-ratio scale:
+
+```math
+CI_\alpha = \exp\{ CI_\psi \}.
+```
+
+In practice:
+
+- `LRT` uses a fitted logistic-regression interval for the treatment coefficient
+  when the information matrix is regular
+- unadjusted `LRT` returns `NA` for `alphaDeltaCI` in boundary cases where the
+  odds ratio is still estimable as `0` or `Inf` but the regular interval is not
+- unadjusted `SPLRT` obtains the logistic interval from the fitted `glm`
+- adjusted `SPLRT` uses the same adjusted logistic coefficient logic as the
+  adjusted parametric path
+
+Interpretation:
+
+- `muDeltaCI` answers "which values of the observed-outcome treatment effect are
+  supported if I focus only on the continuous component?"
+- `alphaDeltaCI` answers "which values of the observation-probability treatment
+  effect are supported if I focus only on the binary component?"
+
+These are not joint intervals. They do not control the joint uncertainty in the
+pair `(muDelta, alphaDelta)`.
+
+### Simultaneous confidence region
+
+For successful unadjusted fits, the package also computes a simultaneous region
+for the two primary treatment-effect components:
+
+```math
+C_{\mathrm{joint}}
+= \{ (\delta_\mu, \delta_\psi) :
+W(\delta_\mu, \delta_\psi) \le q_{\chi^2_2}(\texttt{conf.level}) \},
+```
+
+where `\delta_\psi = \log(\alpha_\delta)`.
+
+This region is returned by `confint(..., type = "simultaneous")` and
+`jointContrastCI()`. It is evaluated on a grid because the user-facing goal is a
+two-dimensional contour or surface, not a one-dimensional bound.
+
+Interpretation:
+
+- this is the correct object when the inferential target is the pair
+  `(muDelta, logORdelta)`
+- it is the right starting point for graphical joint inference
+- it is also the object from which the projected `Delta` interval is derived
+
+### The atom-dependent combined-outcome contrast `Delta`
+
+For unadjusted fits, `Delta` is defined from the fitted atom `e = atom` as
+
+```math
+\Delta(e)
+= [p_1 \mu_1 + (1 - p_1)e] - [p_0 \mu_0 + (1 - p_0)e].
+```
+
+This makes the dependence on the atom explicit: changing `atom` changes the
+meaning of `Delta` and therefore changes every interval for `Delta`.
+
+In the unadjusted case, the fitted point estimate agrees exactly with the raw
+combined-outcome mean difference:
+
+```math
+\hat\Delta
+= \bar Y_{R=1} - \bar Y_{R=0}.
+```
+
+For adjusted fits, `Delta` is not implemented because the fitted treatment
+effects are conditional coefficients rather than a standardized marginal
+contrast.
+
+### Three different intervals for `Delta`
+
+For successful unadjusted fits, `TruncComp2` reports three distinct confidence
+intervals for `Delta`. They share the same point estimate but have different
+mathematical definitions and different interpretations.
+
+#### 1. `DeltaMarginalCI`
+
+This is the ordinary two-sample interval for the raw combined-outcome mean
+difference, using the observed combined outcome values directly:
+
+```math
+\hat\Delta = \bar Y_1 - \bar Y_0,
+```
+
+with Welch standard error
+
+```math
+\operatorname{SE}(\hat\Delta)
+= \sqrt{\frac{s_1^2}{n_1} + \frac{s_0^2}{n_0}},
+```
+
+Welch-Satterthwaite degrees of freedom, and the usual
+
+```math
+\hat\Delta \pm t_{\mathrm{df},\,1-(1-\texttt{conf.level})/2}\operatorname{SE}(\hat\Delta).
+```
+
+Interpretation:
+
+- this is the interval for the raw combined-outcome mean difference treated as
+  an ordinary two-sample summary
+- it is fast, transparent, and largely agnostic to the joint model structure
+- it is often the best descriptive interval when the user wants a simple summary
+  of the combined scale
+
+#### 2. `DeltaProjectedCI`
+
+This interval is defined by projecting the simultaneous two-parameter region
+onto the `Delta` scale:
+
+```math
+CI_{\Delta,\mathrm{proj}}
+= \left[
+\inf_{(\delta_\mu,\delta_\psi)\in C_{\mathrm{joint}}}\Delta(\delta_\mu,\delta_\psi),
+\sup_{(\delta_\mu,\delta_\psi)\in C_{\mathrm{joint}}}\Delta(\delta_\mu,\delta_\psi)
+\right].
+```
+
+Interpretation:
+
+- this is the range of `Delta` values compatible with the full simultaneous
+  region for `(muDelta, logORdelta)`
+- it inherits the two-parameter simultaneous guarantee and is therefore usually
+  more conservative than a one-dimensional profile interval
+- it is the right interval when the user wants a `Delta` statement that remains
+  tied to the whole joint two-component treatment effect
+
+Numerical implementation in the current package:
+
+- by default, `TruncComp2` evaluates the joint surface on an adaptive grid,
+  keeps all points satisfying the `\chi^2_2` cutoff, maps those accepted
+  points to the implied `Delta`, and returns the range of the accepted
+  `Delta` values
+- this default grid-based version is returned by
+  `confint(..., type = "delta_projected")`
+- a slower direct constrained-optimization alternative remains available
+  through `confint(..., type = "delta_projected", algorithm = "optimize")`
+
+#### 3. `DeltaProfileCI`
+
+This is the one-dimensional profile interval for `Delta` itself. Define the
+profiled statistic
+
+```math
+W_\Delta(d)
+= \inf_{\eta:\,\Delta(\eta)=d} W(\eta),
+```
+
+where `\eta` denotes the nuisance and treatment-effect parameters needed by the
+chosen unadjusted model. Then
+
+```math
+CI_{\Delta,\mathrm{profile}}
+= \{ d : W_\Delta(d) \le q_{\chi^2_1}(\texttt{conf.level}) \}.
+```
+
+Interpretation:
+
+- this is the model-based one-dimensional interval when `Delta` itself is the
+  inferential target
+- unlike `DeltaProjectedCI`, it is not a projection of the 2 d.f. simultaneous
+  region
+- unlike `DeltaMarginalCI`, it is explicitly tied to the fitted truncated-outcome
+  model
+
+For backward compatibility, the package stores `DeltaCI` as an alias of
+`DeltaProfileCI`.
+
+Numerical implementation in the current package:
+
+- by default, the package approximates this interval from the evaluated joint
+  surface by using the `\chi^2_1` cutoff instead of the simultaneous
+  `\chi^2_2` cutoff
+- this default grid-based profile approximation is what is stored on the fitted
+  object as `DeltaProfileCI` and `DeltaCI`
+- a slower direct optimization-based alternative remains available through
+  `confint(..., type = "delta_profile", algorithm = "optimize")`; that
+  version profiles directly in `\Delta` by minimizing the model statistic
+  subject to the atom-dependent constraint `\Delta = d`
+
+### Which interval should be used?
+
+- Use `muDeltaCI` if the scientific focus is the observed-outcome component.
+- Use `alphaDeltaCI` if the scientific focus is the observation/survival
+  component.
+- Use the simultaneous region when you want joint inference for both treatment
+  effects together.
+- Use `DeltaMarginalCI` for a simple, descriptive interval on the combined
+  outcome scale.
+- Use `DeltaProfileCI` when `Delta` is the main inferential target and you want
+  the model-based one-dimensional interval. The stored default is the
+  grid-based profile approximation; request `algorithm = "optimize"` if you
+  specifically want the direct optimization-based profile interval.
+- Use `DeltaProjectedCI` when you want the range of `Delta` values compatible
+  with the full joint simultaneous statement. The default returned by
+  `confint(..., type = "delta_projected")` is grid-based; use
+  `algorithm = "optimize"` when you explicitly want the slower direct
+  constrained-optimization version.
+
+For adjusted fits, `Delta`, `DeltaCI`, and the three `Delta` interval variants
+are stored as `NA` because no standardized marginal combined-outcome contrast is
+implemented for the conditional model.
 
 ## Code-Level Mapping
 
@@ -398,7 +624,9 @@ For adjusted fits, both `Delta` and `DeltaCI` are stored as `NA` because no stan
 | Odds ratio of being observed | `\alpha_\delta` | `alphaDelta` | `R/LRT.R`, `R/SPLRT.R` |
 | Confidence interval for observation odds ratio | `CI(\alpha_\delta)` | `alphaDeltaCI` | `R/LRT.R`, `R/SPLRT.R` |
 | Combined-outcome mean difference | `\Delta` | `Delta` | `R/LRT.R`, `R/SPLRT.R` |
-| Combined-outcome CI placeholder | `CI(\Delta)` | `DeltaCI` | `R/LRT.R`, `R/SPLRT.R` |
+| Welch interval for combined-outcome mean difference | marginal `CI(\Delta)` | `DeltaMarginalCI` | `R/delta.R` |
+| Projected interval from the joint surface | projected `CI(\Delta)` | `DeltaProjectedCI` | `R/delta.R`, `R/CI.R` |
+| Profile interval for combined-outcome mean difference | profile `CI(\Delta)` | `DeltaProfileCI` / `DeltaCI` | `R/delta.R` |
 | Joint test statistic | `W` | `W` | `R/LRT.R`, `R/SPLRT.R` |
 | Joint p-value | `p` | `p` | `R/LRT.R`, `R/SPLRT.R` |
 | Parametric likelihood-ratio test | parametric joint LRT | `method = "LRT"` | `R/LRT.R`, called from `R/truncComp.R` |
@@ -419,7 +647,7 @@ The following restrictions are part of the current implementation, regardless of
 - `method = "SPLRT"` leaves the observed-outcome distribution unspecified beyond mean restrictions
 - the same additive covariate specification is used in both adjusted `LRT` submodels and in the adjusted `SPLRT` logistic and observed-outcome components
 - adjusted treatment effects are conditional coefficients with no `R * L` interactions
-- `DeltaCI` is not implemented
+- `Delta` inference is implemented only for unadjusted fits
 - simultaneous confidence regions are only implemented for unadjusted fits
 
 ## Worked Example

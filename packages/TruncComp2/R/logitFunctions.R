@@ -92,15 +92,29 @@ logit.likelihood.profile.prepared <- function(logitReference, delta, interval = 
   logit.likelihood.prepared(logitReference, c(beta0, delta))
 }
 
+logit_profile_fit.prepared <- function(logitReference, delta, interval = NULL) {
+  beta0 <- logit_profile_beta0.prepared(logitReference, delta, interval = interval)
+  ll <- logit.likelihood.prepared(logitReference, c(beta0, delta))
+  p0 <- stats::plogis(beta0)
+  p1 <- stats::plogis(beta0 + delta)
+
+  list(
+    beta0 = beta0,
+    delta = delta,
+    ll = ll,
+    p0 = p0,
+    p1 = p1,
+    statistic = 2 * (ll - logitReference$ll1)
+  )
+}
+
 logit.likelihood.profile <- function(data, delta, interval = NULL) {
   logitReference <- list(X = model.matrix(~R, data = data), y = data$A)
   logit.likelihood.profile.prepared(logitReference, delta, interval = interval)
 }
 
 logit.LRT.prepared <- function(logitReference, delta, interval = NULL) {
-  ll2 <- logit.likelihood.profile.prepared(logitReference, delta, interval = interval)
-
-  2 * (ll2 - logitReference$ll1)
+  logit_profile_fit.prepared(logitReference, delta, interval = interval)$statistic
 }
 
 logit.LRT <- function(data, delta) {

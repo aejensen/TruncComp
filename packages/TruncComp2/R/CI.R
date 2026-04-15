@@ -1,22 +1,177 @@
-jointContrastGrid <- function(interval = NULL, center = NULL, offset = 1, resolution = 35) {
+utils::globalVariables(c("muDelta", "logORdelta", "statistic"))
+
+validateJointContrastResolution <- function(resolution) {
+  if(length(resolution) != 1 || !is.numeric(resolution) || !is.finite(resolution) || resolution < 1) {
+    stop("resolution must be a single positive integer.")
+  }
+
+  as.integer(resolution)
+}
+
+jointContrastAxisBounds <- function(interval = NULL, center = NULL, offset) {
   if(length(offset) != 1 || !is.numeric(offset) || !is.finite(offset) || offset < 0) {
     stop("offset must be a single finite non-negative number.")
   }
 
-  if(length(resolution) != 1 || !is.numeric(resolution) || !is.finite(resolution) || resolution < 1) {
-    stop("resolution must be a single positive integer.")
-  }
-  resolution <- as.integer(resolution)
-
   if(!is.null(interval) && length(interval) >= 2 && all(is.finite(interval[1:2]))) {
-    return(seq(interval[1] - offset, interval[2] + offset, length.out = resolution))
+    return(as.numeric(c(interval[1] - offset, interval[2] + offset)))
   }
 
   if(length(center) == 1 && is.finite(center)) {
-    return(seq(center - offset, center + offset, length.out = resolution))
+    return(as.numeric(c(center - offset, center + offset)))
   }
 
-  seq(-offset, offset, length.out = resolution)
+  as.numeric(c(-offset, offset))
+}
+
+jointContrastGrid <- function(interval = NULL, center = NULL, offset, resolution = 35) {
+  resolution <- validateJointContrastResolution(resolution)
+  bounds <- jointContrastAxisBounds(interval = interval, center = center, offset = offset)
+  seq(bounds[1], bounds[2], length.out = resolution)
+}
+
+jointContrastMuFallbackOffset <- function(m) {
+  data <- m$data
+  y0 <- data$Y[data$R == 0 & data$A == 1]
+  y1 <- data$Y[data$R == 1 & data$A == 1]
+
+  v0 <- if(length(y0) > 1) stats::var(y0) else 0
+  v1 <- if(length(y1) > 1) stats::var(y1) else 0
+  se <- sqrt(v0 / max(length(y0), 1) + v1 / max(length(y1), 1))
+  if(is.finite(se) && se > 0) {
+    return(2 * se)
+  }
+
+  data_scale <- max(abs(data$Y[is.finite(data$Y)]), na.rm = TRUE)
+  if(is.finite(data_scale) && data_scale > 0) {
+    return(data_scale / 4)
+  }
+
+  1 / sqrt(max(nrow(data), 1))
+}
+
+jointContrastLogORFallbackOffset <- function(m) {
+  data <- m$data
+  n0 <- sum(data$R == 0)
+  n1 <- sum(data$R == 1)
+  k0 <- sum(data$R == 0 & data$A == 1)
+  k1 <- sum(data$R == 1 & data$A == 1)
+
+  se <- sqrt(
+    1 / (k0 + 0.5) +
+      1 / (n0 - k0 + 0.5) +
+      1 / (k1 + 0.5) +
+      1 / (n1 - k1 + 0.5)
+  )
+  if(is.finite(se) && se > 0) {
+    return(2 * se)
+  }
+
+  1 / sqrt(max(nrow(data), 1))
+}
+
+jointContrastAxisOffset <- function(interval = NULL, center = NULL, fallback = NULL) {
+  if(!is.null(interval) && length(interval) >= 2 && all(is.finite(interval[1:2]))) {
+    width <- diff(interval[1:2])
+    if(is.finite(width) && width > 0) {
+      return(as.numeric(width / 2))
+    }
+  }
+
+  if(length(fallback) == 1 && is.finite(fallback) && fallback > 0) {
+    return(as.numeric(fallback))
+  }
+
+  if(length(center) == 1 && is.finite(center) && abs(center) > 0) {
+    return(as.numeric(abs(center)))
+  }
+
+  1
+}
+
+jointContrastDefaultOffsets <- function(m) {
+  logAlphaCI <- suppressWarnings(log(m$alphaDeltaCI))
+  logAlpha <- suppressWarnings(log(as.numeric(m$alphaDelta)))
+
+  c(
+    muDelta = jointContrastAxisOffset(
+      interval = m$muDeltaCI,
+      center = m$muDelta,
+      fallback = jointContrastMuFallbackOffset(m)
+    ),
+    logORdelta = jointContrastAxisOffset(
+      interval = logAlphaCI,
+      center = logAlpha,
+      fallback = jointContrastLogORFallbackOffset(m)
+    )
+  )
+}
+
+normalizeJointContrastOffsets <- function(m, offset = NULL) {
+  if(is.null(offset)) {
+    return(jointContrastDefaultOffsets(m))
+  }
+
+  if(!is.numeric(offset) || any(!is.finite(offset)) || any(offset < 0) || !(length(offset) %in% c(1, 2))) {
+    stop("offset must be NULL, a single finite non-negative number, or a length-2 numeric vector.")
+  }
+
+  if(length(offset) == 1) {
+    return(rep(as.numeric(offset), 2))
+  }
+
+  as.numeric(offset)
+}
+
+jointContrastDefaultBounds <- function(m, offset = NULL) {
+  offsets <- normalizeJointContrastOffsets(m, offset)
+  logAlphaCI <- suppressWarnings(log(m$alphaDeltaCI))
+  logAlpha <- suppressWarnings(log(as.numeric(m$alphaDelta)))
+
+  list(
+    muDelta = jointContrastAxisBounds(m$muDeltaCI, m$muDelta, offsets[1]),
+    logORdelta = jointContrastAxisBounds(logAlphaCI, logAlpha, offsets[2])
+  )
+}
+
+jointContrastPlot <- function(muDelta, logORdelta, surface, m, conf.level) {
+  plot_data <- expand.grid(
+    muDelta = muDelta,
+    logORdelta = logORdelta
+  )
+  plot_data$statistic <- as.vector(surface)
+
+  plot_obj <- ggplot2::ggplot(
+    plot_data,
+    ggplot2::aes(x = muDelta, y = logORdelta, fill = statistic)
+  ) +
+    ggplot2::geom_raster() +
+    ggplot2::geom_contour(
+      ggplot2::aes(z = statistic),
+      breaks = stats::qchisq(conf.level, 2),
+      color = "black",
+      linewidth = 0.5
+    ) +
+    ggplot2::scale_fill_gradientn(colors = rev(fields::tim.colors(128))) +
+    ggplot2::labs(
+      x = "Difference in means among the observed",
+      y = "log OR of being observed",
+      fill = "Joint LR"
+    ) +
+    ggplot2::theme_minimal()
+
+  logAlphaEstimate <- suppressWarnings(log(as.numeric(m$alphaDelta)))
+  if(is.finite(m$muDelta) && is.finite(logAlphaEstimate)) {
+    plot_obj <- plot_obj + ggplot2::geom_point(
+      data = data.frame(muDelta = m$muDelta, logORdelta = logAlphaEstimate),
+      ggplot2::aes(x = muDelta, y = logORdelta),
+      inherit.aes = FALSE,
+      shape = 16,
+      size = 2
+    )
+  }
+
+  plot_obj
 }
 
 validateConfidenceLevel <- function(conf.level) {
@@ -38,9 +193,18 @@ buildMarginalCIMatrix <- function(object) {
     "log Odds ratio of being observed:" = suppressWarnings(log(object$alphaDeltaCI))
   ))
 
-  deltaCI <- object$DeltaCI
-  if(length(deltaCI) >= 2 && all(is.finite(deltaCI[1:2]))) {
-    cMat <- rbind(cMat, "Delta" = deltaCI[1:2])
+  delta_intervals <- list(
+    "Delta (marginal)" = object$DeltaMarginalCI,
+    "Delta (projected)" = object$DeltaProjectedCI,
+    "Delta (profile likelihood)" = object$DeltaProfileCI
+  )
+
+  for(label in names(delta_intervals)) {
+    interval <- delta_intervals[[label]]
+    if(length(interval) >= 2 && all(is.finite(interval[1:2]))) {
+      cMat <- rbind(cMat, interval[1:2])
+      rownames(cMat)[nrow(cMat)] <- label
+    }
   }
 
   a <- (1 - object$conf.level)/2
@@ -53,12 +217,14 @@ buildMarginalCIMatrix <- function(object) {
 
 confint.TruncComp2 <- function(object, type = "marginal", muDelta = NULL, logORdelta = NULL,
                               conf.level = object$conf.level, plot = TRUE,
-                              offset = 1, resolution = 35,  ...) {
-  if(!(type %in% c("marginal", "simultaneous"))) {
-    stop("Type of confidence interval must be either marginal or simultaneous.")
+                              offset = NULL, resolution = 35, algorithm = c("grid", "optimize"),
+                              ...) {
+  if(!(type %in% c("marginal", "simultaneous", "delta_projected", "delta_profile"))) {
+    stop("Type of confidence interval must be either marginal, simultaneous, delta_projected, or delta_profile.")
   }
 
   conf.level <- validateConfidenceLevel(conf.level)
+  algorithm <- validateDeltaIntervalAlgorithm(algorithm)
 
   if(!isTRUE(object$success)) {
     stop("Estimation failed. Cannot display confidence intervals.")
@@ -66,6 +232,12 @@ confint.TruncComp2 <- function(object, type = "marginal", muDelta = NULL, logORd
 
   if(type == "simultaneous" && !is.null(object$adjust)) {
     stop("Simultaneous confidence regions are not implemented for adjusted fits.")
+  }
+  if(type == "delta_projected" && !is.null(object$adjust)) {
+    stop("Projected Delta intervals are not implemented for adjusted fits.")
+  }
+  if(type == "delta_profile" && !is.null(object$adjust)) {
+    stop("Profile Delta intervals are not implemented for adjusted fits.")
   }
 
   if (type == "marginal") {
@@ -77,106 +249,96 @@ confint.TruncComp2 <- function(object, type = "marginal", muDelta = NULL, logORd
 
     cMat <- buildMarginalCIMatrix(object)
     print.default(cMat)
-  } else {
+  } else if(type == "simultaneous") {
     message("Calculating joint likelihood surface.\nThis may take some time depending on the resolution.")
     joint <- jointContrastCI(object, muDelta, logORdelta, conf.level, plot, offset, resolution)
+  } else if(type == "delta_projected") {
+    projected <- delta_projected_interval(
+      object,
+      conf.level = conf.level,
+      offset = offset,
+      resolution = resolution,
+      algorithm = algorithm
+    )
+    a <- (1 - conf.level) / 2
+    a <- c(a, 1 - a)
+    pct <- paste(format(100 * a, trim = TRUE, scientific = FALSE, digits = 3), "%")
+    projected_mat <- matrix(projected, nrow = 1, dimnames = list("Delta (projected)", pct))
+    print.default(projected_mat)
+  } else {
+    if(identical(algorithm, "grid") &&
+       isTRUE(all.equal(conf.level, object$conf.level, tolerance = sqrt(.Machine$double.eps))) &&
+       is.null(offset) &&
+       identical(validateJointContrastResolution(resolution), as.integer(35)) &&
+       length(object$DeltaProfileCI) >= 2 &&
+       all(is.finite(object$DeltaProfileCI[1:2]))) {
+      profiled <- object$DeltaProfileCI[1:2]
+    } else {
+      profiled <- delta_profile_interval(
+        object,
+        conf.level = conf.level,
+        offset = offset,
+        resolution = resolution,
+        algorithm = algorithm
+      )
+    }
+    a <- (1 - conf.level) / 2
+    a <- c(a, 1 - a)
+    pct <- paste(format(100 * a, trim = TRUE, scientific = FALSE, digits = 3), "%")
+    profiled_mat <- matrix(profiled, nrow = 1, dimnames = list("Delta (profile likelihood)", pct))
+    print.default(profiled_mat)
   }
 
   if(type == "marginal") {
     invisible(cMat)
+  } else if(type == "delta_projected") {
+    invisible(projected_mat)
+  } else if(type == "delta_profile") {
+    invisible(profiled_mat)
   } else {
     invisible(joint)
   }
 }
 
-parametricJointReference <- function(data) {
-  observed_data <- droplevels(data[data$A == 1, c("Y", "R"), drop = FALSE])
-  glm_alt <- suppressWarnings(tryCatch(
-    stats::glm(A ~ R, family = stats::binomial(), data = data),
-    error = function(e) NULL
-  ))
-  lm_alt <- suppressWarnings(tryCatch(
-    stats::lm(Y ~ R, data = observed_data),
-    error = function(e) NULL
-  ))
-
-  list(
-    data = data,
-    observed_data = observed_data,
-    glm_alt = glm_alt,
-    lm_alt = lm_alt,
-    ll_glm_alt = parametric_loglik_value(glm_alt),
-    ll_lm_alt = parametric_loglik_value(lm_alt, reml = FALSE)
-  )
+parametricJointReference <- function(data, atom = 0) {
+  prepareParametricJointReference(data, atom = atom)
 }
 
 jointContrastLRT.parametric.cached <- function(parametricReference, muDelta, logORdelta,
                                                tol = 1e-12) {
-  glm_constrained <- suppressWarnings(tryCatch(
-    stats::glm(
-      A ~ 1,
-      family = stats::binomial(),
-      data = parametricReference$data,
-      offset = logORdelta * parametricReference$data$R
-    ),
-    error = function(e) NULL
-  ))
-
-  lm_constrained <- suppressWarnings(tryCatch(
-    stats::lm(
-      Y ~ 1,
-      data = parametricReference$observed_data,
-      offset = muDelta * parametricReference$observed_data$R
-    ),
-    error = function(e) NULL
-  ))
-
-  ll_glm_constrained <- parametric_loglik_value(glm_constrained)
-  ll_lm_constrained <- parametric_loglik_value(lm_constrained, reml = FALSE)
-
-  W_A <- if(is.finite(ll_glm_constrained) && is.finite(parametricReference$ll_glm_alt)) {
-    parametric_clamp_statistic(2 * (parametricReference$ll_glm_alt - ll_glm_constrained), tol = tol)
-  } else {
-    Inf
-  }
-
-  W_Y <- if(is.finite(ll_lm_constrained) && is.finite(parametricReference$ll_lm_alt)) {
-    parametric_clamp_statistic(2 * (parametricReference$ll_lm_alt - ll_lm_constrained), tol = tol)
-  } else {
-    Inf
-  }
-
-  total <- W_A + W_Y
-  if(is.finite(total)) {
-    parametric_clamp_statistic(total, tol = tol)
-  } else {
-    total
-  }
+  parametricJointCandidate(parametricReference, muDelta, logORdelta, tol = tol)$statistic
 }
 
 jointContrastLRT.parametric <- function(data, muDelta, logORdelta) {
-  parametricReference <- parametricJointReference(data)
+  parametricReference <- parametricJointReference(data, atom = resolveDefaultAtom(data$Y, data$A))
   jointContrastLRT.parametric.cached(parametricReference, muDelta, logORdelta)
 }
 
-jointContrastLRT.cached <- function(yAlive1, yAlive2, muDelta, logORdelta, logitReference) {
-  muW <- el_mean_diff_statistic(yAlive2, yAlive1, muDelta)
-  binom <- logit.LRT.prepared(logitReference, logORdelta)
+jointContrastLRT.cached <- function(yAlive1, yAlive2, muDelta, logORdelta, logitReference,
+                                    atom = 0) {
+  splrtReference <- list(
+    yAlive0 = yAlive1,
+    yAlive1 = yAlive2,
+    logitReference = logitReference,
+    atom = atom
+  )
 
-  as.numeric(muW + binom)
+  splrtJointCandidate(splrtReference, muDelta, logORdelta)$statistic
 }
 
 jointContrastLRT <- function(data, muDelta, logORdelta) {
   yAlive1 <- data[data$R == 0 & data$A == 1, "Y"]
   yAlive2 <- data[data$R == 1 & data$A == 1, "Y"]
   logitReference <- logit.prepare(data)
+  atom <- resolveDefaultAtom(data$Y, data$A)
 
-  jointContrastLRT.cached(yAlive1, yAlive2, muDelta, logORdelta, logitReference)
+  jointContrastLRT.cached(yAlive1, yAlive2, muDelta, logORdelta, logitReference, atom = atom)
 }
 
-jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL,
-                            conf.level = m$conf.level, plot = TRUE,
-                            offset = 1, resolution = 35) {
+jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
+                                     conf.level = m$conf.level,
+                                     plot = TRUE, offset = NULL, resolution = 35,
+                                     include_delta = FALSE) {
   if(!inherits(m, "TruncComp2")) {
     stop("m must be an object of type TruncComp2")
   }
@@ -196,57 +358,74 @@ jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL,
     stop("Simultaneous confidence regions are not implemented for adjusted fits.")
   }
 
+  resolution <- validateJointContrastResolution(resolution)
+  offsets <- normalizeJointContrastOffsets(m, offset)
+
   if(is.null(muDelta)) {
-    muDelta <- jointContrastGrid(m$muDeltaCI, m$muDelta, offset = offset, resolution = resolution)
+    muDelta <- jointContrastGrid(m$muDeltaCI, m$muDelta, offset = offsets[1], resolution = resolution)
   }
 
   if(is.null(logORdelta)) {
     logAlphaCI <- suppressWarnings(log(m$alphaDeltaCI))
     logAlpha <- suppressWarnings(log(as.numeric(m$alphaDelta)))
-    logORdelta <- jointContrastGrid(logAlphaCI, logAlpha, offset = offset, resolution = resolution)
+    logORdelta <- jointContrastGrid(logAlphaCI, logAlpha, offset = offsets[2], resolution = resolution)
   }
 
   matOut <- matrix(NA, length(muDelta), length(logORdelta))
+  deltaOut <- if(isTRUE(include_delta)) matrix(NA, length(muDelta), length(logORdelta)) else NULL
   if(identical(m$method, "Semi-empirical Likelihood Ratio Test")) {
-    yAlive1 <- m$data[m$data$R == 0 & m$data$A == 1, "Y"]
-    yAlive2 <- m$data[m$data$R == 1 & m$data$A == 1, "Y"]
-    logitReference <- logit.prepare(m$data)
+    splrtReference <- prepareSPLRTJointReference(m$data, atom = m$atom)
 
     for(a in seq_along(muDelta)) {
       for(b in seq_along(logORdelta)) {
-        matOut[a,b] <- jointContrastLRT.cached(yAlive1, yAlive2, muDelta[a], logORdelta[b], logitReference)
+        candidate <- splrtJointCandidate(splrtReference, muDelta[a], logORdelta[b])
+        matOut[a,b] <- candidate$statistic
+        if(isTRUE(include_delta)) {
+          deltaOut[a,b] <- candidate$Delta
+        }
       }
     }
   } else {
-    parametricReference <- parametricJointReference(m$data)
+    parametricReference <- parametricJointReference(m$data, atom = m$atom)
     for(a in seq_along(muDelta)) {
       for(b in seq_along(logORdelta)) {
-        matOut[a,b] <- jointContrastLRT.parametric.cached(
+        candidate <- parametricJointCandidate(
           parametricReference,
           muDelta[a],
           logORdelta[b]
         )
+        matOut[a,b] <- candidate$statistic
+        if(isTRUE(include_delta)) {
+          deltaOut[a,b] <- candidate$Delta
+        }
       }
     }
   }
 
   if(plot) {
-    #fields::image.plot(muDelta, logORdelta, matOut, useRaster = TRUE,
-    #                   xlab="Mean difference among the observed",
-    #                   ylab="log OR of being observed")
-    image(muDelta, logORdelta, matOut,
-          xlab="Difference in means among the observed",
-          ylab="log OR of being observed",
-          col = rev(fields::tim.colors(128)), useRaster = TRUE)
-    logAlphaEstimate <- suppressWarnings(log(as.numeric(m$alphaDelta)))
-    if(is.finite(m$muDelta) && is.finite(logAlphaEstimate)) {
-      points(m$muDelta, logAlphaEstimate, pch=19, cex=1)
-    }
-    #points(0, 0, cex=3, pch=1)
-    contour(muDelta, logORdelta, matOut, add=TRUE,
-            levels=stats::qchisq(conf.level, 2), lwd=1, labels=conf.level)
+    print(jointContrastPlot(muDelta, logORdelta, matOut, m, conf.level))
   }
 
-  #Also add the contour itself to the return
-  list(muDelta = muDelta, logORdelta = logORdelta, surface = matOut)
+  out <- list(muDelta = muDelta, logORdelta = logORdelta, surface = matOut)
+  if(isTRUE(include_delta)) {
+    out$deltaSurface <- deltaOut
+  }
+  out
+}
+
+jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL,
+                            conf.level = m$conf.level, plot = TRUE,
+                            offset = NULL, resolution = 35) {
+  surface <- jointContrastSurfaceData(
+    m,
+    muDelta = muDelta,
+    logORdelta = logORdelta,
+    conf.level = conf.level,
+    plot = plot,
+    offset = offset,
+    resolution = resolution,
+    include_delta = FALSE
+  )
+
+  list(muDelta = surface$muDelta, logORdelta = surface$logORdelta, surface = surface$surface)
 }

@@ -100,8 +100,26 @@ prepareDefaultAdjustment <- function(adjust, n) {
   list(data = adjust_data, formula = adjust_formula)
 }
 
+resolveDefaultAtom <- function(y, a, atom = NULL) {
+  if(!is.null(atom)) {
+    if(!(length(atom) == 1 && is.numeric(atom) && is.finite(atom))) {
+      stop("atom must be NULL or a single finite numeric value.")
+    }
+    return(as.numeric(atom))
+  }
+
+  atom_values <- unique(y[a == 0])
+  atom_values <- atom_values[is.finite(atom_values)]
+  if(length(atom_values) == 1) {
+    return(as.numeric(atom_values))
+  }
+
+  stop("atom must be supplied for truncComp.default() unless y[a == 0] has exactly one unique finite value.")
+}
+
 truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
-                           adjust_data = NULL, adjust_formula = NULL) {
+                           adjust_data = NULL, adjust_formula = NULL,
+                           atom = NULL) {
   if(!(method == "LRT" || method == "SPLRT")) {
     stop("Only LRT or SPLRT supported as methods.")
   }
@@ -121,16 +139,18 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
                            conf.level,
                            init = init,
                            data = d,
-                           adjust = adjust_spec))
+                           adjust = adjust_spec,
+                           atom = atom))
   }
 
   if(method == "LRT") {
-    out <- LRT(d, init, conf.level, adjust = adjust_formula, adjust_spec = adjust_spec)
+    out <- LRT(d, init, conf.level, adjust = adjust_formula, adjust_spec = adjust_spec, atom = atom)
   } else if(method == "SPLRT") {
-    out <- SPLRT(d, conf.level, adjust = adjust_formula, adjust_spec = adjust_spec)
+    out <- SPLRT(d, conf.level, adjust = adjust_formula, adjust_spec = adjust_spec, atom = atom)
   }
 
   out$data <- d
+  out$atom <- atom
   out
 }
 
@@ -189,13 +209,15 @@ truncComp <- function(formula, atom, data, method, conf.level = 0.95, init = NUL
                  conf.level,
                  init,
                  adjust_data = adjustment$data,
-                 adjust_formula = adjustment$formula)
+                 adjust_formula = adjustment$formula,
+                 atom = atom)
 }
 
 
 truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL,
-                              adjust = NULL) {
+                              adjust = NULL, atom = NULL) {
   adjustment <- prepareDefaultAdjustment(adjust, length(y))
+  atom <- resolveDefaultAtom(y, a, atom = atom)
 
   truncComp_core(y,
                  a,
@@ -204,5 +226,6 @@ truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL,
                  conf.level,
                  init,
                  adjust_data = adjustment$data,
-                 adjust_formula = adjustment$formula)
+                 adjust_formula = adjustment$formula,
+                 atom = atom)
 }

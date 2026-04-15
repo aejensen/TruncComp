@@ -12,7 +12,8 @@ Description: Implements likelihood-ratio methods for comparing two groups when
 License: GPL-3
 Encoding: UTF-8
 Imports:
-    fields
+    fields,
+    ggplot2
 Suggests:
     testthat
 Config/testthat/edition: 3

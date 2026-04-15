@@ -31,6 +31,23 @@ The helper \code{\link{jointContrastCI}} computes a simultaneous
 confidence-region surface for the unadjusted parametric and semi-parametric
 procedures. Adjusted fits still support only marginal confidence intervals.
 
+For successful unadjusted fits, the package distinguishes three different
+intervals for the derived combined-outcome contrast \code{Delta}:
+\itemize{
+  \item{\code{DeltaMarginalCI}: Welch interval for the raw combined-outcome mean difference}
+  \item{\code{DeltaProjectedCI}: projection of the two-parameter simultaneous region onto \code{Delta}}
+  \item{\code{DeltaProfileCI}: one-dimensional profile interval for \code{Delta}}
+}
+
+These intervals share the same point estimate but differ in interpretation.
+\code{DeltaMarginalCI} is the descriptive raw-scale interval,
+\code{DeltaProjectedCI} is tied to the full joint simultaneous statement, and
+\code{DeltaProfileCI} is the model-based one-dimensional interval for
+\code{Delta} itself. By default, the package reports grid-based projected and
+profile intervals; the slower optimization-based alternatives remain available
+through \code{\link{confint.TruncComp2}} with
+\code{algorithm = "optimize"}.
+
 For illustrating covariate adjustment in both methods, the package also
 ships \code{\link{loadTruncComp2AdjustedExample}}, a fixed example with a
 3-level categorical covariate.

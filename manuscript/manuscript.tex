@@ -1,0 +1,44 @@
+\documentclass[11pt]{article}
+
+\input{tex/preamble}
+\input{tex/macros}
+\input{build/generated-values.tex}
+
+\title{A novel high-power test for continuous outcomes truncated by death}
+\author{
+  Andreas Kryger Jensen and Theis Lange\\
+  Section of Biostatistics, Department of Public Health\\
+  University of Copenhagen
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Patient reported outcomes including quality of life assessments are increasingly being included as either primary or secondary outcomes in randomized controlled trials. While making the outcomes more relevant for patients it entails a challenge in cases where death or a similar event makes the outcome of interest undefined. A pragmatic -- and much used -- solution is to assign deceased patients the lowest possible quality of life score. This makes medical sense, but creates a statistical problem since traditional tests such as the t-test or the Wilcoxon test potentially lose high amounts of statistical power. In this paper we propose a novel test that can keep the medically relevant composite outcome but preserve full statistical power. The test is also applicable in other situations where a specific value (say zero days alive outside hospitals) encodes a special meaning. The test is implemented in an R package, and the paper includes a simulation study and an application to a COVID-19 randomized controlled trial.
+\end{abstract}
+
+\begin{center}
+\textbf{Keywords:} Quality of Life, Randomized Controlled Trials,\\
+Truncated Outcomes, Semi-Continuous Distributions, Empirical Likelihood
+\end{center}
+
+\input{tex/sections/introduction}
+\input{tex/sections/method}
+\input{tex/sections/software-implementation}
+\input{tex/sections/simulation-study}
+\input{tex/sections/application}
+\input{tex/sections/discussion}
+
+\clearpage
+\appendix
+\input{tex/sections/appendix-simulation-results}
+\input{tex/sections/appendix-derivation}
+
+\clearpage
+\bibliographystyle{plainnat}
+\bibliography{bibliography}
+
+\end{document}

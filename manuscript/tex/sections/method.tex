@@ -1,0 +1,118 @@
+\section{Method}\label{sec:method}
+
+We consider random variables $(Y, A, R, X)$ where $Y$ is the continuous outcome, $A$ is a binary variable being equal to $1$ if $Y$ is observed and equal to $0$ if $Y$ is unobserved or undefined, $R$ is a binary treatment indicator, and $X$ is a $p$-dimensional vector of additional covariates. The objective is to focus on the bivariate distribution of $(Y \mid A = 1), A \mid R, X$ under the primary null hypothesis of no treatment effect given by $(Y \mid A = 1), A \perp R \mid X$. Even though we model the outcome as a bivariate random variable, a combined outcome is often used in practice. The combined outcome is derived such that it is equal to $Y$ if $A = 1$ (and $Y$ is observed), and otherwise (when $A = 0$) it is equal to some predetermined value. The combined outcome can be written as
+\begin{align}
+  \widetilde{Y} = Y \mathbbm{1}(A = 1) + \mathcal{E} \mathbbm{1}(A = 0)\label{eq:combinedOutcome}
+\end{align}
+where $\mathcal{E}$ is a fixed atom assigned as the outcome value when $Y$ is unobserved, and $\mathbbm{1}$ denotes the indicator function. The semi-continuous distribution of $\widetilde{Y}$ is therefore a probabilistic mixture of a singular distribution at $\mathcal{E}$ and a continuous distribution over the domain of the random variable $Y \mid A = 1$. Thus the statistical challenge can be rephrased as to ascertain whether the treatment affects the distribution of $\widetilde{Y}$.
+
+The conditional expectation of the combined outcome in Equation~(\ref{eq:combinedOutcome}) is given by
+\begin{align*}
+  E[\widetilde{Y} \mid R, X] = E[Y \mid R, X, A = 1]P(A = 1 \mid R, X) + \mathcal{E}P(A = 0 \mid R, X)
+\end{align*}
+From this expression it can be seen that a treatment comparison expressed in terms of a contrast of the expectation of $\widetilde{Y}$ can be zero even though the distribution of $(Y \mid A = 1), A \mid X$ depends on $R$. To see this, let $E[Y \mid A = 1, R = 0, X] = \mu(X)$ and $E[Y \mid A = 1, R = 1, X] = \mu(X) + \mu_{\delta}(X)$ and assume without loss of generalization that $\mathcal{E} = 0$. Then the average treatment effect for the combined outcome conditional on baseline covariates is
+\begin{align}
+  \Delta(X) &= E[\widetilde{Y} \mid R = 1, X] - E[\widetilde{Y} \mid R = 0, X]\label{eq:Delta}\\
+  &= \mu(X)\left[P(A = 1 \mid R = 1, X) - P(A = 1 \mid R = 0, X)\right] + \mu_{\delta}(X)P(A = 1 \mid R = 1, X)\nonumber
+\end{align}
+If we auspiciously let $\mu_{\delta}(X) = \mu(X)\left[P(A = 1 \mid R = 0, X) P(A = 1 \mid R = 1, X)^{-1} - 1\right]$ then $\Delta(X) = 0$ for all values of $X$ even though $\mu_{\delta}(X) \ne 0$ and $P(A = 1 \mid R = 0, X) \ne P(A = 1 \mid R = 1, X)$. On the other hand, if $\mu_\delta(X) = 0$ and $P(A = 1 \mid R = 1, X) = P(A = 1 \mid R = 0, X)$ then $\Delta(X)$ is necessarily equal to zero. This illustrates that a significance test of no treatment effect must have two degrees of freedom. Such a test which we develop in the subsequent sections is conceptually different than a test for the null hypothesis $\Delta(X) = 0$.
+
+Let $(Y_i, A_i, R_i, X_i)$ for $i = 1, \ldots, n$ be independent and identically distributed random variables. We propose to test the null hypothesis of no treatment effect on the combined outcome by a likelihood ratio test of the joint distribution of $Y_i \mid A_i$ and $A_i$. This has the advantage that it increases the efficiency compared to the Wilcoxon test and it yields a single p-value appropriate for testing a primary outcome in a clinical trial. We may write our model in a general form as
+\begin{align*}
+  A_i \mid R_i, X_i &\sim \text{Bernoulli}(A_i; \pi_i(R_i, X_i))\\
+  Y_i \mid A_i = 1, R_i, X_i &\sim F(Y_i; \mu_i(R_i, X_i), \Psi)
+\end{align*}
+for some mean functions $\pi_i$ and $\mu_i$ and a distribution function $F$ characterizing the distribution of the observed continuous outcomes with possible nuisance parameters $\Psi$. The joint likelihood function for the combined outcome conditional on treatment and baseline covariates is
+\begin{align*}
+  L_n(\mu_i(R_i, X_i), \pi_i(R_i, X_i), \Psi) &= \prod_{i = 1}^n f(Y_i; \mu_i(R_i, X_i), \Psi)^{A_i}P(A_i = a_i; \pi_i(R_i, X_i))\\
+  &= \prod_{i = 1}^n f(Y_i; \mu_i(R_i, X_i), \Psi)^{A_i} \pi_i(R_i, X_i)^{A_i} (1 - \pi_i(R_i, X_i))^{1 - A_i}\nonumber
+\end{align*}
+We note that when $F$ is absolutely continuous with respect to the Lebesgue measure with density function $f$, the likelihood function can equivalently be written solely in terms of the combined outcome $\widetilde{Y}$ in Equation~(\ref{eq:combinedOutcome}) since $f(Y_i; \cdot)^{A_i} = f(\widetilde{Y}_i; \cdot)^{\mathbbm{1}(\widetilde{Y}_i \ne \mathcal{E})}$ and $\pi_i(\cdot)^{A_i} = \pi_i(\cdot)^{\mathbbm{1}(\widetilde{Y}_i \ne \mathcal{E})}$ almost surely. An important property of this model is that the likelihood function factorizes into two components as
+\begin{align*}
+  L_n(\mu_i(R_i, X_i), \pi_i(R_i, X_i)) &= L_{1,n}(\mu_i(R_i, X_i), \Psi) L_{2,n}(\pi_i(R_i, X_i))
+\end{align*}
+where
+\begin{align*}
+  L_{1,n}(\mu_i(R_i, X_i), \Psi) &= \prod_{i = 1}^n f(Y_i; \mu_i(R_i, X_i), \Psi)^{A_i},\\
+  L_{2,n}(\pi_i(R_i, X_i)) &= \prod_{i = 1}^n \pi_i(R_i, X_i)^{A_i} (1 - \pi_i(R_i, X_i))^{1 - A_i}.
+\end{align*}
+This implies that the parameters for the observed outcomes, $\mu_i(R_i, X_i)$, can be estimated independently of the parameters governing the probability of observing the outcome, $\pi_i(R_i, X_i)$. This factorization is a consequence of the likelihood construction and it does neither assume nor require independence between the value of the outcome and the probability of observing it.
+
+Under the assumption of generalized linear models for $\mu_i(R_i, X_i)$ and $\pi_i(R_i, X_i)$ we may parameterize the conditional mean functions as
+\begin{align}
+  \logit P(A_i = 1 \mid R_i, X_i) &= \beta_0 + \beta_{\delta} R_i + s_\beta(X_i)\label{eq:glm1}\\
+  \E[Y_i \mid A_i = 1, R_i, X_i] &= \mu_0 + \mu_{\delta} R_i + s_\mu(X_i)\label{eq:glm2}
+\end{align}
+where the treatment effect is quantified by the bivariate contrast $(\mu_\delta, \beta_\delta)$ and $s_\mu, s_\beta \colon \mathbb{R}^p \mapsto \mathbb{R}$ are some models for the additional covariates. The parameter $\mu_\delta$ is interpreted as the expected difference among the observed outcomes and $\beta_\delta$ is correspondingly the log odds-ratio of being observed.
+
+To assess the treatment effect on the combined outcome we propose a test statistic based on the likelihood ratio
+\begin{equation*}
+\begin{aligned}
+  W_n(\mu_0, \mu_\delta, s_\mu, \beta_0, \beta_\delta, s_\beta) &= -2 \log \frac{\sup\limits_{\Psi} L_{1,n}(\mu_0, \mu_\delta, s_\mu, \Psi) L_{2,n}(\beta_0, \beta_\delta, s_\beta)}{\sup\limits_{\mu_0, \mu_\delta, s_\mu, \Psi} L_{1,n}(\mu_0, \mu_\delta, s_\mu, \Psi) \sup\limits_{\beta_0, \beta_\delta, s_\beta} L_{2,n}(\beta_0, \beta_\delta, s_\beta)}\label{eq:lrtgeneral}\\
+  &= W_{1,n}(\mu_0, \mu_\delta, s_\mu) + W_{2,n}(\beta_0, \beta_\delta, s_\beta)
+\end{aligned}
+\end{equation*}
+where
+\begin{align*}
+  W_{1,n}(\mu_0, \mu_\delta, s_\mu) &= -2\left(\log \sup\limits_{\Psi} L_{1,n}(\mu_0, \mu_\delta, s_\mu, \Psi) - \log \sup\limits_{\mu_0, \mu_\delta, s_\mu, \Psi} L_{1,n}(\mu_0, \mu_\delta, s_\mu, \Psi)\right)\\
+  W_{2,n}(\beta_0, \beta_\delta, s_\beta) &= -2\left(\log L_{2,n}(\beta_0, \beta_\delta, s_\beta) - \log \sup\limits_{\beta_0, \beta_\delta, s_\beta} L_{2,n}(\beta_0, \beta_\delta, s_\beta)\right)
+\end{align*}
+are the likelihood ratio test statistics for each of the components. As a test statistic we use the profile likelihood ratio defined as
+\begin{equation}
+\begin{aligned}
+  W_n^P(\mu_\delta, \beta_\delta) &= \sup\limits_{\mu_0, s_\mu} W_{1,n}(\mu_0, \mu_\delta, s_\mu) + \sup\limits_{\beta_0, s_\beta} W_{2,n}(\beta_0, \beta_\delta, s_\beta)\label{eq:LRTtotal}\\
+  &= W_{1,n}^P(\mu_\delta) + W_{2,n}^P(\beta_\delta)
+\end{aligned}
+\end{equation}
+which is only a function of the two treatment contrasts. Specifically, for the null hypothesis of no treatment effect the test statistic $W_n^P(0, 0)$ is used.
+
+In the following we will consider both a parametric and a semi-parametric version of our profile likelihood ratio. The difference between the two are that the parametric test assumes a specific distributional form for $W_{1,n}^P(\mu_\delta)$, e.g., for $Y_i \mid A_i = 1, R_i, X_i$ the continuous part of the model, while the semi-parametric version is based on a profile empirical likelihood ratio and does not require any distributional assumptions.
+
+Starting with the parametric version we obtain the following sub-model if we combine the specification of the conditional expectation of observed outcomes in Equations~(\ref{eq:glm1}) and~(\ref{eq:glm2}) with the assumption of normality
+\begin{align*}
+  Y_i \mid A_i = 1, R_i, X_i \sim N\left(\mu_0 + \mu_\delta R_i + s_\mu(X_i), \sigma^2\right)
+\end{align*}
+which gives rise to a parametric form of $L_{1,n}$ and thereby $W_{1,n}^P(\mu_\delta)$. Plugging the latter into Equation~(\ref{eq:LRTtotal}) yields our proposed parametric likelihood ratio test. We note any parametric model other than the normal distribution can also be used.
+
+A direct consequence of Wilks' theorem \citep{wilks1938large} is that the large sample distribution of $W_n^P(0, 0)$ under a parametric model for $W_{1,n}^P(\mu_\delta)$ is given in the proposition below.
+
+\begin{proposition}
+Assume that $P(A_i = 1 \mid R_i = r, X_i) > 0$ for $r = 0, 1$ and let $m_j = \sum_{i = 1}^n \mathbbm{1}(R_i = j)$. Then the parametric profile likelihood ratio test statistic $W_n^P(0,0)$ stated in Equation~(\ref{eq:LRTtotal}) for the null hypothesis of no treatment effect on the combined outcome is asymptotically $\chi^2$ distributed with two degrees of freedom for $m_1, m_2 \rightarrow \infty$ and $m_1 / m_2 \rightarrow c$ for some finite, positive constant $c$.
+\end{proposition}
+
+We note that given specific models for $s_\mu(X_i)$ and $s_\beta(X_i)$ this parametric likelihood ratio test is particularly simple to calculate using standard statistical software. One must then estimate two linear regression models and two logistic regression model both with and without the binary treatment indicator as a covariate and then add their individual log likelihood differences according to Equation~(\ref{eq:LRTtotal}). The p-value for the null hypothesis of no treatment effect can then be calculated by the $\chi^2$-distribution with two degrees of freedom. The critical value for rejecting the null hypothesis of no treatment effect at the 5\% level is thus equal to $5.99$ and equal to $9.21$ at the 1\% level.
+
+A potential drawback of the parametric likelihood ratio test is that it relies on a distributional assumption for the observed outcomes. We now extend our testing procedure to a more flexible approach based on an empirical likelihood ratio. This approach also utilizes the decomposition of the likelihood ratio test statistic in Equation~(\ref{eq:LRTtotal}) but substitutes $W_{1,n}$ with a term that is free of any distributional assumptions. Combining this with the Bernoulli model for $A \mid R_i, X_i$ in $W_{2,n}$ leads to a semi-parametric likelihood ratio test for the overall treatment effect. We note that when there are no additional covariates to adjust for (i.e., no $X_i$), as will sometimes be the case in randomized controlled trials, our semi-parametric likelihood ratio test is actually a fully non-parametric testing procedure.
+
+To simplify the presentation of our semi-parametric testing procedure we consider the case when there are no additional covariates present. The extension of our method to covariate adjustment follows along the lines of \citet{owen1991empirical}. Let $\mathcal{I}_0 = \left\{i = 1,\ldots, n : R_i = 0, A_i = 1\right\}$ and $\mathcal{I}_1 = \left\{i = 1,\ldots, n : R_i = 1, A_i = 1\right\}$ be the sets of indices of the observed outcomes for the two treatment groups. As derived in Appendix~\ref{app:supplementary-derivation}, the empirical likelihood ratio test statistic as a function of the difference in expected value is given by
+\begin{align}
+  \widetilde{W}_{1,n}^P(\mu_\delta) &= 2\sup_{\mu}\left(\sum_{i \in \mathcal{I}_0}\log \left(1 + \lambda_1 (Y_i - \mu)\right) + \sum_{j \in \mathcal{I}_1}\log\left(1 + \lambda_2 (Y_j - \mu - \mu_\delta)\right)\right)\label{eq:nonparametric}
+\end{align}
+where $\lambda_1$ and $\lambda_2$ are the solutions to the following equations
+\begin{align*}
+  \frac{1}{|\mathcal{I}_0|}\sum_{i \in \mathcal{I}_0} \frac{Y_i - \mu}{1 + \lambda_1 (Y_i - \mu)} = 0, \quad \frac{1}{|\mathcal{I}_1|}\sum_{j \in \mathcal{I}_1}\frac{Y_j - \mu - \mu_\delta^\ast}{1 + \lambda_2 (Y_j - \mu - \mu_\delta^\ast)} = 0
+\end{align*}
+We refer to Appendix~\ref{app:supplementary-derivation} for a derivation of this test statistic. \textbf{[TODO: Fix notation]}
+
+The semi-parametric version of our proposed likelihood ratio test statistic for testing the null hypothesis of no treatment effect is then given by
+\begin{equation}
+  \widetilde{W}_n^P(\mu_\delta, \beta_\delta) = \widetilde{W}_{1,n}^P(\mu_\delta) + W_{2,n}^P(\beta_\delta)\label{eq:LRT_SP_total}
+\end{equation}
+with $\widetilde{W}_{1,n}^P(\mu_\delta)$ replacing $W_{1,n}^P(\mu_\delta)$ from Equation~(\ref{eq:LRTtotal}).
+
+The following proposition states the large sample distribution of $\widetilde{W}_n^P(0, 0)$ under a non-parametric model for $\widetilde{W}_{1,n}^P(\mu_\delta)$, and it enables the calculation of p-values under the joint null hypothesis of no treatment effect under the fully non-parametric model.
+
+\begin{proposition}
+Assume that $P(A_i = 1 \mid R_i = r) > 0$ for $r = 0, 1$ and let $m_j = \sum_{i = 1}^n \mathbbm{1}(R_i = j)$. Then the non-parametric profile likelihood ratio test statistic $\widetilde{W}_n^P(0,0)$ stated in Equation~(\ref{eq:LRT_SP_total}) for the null hypothesis of no treatment effect on the combined outcome is asymptotically $\chi^2$ distributed with two degrees of freedom for $m_1, m_2 \rightarrow \infty$ and $m_1 / m_2 \rightarrow c$ for some finite, positive constant $c$.
+\end{proposition}
+
+Confidence intervals for the treatment effect under either the parametric or semi-parametric model are readily obtained by inverting the likelihood ratio test statistic presented in general in Equation~(\ref{eq:LRTtotal}) utilizing the duality between hypothesis testing and confidence intervals. Specifically, an $(1 - \alpha)100\%$ confidence region contains all values of the treatment contrast that cannot be rejected by either the parametric or semi-parametric likelihood ratio test at level $\alpha$. This simultaneous bivariate confidence region for the treatment effect is given by the following point set in $\mathbb{R}^2$
+\begin{align*}
+  \text{CI}^{(\mu_\delta, \beta_\delta)}_{1 - \alpha} = \left\{(m, b) \in \mathbb{R}^2 : W_n^P(m, b) \leq \chi^2_2(1 - \alpha)\right\}
+\end{align*}
+and it will asymptotically contain the true difference in means among the observed outcomes and the true log odds-ratio of being observed simultaneously with probability $(1 - \alpha)100\%$. Similarly, univariate confidence intervals for $\mu_\delta$ and $\beta_\delta$ can be calculated by inversion with respect to a $\chi^2$ distribution with one degree of freedom as
+\begin{align*}
+  \text{CI}^{\mu_\delta}_{1 - \alpha} &= \left\{m \in \mathbb{R} : W_{1,n}^P(m) \leq \chi^2_1(1 - \alpha)\right\},\\
+  \text{CI}^{\beta_\delta}_{1 - \alpha} &= \left\{b \in \mathbb{R} : W_{2,n}^P(b) \leq \chi^2_1(1 - \alpha)\right\}
+\end{align*}
+We recommend illustrating the result of the treatment effect and its confidence through the simultaneous confidence region $\text{CI}^{(\mu_\delta, \beta_\delta)}_{1 - \alpha}$ as it is capable of conveying the probable magnitudes of the effect of the treatment in both components of the combined outcome simultaneously. Examples will be given below.

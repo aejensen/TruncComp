@@ -1,0 +1,43 @@
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{array}
+\usepackage{bbm}
+\usepackage{booktabs}
+\usepackage[labelfont=bf]{caption}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{makecell}
+\usepackage{multirow}
+\usepackage[round,authoryear]{natbib}
+\usepackage{url}
+\usepackage{xcolor}
+
+\graphicspath{{build/figures/}}
+\hypersetup{
+  colorlinks = true,
+  linkcolor = blue,
+  citecolor = blue,
+  urlcolor = blue
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.75em}
+\allowdisplaybreaks
+
+\lstdefinestyle{rstyle}{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  frame=single,
+  keepspaces=true,
+  showstringspaces=false
+}
+\lstset{style=rstyle, language=R}

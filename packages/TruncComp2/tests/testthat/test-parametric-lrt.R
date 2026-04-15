@@ -114,6 +114,34 @@ runtime_model_reference <- function(data, conf.level = 0.95, adjust = NULL) {
   )
 }
 
+runtime_parametric_joint_reference <- function(data, muDelta, logORdelta) {
+  observed <- droplevels(data[data$A == 1, c("Y", "R"), drop = FALSE])
+
+  glm_alt <- suppressWarnings(stats::glm(A ~ R, family = stats::binomial(), data = data))
+  glm_constrained <- suppressWarnings(stats::glm(
+    A ~ 1,
+    family = stats::binomial(),
+    data = data,
+    offset = logORdelta * data$R
+  ))
+  lm_alt <- suppressWarnings(stats::lm(Y ~ R, data = observed))
+  lm_constrained <- suppressWarnings(stats::lm(
+    Y ~ 1,
+    data = observed,
+    offset = muDelta * observed$R
+  ))
+
+  W_A <- 2 * (as.numeric(stats::logLik(glm_alt)) - as.numeric(stats::logLik(glm_constrained)))
+  W_Y <- 2 * (as.numeric(stats::logLik(lm_alt, REML = FALSE)) -
+    as.numeric(stats::logLik(lm_constrained, REML = FALSE)))
+
+  list(
+    W_A = W_A,
+    W_Y = W_Y,
+    W = W_A + W_Y
+  )
+}
+
 parametric_null_nll <- function(par, data, adjust = NULL) {
   formulas <- TruncComp2:::parametric_model_formulas(adjust)
   adjust_vars <- if(is.null(adjust)) character(0) else all.vars(adjust)
@@ -295,6 +323,65 @@ test_that("public LRT path returns the expected object and keeps init compatible
   expect_equal(unname(ci["Odds ratio of being observed:", ]), fit$alphaDeltaCI)
 })
 
+test_that("parametric simultaneous confidence helpers work for unadjusted fits", {
+  case <- interior_lrt_case(20260601, 16, 2.1, 2.8, 0.75, 0.45, 0.70)
+  fit <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT")
+
+  expect_true(fit$success)
+
+  capture.output(joint <- confint(fit, type = "simultaneous", plot = FALSE, offset = 1, resolution = 5))
+  expect_equal(dim(joint$surface), c(5, 5))
+  expect_equal(length(joint$muDelta), 5)
+  expect_equal(length(joint$logORdelta), 5)
+
+  direct_joint <- jointContrastCI(fit, plot = FALSE, offset = 1, resolution = 5)
+  expect_equal(direct_joint$surface, joint$surface, tolerance = 1e-10)
+
+  parametric_reference <- TruncComp2:::parametricJointReference(fit$data)
+  fitted_log_or <- log(as.numeric(fit$alphaDelta))
+
+  expect_equal(
+    TruncComp2:::jointContrastLRT.parametric.cached(parametric_reference, 0, 0),
+    fit$W,
+    tolerance = 1e-10
+  )
+  expect_equal(
+    TruncComp2:::jointContrastLRT.parametric.cached(parametric_reference, fit$muDelta, fitted_log_or),
+    0,
+    tolerance = 1e-10
+  )
+})
+
+test_that("parametric simultaneous surface matches direct constrained model fits", {
+  cases <- list(
+    list(data = interior_lrt_case(20260611, 18, 2.3, 2.9, 0.8, 0.35, 0.65),
+         mu = 0.2, log_or = -0.15),
+    list(data = interior_lrt_case(20260612, 45, 2.0, 2.2, 0.7, 0.06, 0.12),
+         mu = 0.1, log_or = 0.05),
+    list(data = interior_lrt_case(20260613, 20, 2.5, 2.7, 0.08, 0.50, 0.65),
+         mu = -0.03, log_or = 0.12)
+  )
+
+  for(case in cases) {
+    fit <- truncComp.default(case$data$Y, case$data$A, case$data$R, method = "LRT")
+    expect_true(fit$success)
+
+    parametric_reference <- TruncComp2:::parametricJointReference(case$data)
+    runtime_reference <- runtime_parametric_joint_reference(case$data, case$mu, case$log_or)
+
+    expect_equal(
+      TruncComp2:::jointContrastLRT.parametric.cached(parametric_reference, case$mu, case$log_or),
+      runtime_reference$W,
+      tolerance = 1e-10
+    )
+    expect_equal(
+      TruncComp2:::jointContrastLRT.parametric(case$data, case$mu, case$log_or),
+      runtime_reference$W,
+      tolerance = 1e-10
+    )
+  }
+})
+
 test_that("adjusted formula interface stores adjustment metadata and conditional outputs", {
   case <- adjusted_lrt_case(20260521, 18)
   fit <- truncComp(Y ~ R,
@@ -316,6 +403,8 @@ test_that("adjusted formula interface stores adjustment metadata and conditional
   capture.output(ci <- confint(fit, type = "marginal"))
   expect_equal(unname(ci["Difference in means among the observed:", ]), fit$muDeltaCI)
   expect_equal(unname(ci["Odds ratio of being observed:", ]), fit$alphaDeltaCI)
+  expect_error(confint(fit, type = "simultaneous"), "adjusted fits")
+  expect_error(jointContrastCI(fit, plot = FALSE), "adjusted fits")
 })
 
 test_that("packaged adjusted example illustrates attenuation after covariate adjustment", {

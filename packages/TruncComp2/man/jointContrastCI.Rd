@@ -1,7 +1,7 @@
 \name{jointContrastCI}
 \alias{jointContrastCI}
 
-\title{Joint confidence-region surface for the semi-parametric fit}
+\title{Joint confidence-region surface for an unadjusted fit}
 
 \usage{
 jointContrastCI(m, muDelta = NULL, logORdelta = NULL,
@@ -10,12 +10,13 @@ jointContrastCI(m, muDelta = NULL, logORdelta = NULL,
 
 \description{
 Evaluates the simultaneous confidence-region surface for a fitted
-\code{TruncComp2} object from the semi-parametric likelihood-ratio method.
+\code{TruncComp2} object from the unadjusted parametric or semi-parametric
+likelihood-ratio method.
 }
 
 \arguments{
-\item{m}{A successful \code{TruncComp2} object fitted with
-\code{method = "SPLRT"}.}
+\item{m}{A successful unadjusted \code{TruncComp2} object fitted with
+\code{method = "LRT"} or \code{method = "SPLRT"}.}
 \item{muDelta}{Optional grid values for the mean-difference axis.}
 \item{logORdelta}{Optional grid values for the log-odds-ratio axis.}
 \item{conf.level}{Confidence level used for the plotted contour. Defaults to
@@ -35,15 +36,17 @@ A list with components:
 
 \details{
 This helper is exported for compatibility, but it is only defined for
-successful unadjusted semi-parametric fits. Parametric fits, failed fits, and
-adjusted semi-parametric fits are rejected.
+successful unadjusted fits. Failed fits and adjusted fits are rejected.
 }
 
 \examples{
 library(TruncComp2)
 d <- loadTruncComp2Example()
 fit <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+fit_lrt <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
 
 joint <- jointContrastCI(fit, plot = FALSE, offset = 1, resolution = 5)
+joint_lrt <- jointContrastCI(fit_lrt, plot = FALSE, offset = 1, resolution = 5)
 str(joint)
+str(joint_lrt)
 }

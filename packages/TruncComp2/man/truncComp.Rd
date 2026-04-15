@@ -36,7 +36,7 @@ default interface, this must be \code{NULL}, a data frame, or a matrix of
 baseline covariates. The same additive adjustment specification is used in both
 the observed-outcome and observation components. For adjusted \code{SPLRT}
 fits, only marginal intervals are implemented; simultaneous confidence regions
-remain unavailable.}
+remain unavailable. The same is true for adjusted \code{LRT} fits.}
 }
 
 \value{

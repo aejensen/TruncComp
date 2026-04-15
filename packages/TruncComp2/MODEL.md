@@ -373,8 +373,8 @@ For both methods, the returned model object contains:
 
 - `muDelta` and `alphaDelta` are estimated for both `LRT` and `SPLRT`
 - marginal confidence intervals for `muDelta` and `alphaDelta` are implemented for both methods
-- simultaneous confidence regions are implemented only for unadjusted `SPLRT`
-- `jointContrastCI()` is exported for compatibility but is only defined for successful unadjusted `SPLRT` fits
+- simultaneous confidence regions are implemented for successful unadjusted `LRT` and `SPLRT` fits
+- `jointContrastCI()` is exported for compatibility and is defined for successful unadjusted fits from either method
 - `confint()` uses the fitted model's `conf.level` by default and treats a different requested marginal confidence level as requiring a refit
 
 ### Current implementation detail: `DeltaCI`
@@ -420,7 +420,7 @@ The following restrictions are part of the current implementation, regardless of
 - the same additive covariate specification is used in both adjusted `LRT` submodels and in the adjusted `SPLRT` logistic and observed-outcome components
 - adjusted treatment effects are conditional coefficients with no `R * L` interactions
 - `DeltaCI` is not implemented
-- simultaneous confidence regions are only implemented for unadjusted `SPLRT`
+- simultaneous confidence regions are only implemented for unadjusted fits
 
 ## Worked Example
 

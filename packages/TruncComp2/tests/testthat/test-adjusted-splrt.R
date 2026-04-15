@@ -246,9 +246,9 @@ test_that("adjusted SPLRT handles the packaged adjusted example and attenuates a
   expect_equal(unname(ci["Difference in means among the observed:", ]), fit_adjusted$muDeltaCI)
   expect_equal(unname(ci["Odds ratio of being observed:", ]), fit_adjusted$alphaDeltaCI)
   expect_error(confint(fit_adjusted, type = "simultaneous"),
-               "not implemented for adjusted semi-parametric fits")
+               "not implemented for adjusted fits")
   expect_error(jointContrastCI(fit_adjusted, plot = FALSE),
-               "not implemented for adjusted semi-parametric fits")
+               "not implemented for adjusted fits")
 })
 
 test_that("adjusted SPLRT fails cleanly on non-regular adjusted fits", {

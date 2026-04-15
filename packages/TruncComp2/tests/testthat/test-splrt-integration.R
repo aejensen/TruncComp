@@ -71,11 +71,6 @@ test_that("jointContrastCI rejects unsupported fits", {
   splrt_model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
   expect_silent(jointContrastCI(splrt_model, plot = FALSE, offset = 1, resolution = 5))
 
-  param_model <- splrt_model
-  param_model$method <- "Parametric Likelihood Ratio Test"
-  expect_error(jointContrastCI(param_model, plot = FALSE, offset = 1, resolution = 5),
-               "semi-parametric")
-
   expect_warning(
     failed_model <- truncComp(Y ~ R, atom = 0,
                               data = data.frame(Y = c(0, 0, 1, 0, 2, 3),

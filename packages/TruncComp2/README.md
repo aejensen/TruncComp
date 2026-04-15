@@ -59,8 +59,10 @@ When `adjust` is supplied with either method, `muDelta` and `alphaDelta` are
 conditional treatment effects from the adjusted observed-outcome and logistic
 submodels. In that adjusted setting, `Delta` is not reported and remains `NA`.
 
-For `method = "SPLRT"`, simultaneous confidence-region surfaces are available
-only for unadjusted fits through `confint(..., type = "simultaneous")`.
+For both `method = "LRT"` and `method = "SPLRT"`, simultaneous
+confidence-region surfaces are available for unadjusted fits through
+`confint(..., type = "simultaneous")`. Adjusted fits currently support only
+marginal intervals.
 
 # Example
 ```r
@@ -99,7 +101,8 @@ summary(fit_splrt_adjusted)
 fit_splrt <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 summary(fit_splrt)
 
-#Get simultaneous confidence region for the unadjusted SPLRT fit
+#Get simultaneous confidence region for an unadjusted fit
+confint(fit_lrt, type = "simultaneous", plot = TRUE, resolution = 10)
 confint(fit_splrt, type = "simultaneous", plot = TRUE, resolution = 10)
 ```
 

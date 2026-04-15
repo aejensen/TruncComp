@@ -40,9 +40,9 @@ If \code{type = "simultaneous"}, a list with components \code{muDelta},
 }
 
 \details{
-Simultaneous confidence regions are only implemented for fits obtained with
-\code{method = "SPLRT"} and no covariate adjustment. Adjusted semi-parametric
-fits support only \code{type = "marginal"} in the current version.
+Simultaneous confidence regions are implemented for successful unadjusted fits
+obtained with \code{method = "LRT"} or \code{method = "SPLRT"}. Adjusted fits
+support only \code{type = "marginal"} in the current version.
 
 Marginal confidence intervals are stored on the fitted object. For
 \code{type = "marginal"}, the requested \code{conf.level} must therefore match
@@ -55,7 +55,9 @@ f0 <- function(n) stats::rnorm(n, 3, 1)
 f1 <- function(n) stats::rnorm(n, 3.5, 1)
 d <- simulateTruncatedData(n = 40, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
 fit <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+fit_lrt <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
 
 confint(fit, type = "marginal")
+confint(fit_lrt, type = "simultaneous", plot = FALSE, resolution = 5)
 confint(fit, type = "simultaneous", plot = FALSE, resolution = 5)
 }

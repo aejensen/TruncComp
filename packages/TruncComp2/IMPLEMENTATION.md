@@ -445,8 +445,8 @@ Before building the surface, it now checks that the supplied object:
 
 - inherits from `TruncComp2`
 - represents a successful fit
-- was fitted with `method = "SPLRT"`
-- is not an adjusted semi-parametric fit
+- was fitted with `method = "SPLRT"` or `method = "LRT"`
+- is not an adjusted fit
 
 The default grids are also guarded so that non-finite odds-ratio confidence
 limits fall back to a finite centered grid rather than propagating `log(0)` or
@@ -461,6 +461,12 @@ When `plot = TRUE`, it renders the heat map and contour using the joint `chisq(d
 To avoid repeated work in the inner loop, `jointContrastCI()` caches the
 unconstrained logistic fit and the alive-only outcome splits before evaluating
 the grid.
+
+For unadjusted `SPLRT`, the surface combines the empirical-likelihood
+continuous contribution with the profiled logistic contribution. For
+unadjusted `LRT`, it instead evaluates constrained `glm`/`lm` fits with fixed
+`logORdelta` and `muDelta` offsets and adds the resulting two LR components
+pointwise on the grid.
 
 For the marginal path, `confint.TruncComp2()` now prints only the implemented
 intervals. The stored `DeltaCI` placeholder remains on the fit object for API

@@ -27,10 +27,9 @@ for the observed-outcome component and no longer requires the external
 covariate adjustment for \code{method = "SPLRT"} through an empirical-likelihood
 regression-coefficient extension.
 
-The helper \code{\link{jointContrastCI}} is intended for fitted
-\code{method = "SPLRT"} objects and computes a simultaneous confidence-region
-surface for the semi-parametric procedure. This remains available only for
-unadjusted semi-parametric fits.
+The helper \code{\link{jointContrastCI}} computes a simultaneous
+confidence-region surface for the unadjusted parametric and semi-parametric
+procedures. Adjusted fits still support only marginal confidence intervals.
 
 For illustrating covariate adjustment in both methods, the package also
 ships \code{\link{loadTruncComp2AdjustedExample}}, a fixed example with a

@@ -64,14 +64,8 @@ confint.TruncComp2 <- function(object, type = "marginal", muDelta = NULL, logORd
     stop("Estimation failed. Cannot display confidence intervals.")
   }
 
-  if(object$method == "Parametric Likelihood Ratio Test" && type == "simultaneous") {
-    stop("Simultaneous confidence regions are only implemented for the semi-parametric likelihood ratio model.")
-  }
-
-  if(object$method == "Semi-empirical Likelihood Ratio Test" &&
-     type == "simultaneous" &&
-     !is.null(object$adjust)) {
-    stop("Simultaneous confidence regions are not implemented for adjusted semi-parametric fits.")
+  if(type == "simultaneous" && !is.null(object$adjust)) {
+    stop("Simultaneous confidence regions are not implemented for adjusted fits.")
   }
 
   if (type == "marginal") {
@@ -93,6 +87,76 @@ confint.TruncComp2 <- function(object, type = "marginal", muDelta = NULL, logORd
   } else {
     invisible(joint)
   }
+}
+
+parametricJointReference <- function(data) {
+  observed_data <- droplevels(data[data$A == 1, c("Y", "R"), drop = FALSE])
+  glm_alt <- suppressWarnings(tryCatch(
+    stats::glm(A ~ R, family = stats::binomial(), data = data),
+    error = function(e) NULL
+  ))
+  lm_alt <- suppressWarnings(tryCatch(
+    stats::lm(Y ~ R, data = observed_data),
+    error = function(e) NULL
+  ))
+
+  list(
+    data = data,
+    observed_data = observed_data,
+    glm_alt = glm_alt,
+    lm_alt = lm_alt,
+    ll_glm_alt = parametric_loglik_value(glm_alt),
+    ll_lm_alt = parametric_loglik_value(lm_alt, reml = FALSE)
+  )
+}
+
+jointContrastLRT.parametric.cached <- function(parametricReference, muDelta, logORdelta,
+                                               tol = 1e-12) {
+  glm_constrained <- suppressWarnings(tryCatch(
+    stats::glm(
+      A ~ 1,
+      family = stats::binomial(),
+      data = parametricReference$data,
+      offset = logORdelta * parametricReference$data$R
+    ),
+    error = function(e) NULL
+  ))
+
+  lm_constrained <- suppressWarnings(tryCatch(
+    stats::lm(
+      Y ~ 1,
+      data = parametricReference$observed_data,
+      offset = muDelta * parametricReference$observed_data$R
+    ),
+    error = function(e) NULL
+  ))
+
+  ll_glm_constrained <- parametric_loglik_value(glm_constrained)
+  ll_lm_constrained <- parametric_loglik_value(lm_constrained, reml = FALSE)
+
+  W_A <- if(is.finite(ll_glm_constrained) && is.finite(parametricReference$ll_glm_alt)) {
+    parametric_clamp_statistic(2 * (parametricReference$ll_glm_alt - ll_glm_constrained), tol = tol)
+  } else {
+    Inf
+  }
+
+  W_Y <- if(is.finite(ll_lm_constrained) && is.finite(parametricReference$ll_lm_alt)) {
+    parametric_clamp_statistic(2 * (parametricReference$ll_lm_alt - ll_lm_constrained), tol = tol)
+  } else {
+    Inf
+  }
+
+  total <- W_A + W_Y
+  if(is.finite(total)) {
+    parametric_clamp_statistic(total, tol = tol)
+  } else {
+    total
+  }
+}
+
+jointContrastLRT.parametric <- function(data, muDelta, logORdelta) {
+  parametricReference <- parametricJointReference(data)
+  jointContrastLRT.parametric.cached(parametricReference, muDelta, logORdelta)
 }
 
 jointContrastLRT.cached <- function(yAlive1, yAlive2, muDelta, logORdelta, logitReference) {
@@ -123,17 +187,14 @@ jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL,
     stop("Estimation failed. Cannot calculate simultaneous confidence regions.")
   }
 
-  if(!identical(m$method, "Semi-empirical Likelihood Ratio Test")) {
-    stop("Simultaneous confidence regions are only implemented for the semi-parametric likelihood ratio model.")
+  if(!(identical(m$method, "Semi-empirical Likelihood Ratio Test") ||
+       identical(m$method, "Parametric Likelihood Ratio Test"))) {
+    stop("Simultaneous confidence regions are only implemented for the parametric and semi-parametric likelihood ratio models.")
   }
 
   if(!is.null(m$adjust)) {
-    stop("Simultaneous confidence regions are not implemented for adjusted semi-parametric fits.")
+    stop("Simultaneous confidence regions are not implemented for adjusted fits.")
   }
-
-  yAlive1 <- m$data[m$data$R == 0 & m$data$A == 1, "Y"]
-  yAlive2 <- m$data[m$data$R == 1 & m$data$A == 1, "Y"]
-  logitReference <- logit.prepare(m$data)
 
   if(is.null(muDelta)) {
     muDelta <- jointContrastGrid(m$muDeltaCI, m$muDelta, offset = offset, resolution = resolution)
@@ -146,9 +207,26 @@ jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL,
   }
 
   matOut <- matrix(NA, length(muDelta), length(logORdelta))
-  for(a in seq_along(muDelta)) {
-    for(b in seq_along(logORdelta)) {
-      matOut[a,b] <- jointContrastLRT.cached(yAlive1, yAlive2, muDelta[a], logORdelta[b], logitReference)
+  if(identical(m$method, "Semi-empirical Likelihood Ratio Test")) {
+    yAlive1 <- m$data[m$data$R == 0 & m$data$A == 1, "Y"]
+    yAlive2 <- m$data[m$data$R == 1 & m$data$A == 1, "Y"]
+    logitReference <- logit.prepare(m$data)
+
+    for(a in seq_along(muDelta)) {
+      for(b in seq_along(logORdelta)) {
+        matOut[a,b] <- jointContrastLRT.cached(yAlive1, yAlive2, muDelta[a], logORdelta[b], logitReference)
+      }
+    }
+  } else {
+    parametricReference <- parametricJointReference(m$data)
+    for(a in seq_along(muDelta)) {
+      for(b in seq_along(logORdelta)) {
+        matOut[a,b] <- jointContrastLRT.parametric.cached(
+          parametricReference,
+          muDelta[a],
+          logORdelta[b]
+        )
+      }
     }
   }
 

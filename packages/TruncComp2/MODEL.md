@@ -13,7 +13,7 @@ The current package implementation is narrower than the general framework discus
 
 This document describes the model as it is implemented in the package source, with the manuscript used for interpretation and motivation.
 
-For an engineering-focused walkthrough of the current code paths and the internal empirical-likelihood routine, see [IMPLEMENTATION.md](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/IMPLEMENTATION.md).
+For an engineering-focused walkthrough of the current code paths and the internal empirical-likelihood routine, see [IMPLEMENTATION.md](IMPLEMENTATION.md).
 
 ## Observed Data and Notation
 
@@ -361,6 +361,6 @@ This document was cross-checked against:
 - `R/SPLRT.R` for the semi-parametric construction
 - `R/CI.R` for the simultaneous confidence-region machinery
 - `R/classFunctions.R` for user-facing labels
-- `manuscript/manuscript.Rmd` and `manuscript/supplementary.Rmd` for motivation and theoretical background
+- the original project manuscript for optional historical motivation and broader theoretical background when available
 
-When the manuscript describes a more general framework than the package currently exposes, this document follows the package implementation.
+When older project material describes a more general framework than the package currently exposes, this document follows the package implementation.

@@ -6,10 +6,10 @@ This document describes how the current `TruncComp2` implementation is organized
 
 The package has two main estimation paths:
 
-- `method = "LRT"`: a fully parametric likelihood-ratio test implemented in [R/LRT.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/LRT.R)
-- `method = "SPLRT"`: a semi-parametric likelihood-ratio test implemented in [R/SPLRT.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/SPLRT.R), using the internal empirical-likelihood helpers in [R/empiricalLikelihood.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/empiricalLikelihood.R)
+- `method = "LRT"`: a fully parametric likelihood-ratio test implemented in [R/LRT.R](R/LRT.R)
+- `method = "SPLRT"`: a semi-parametric likelihood-ratio test implemented in [R/SPLRT.R](R/SPLRT.R), using the internal empirical-likelihood helpers in [R/empiricalLikelihood.R](R/empiricalLikelihood.R)
 
-The exported entry point for both methods is [R/truncComp.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/truncComp.R).
+The exported entry point for both methods is [R/truncComp.R](R/truncComp.R).
 
 ## End-to-End Control Flow
 
@@ -50,7 +50,7 @@ This representation is used by both the parametric and semi-parametric paths, as
 There are two layers of validation:
 
 - `truncComp()` ensures that the formula is valid, the treatment variable is binary, the atom is numeric, and that there is at least one observed outcome in each arm.
-- `isDataOkay()` in [R/utility.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/utility.R) requires at least two observed outcomes in each treatment arm.
+- `isDataOkay()` in [R/utility.R](R/utility.R) requires at least two observed outcomes in each treatment arm.
 
 If the internal data check fails, `truncComp.default()` now returns an error object immediately rather than continuing into estimation.
 
@@ -65,7 +65,7 @@ rather than silently pretending it can recompute the stored intervals.
 
 ## Parametric Path
 
-The parametric likelihood-ratio implementation in [R/LRT.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/LRT.R) now computes the null and alternative likelihoods directly from sufficient statistics instead of fitting two generic optimizer objects.
+The parametric likelihood-ratio implementation in [R/LRT.R](R/LRT.R) now computes the null and alternative likelihoods directly from sufficient statistics instead of fitting two generic optimizer objects.
 
 The model is unchanged:
 
@@ -123,7 +123,7 @@ The public `init` argument is still accepted for compatibility, but the current 
 
 ## Semi-Parametric Path
 
-The semi-parametric method in [R/SPLRT.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/SPLRT.R) decomposes the joint test into two components:
+The semi-parametric method in [R/SPLRT.R](R/SPLRT.R) decomposes the joint test into two components:
 
 - a mean-difference empirical likelihood ratio for the observed outcomes
 - a logistic likelihood-ratio test for the observation indicator
@@ -189,7 +189,7 @@ The returned object still has the same external shape as before, so the public A
 
 ## Internal Empirical-Likelihood Engine
 
-The file [R/empiricalLikelihood.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/empiricalLikelihood.R) contains a focused implementation of the two-sample empirical likelihood for a difference in means. It intentionally implements only the slice of functionality that `TruncComp2` needs.
+The file [R/empiricalLikelihood.R](R/empiricalLikelihood.R) contains a focused implementation of the two-sample empirical likelihood for a difference in means. It intentionally implements only the slice of functionality that `TruncComp2` needs.
 
 ### Design goals
 
@@ -329,7 +329,7 @@ rather than being obtained by a numerical optimizer.
 
 ## Confidence-Region Implementation
 
-The simultaneous-confidence-region code lives in [R/CI.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/CI.R).
+The simultaneous-confidence-region code lives in [R/CI.R](R/CI.R).
 
 ### `jointContrastLRT()`
 
@@ -391,7 +391,7 @@ These choices are what allow the implementation to match the previous `EL`-based
 
 ## Test Coverage
 
-The current test suite in [tests/testthat](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/tests/testthat) covers five layers.
+The current test suite in [tests/testthat](tests/testthat) covers five layers.
 
 ### 1. Low-level numerical tests
 
@@ -406,11 +406,11 @@ These tests validate:
 
 A reference fixture generated from CRAN `EL` 1.3 is stored in:
 
-[tests/testthat/fixtures/el_means_reference.rds](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/tests/testthat/fixtures/el_means_reference.rds)
+[tests/testthat/fixtures/el_means_reference.rds](tests/testthat/fixtures/el_means_reference.rds)
 
 and can be regenerated with:
 
-[tools/generate-el-fixture.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/tools/generate-el-fixture.R)
+[tools/generate-el-fixture.R](tools/generate-el-fixture.R)
 
 This lets the tests compare against upstream behavior without requiring `EL` at runtime.
 
@@ -419,11 +419,11 @@ This lets the tests compare against upstream behavior without requiring `EL` at 
 A second frozen fixture stores outputs from the previous optimizer-based
 parametric implementation:
 
-[tests/testthat/fixtures/lrt_reference.rds](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/tests/testthat/fixtures/lrt_reference.rds)
+[tests/testthat/fixtures/lrt_reference.rds](tests/testthat/fixtures/lrt_reference.rds)
 
 and can be regenerated with:
 
-[tools/generate-lrt-fixture.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/tools/generate-lrt-fixture.R)
+[tools/generate-lrt-fixture.R](tools/generate-lrt-fixture.R)
 
 This allows the closed-form parametric implementation to be checked against the
 earlier `bbmle`-based path on regular interior datasets.
@@ -452,12 +452,12 @@ These cover:
 
 The main files involved in the current implementation are:
 
-- [R/truncComp.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/truncComp.R): public entry point and dispatch
-- [R/LRT.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/LRT.R): parametric likelihood-ratio implementation
-- [R/SPLRT.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/SPLRT.R): semi-parametric likelihood-ratio implementation
-- [R/empiricalLikelihood.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/empiricalLikelihood.R): internal empirical-likelihood engine
-- [R/CI.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/CI.R): marginal and simultaneous confidence procedures
-- [R/logitFunctions.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/logitFunctions.R): logistic profile-likelihood helper used for the confidence surface
-- [R/utility.R](/Users/czv146/Documents/GitHub/TruncComp2/packages/TruncComp2/R/utility.R): data validation and error-object construction
+- [R/truncComp.R](R/truncComp.R): public entry point and dispatch
+- [R/LRT.R](R/LRT.R): parametric likelihood-ratio implementation
+- [R/SPLRT.R](R/SPLRT.R): semi-parametric likelihood-ratio implementation
+- [R/empiricalLikelihood.R](R/empiricalLikelihood.R): internal empirical-likelihood engine
+- [R/CI.R](R/CI.R): marginal and simultaneous confidence procedures
+- [R/logitFunctions.R](R/logitFunctions.R): logistic profile-likelihood helper used for the confidence surface
+- [R/utility.R](R/utility.R): data validation and error-object construction
 
 Together, these files now give a complete in-package implementation of both testing procedures without relying on the external `EL` package at runtime.

@@ -30,6 +30,7 @@ install_github("aejensen/TruncComp", subdir = "packages/TruncComp2")
 
 - Statistical model specification: [MODEL.md](MODEL.md)
 - Implementation walkthrough: [IMPLEMENTATION.md](IMPLEMENTATION.md)
+- Package-local development guide: [DEVELOPMENT.md](DEVELOPMENT.md)
 
 # Main Interface
 
@@ -79,15 +80,18 @@ confint(fit_splrt, type = "simultaneous", plot = TRUE, resolution = 10)
 
 # Development
 
-The repository includes a GitHub Actions workflow that runs package install,
-the `testthat` suite, and `R CMD check --no-manual --no-build-vignettes` on
-changes. That check combination should be treated as the release gate for
-package changes.
+`TruncComp2` is intended to be developed from its own package subtree. For
+ordinary work, no edits outside `packages/TruncComp2/` should be needed.
 
-From the monorepo root, local package verification is:
+From the package root, the package-local verification entry point is:
 
 ```sh
-cd packages/TruncComp2
+Rscript tools/check-package.R
+```
+
+Manual verification is also available:
+
+```sh
 R CMD build .
 R CMD check --no-manual --no-build-vignettes TruncComp2_*.tar.gz
 ```

@@ -56,15 +56,15 @@ parametric_alt_nll <- function(par, data) {
 }
 
 optim_parametric_lrt <- function(data) {
-  analytic <- TruncComp2:::parametric_lrt_fit(data)
-  start_null <- c(stats::qlogis(analytic$bernoulli$pi),
-                  analytic$normal$mu,
-                  log(sqrt(analytic$normal$sigma2_hat)))
-  start_alt <- c(stats::qlogis(analytic$bernoulli$pi0),
-                 stats::qlogis(analytic$bernoulli$pi1),
-                 analytic$normal$mu0,
-                 analytic$normal$mu1,
-                 log(sqrt(analytic$normal$sigma2_hat)))
+  observed <- data[data$A == 1, , drop = FALSE]
+  start_null <- c(stats::qlogis(mean(data$A)),
+                  mean(observed$Y),
+                  log(stats::sd(observed$Y)))
+  start_alt <- c(stats::qlogis(mean(data$A[data$R == 0])),
+                 stats::qlogis(mean(data$A[data$R == 1])),
+                 mean(observed$Y[observed$R == 0]),
+                 mean(observed$Y[observed$R == 1]),
+                 log(stats::sd(observed$Y)))
 
   opt_null <- stats::optim(start_null,
                            parametric_null_nll,
@@ -80,53 +80,30 @@ optim_parametric_lrt <- function(data) {
   2 * (-opt_alt$value + opt_null$value)
 }
 
-test_that("parametric helpers handle safe logs and grouped Bernoulli likelihoods", {
-  expect_equal(TruncComp2:::parametric_safe_xlogy(c(0, 2), c(0, 0.5)),
-               c(0, 2 * log(0.5)))
-  expect_true(is.infinite(TruncComp2:::parametric_safe_xlogy(1, 0)))
+runtime_model_reference <- function(data, conf.level = 0.95) {
+  observed <- data[data$A == 1, c("Y", "R"), drop = FALSE]
 
-  a <- c(rep(1, 3), rep(0, 7), rep(1, 6), rep(0, 6))
-  r <- c(rep(0, 10), rep(1, 12))
-  fit <- TruncComp2:::parametric_bernoulli_summary(a, r, conf.level = 0.95)
+  glm_null <- stats::glm(A ~ 1, family = stats::binomial(), data = data)
+  glm_alt <- stats::glm(A ~ R, family = stats::binomial(), data = data)
+  lm_null <- stats::lm(Y ~ 1, data = observed)
+  lm_alt <- stats::lm(Y ~ R, data = observed)
 
-  pi0 <- 3 / 10
-  pi1 <- 6 / 12
-  pi <- 9 / 22
-  expected <- 2 * (
-    (3 * log(pi0) + 7 * log(1 - pi0) + 6 * log(pi1) + 6 * log(1 - pi1)) -
-      (9 * log(pi) + 13 * log(1 - pi))
+  z <- stats::qnorm((1 + conf.level) / 2)
+  log_or <- stats::coef(glm_alt)[["R"]]
+  mu_delta <- stats::coef(lm_alt)[["R"]]
+
+  list(
+    W_A = 2 * (as.numeric(stats::logLik(glm_alt)) - as.numeric(stats::logLik(glm_null))),
+    W_Y = 2 * (as.numeric(stats::logLik(lm_alt, REML = FALSE)) -
+      as.numeric(stats::logLik(lm_null, REML = FALSE))),
+    alphaDelta = exp(as.numeric(log_or)),
+    muDelta = as.numeric(mu_delta),
+    alphaDeltaCI = exp(as.numeric(log_or) + c(-1, 1) * z * sqrt(stats::vcov(glm_alt)["R", "R"])),
+    muDeltaCI = as.numeric(mu_delta) + c(-1, 1) * z * sqrt(stats::vcov(lm_alt)["R", "R"])
   )
+}
 
-  expect_equal(fit$W, expected, tolerance = 1e-12)
-  expect_equal(fit$alphaDelta, (pi1 / (1 - pi1)) / (pi0 / (1 - pi0)), tolerance = 1e-12)
-})
-
-test_that("parametric normal helper matches the closed-form LR and boundary rules", {
-  y0 <- c(1, 2, 4)
-  y1 <- c(2, 3, 5)
-  fit <- TruncComp2:::parametric_normal_summary(y0, y1, conf.level = 0.95)
-
-  sse1 <- sum((y0 - mean(y0))^2) + sum((y1 - mean(y1))^2)
-  sse0 <- sum((c(y0, y1) - mean(c(y0, y1)))^2)
-  expected <- length(c(y0, y1)) * log(sse0 / sse1)
-
-  expect_equal(fit$W, expected, tolerance = 1e-12)
-  expect_equal(fit$muDelta, mean(y1) - mean(y0), tolerance = 1e-12)
-
-  swapped <- TruncComp2:::parametric_normal_summary(y1, y0, conf.level = 0.95)
-  expect_equal(swapped$W, fit$W, tolerance = 1e-12)
-  expect_equal(swapped$muDelta, -fit$muDelta, tolerance = 1e-12)
-
-  same_constants <- TruncComp2:::parametric_normal_summary(c(1, 1), c(1, 1), conf.level = 0.95)
-  expect_equal(same_constants$W, 0)
-  expect_true(all(is.na(same_constants$muDeltaCI)))
-
-  separated_constants <- TruncComp2:::parametric_normal_summary(c(1, 1), c(2, 2), conf.level = 0.95)
-  expect_true(is.infinite(separated_constants$W))
-  expect_true(all(is.na(separated_constants$muDeltaCI)))
-})
-
-test_that("analytic parametric engine matches direct numerical optimization", {
+test_that("model-backed parametric engine matches direct glm/lm references on regular data", {
   cases <- list(
     interior_lrt_case(20260411, 12, 2.5, 2.5, 1.0, 0.55, 0.55),
     interior_lrt_case(20260412, 10, 2.2, 3.1, 0.8, 0.45, 0.70),
@@ -134,48 +111,55 @@ test_that("analytic parametric engine matches direct numerical optimization", {
   )
 
   for(case in cases) {
-    analytic <- TruncComp2:::parametric_lrt_fit(case)
-    numeric_lrt <- optim_parametric_lrt(case)
+    fit <- TruncComp2:::parametric_lrt_fit(case)
+    ref <- runtime_model_reference(case)
 
-    expect_equal(analytic$W, numeric_lrt, tolerance = 1e-6)
-    expect_equal(analytic$W, analytic$W_A + analytic$W_Y, tolerance = 1e-12)
-    expect_equal(analytic$p, stats::pchisq(analytic$W, df = 2, lower.tail = FALSE), tolerance = 1e-12)
-    expect_gte(analytic$W, 0)
+    expect_equal(fit$W_A, ref$W_A, tolerance = 1e-10)
+    expect_equal(fit$W_Y, ref$W_Y, tolerance = 1e-10)
+    expect_equal(fit$W, ref$W_A + ref$W_Y, tolerance = 1e-10)
+    expect_equal(fit$alphaDelta, ref$alphaDelta, tolerance = 1e-10)
+    expect_equal(fit$muDelta, ref$muDelta, tolerance = 1e-10)
+    expect_equal(fit$alphaDeltaCI, ref$alphaDeltaCI, tolerance = 1e-10)
+    expect_equal(fit$muDeltaCI, ref$muDeltaCI, tolerance = 1e-10)
+    expect_equal(fit$p, stats::pchisq(fit$W, df = 2, lower.tail = FALSE), tolerance = 1e-12)
+    expect_gte(fit$W, 0)
   }
 })
 
-test_that("analytic parametric engine matches frozen optimizer fixtures on regular cases", {
-  fixture <- readRDS(fixture_path("lrt_reference.rds"))
+test_that("model-backed parametric engine matches direct numerical optimization", {
+  cases <- list(
+    interior_lrt_case(20260421, 12, 2.5, 2.5, 1.0, 0.55, 0.55),
+    interior_lrt_case(20260422, 10, 2.2, 3.1, 0.8, 0.45, 0.70),
+    interior_lrt_case(20260423, 14, 1.8, 2.8, 1.2, 0.35, 0.65)
+  )
 
-  expect_equal(fixture$generated_on, as.Date("2026-04-15"))
-  expect_equal(fixture$reference_package, "bbmle")
+  for(case in cases) {
+    fit <- TruncComp2:::parametric_lrt_fit(case)
+    numeric_lrt <- optim_parametric_lrt(case)
 
-  for(case in fixture$cases) {
-    fit <- truncComp(Y ~ R, atom = 0, data = case$data, method = "LRT")
-    ref <- case$reference
-
-    expect_true(fit$success, info = case$name)
-    expect_equal(fit$muDelta, ref$muDelta, tolerance = 1e-5, info = case$name)
-    expect_equal(as.numeric(fit$alphaDelta), ref$alphaDelta, tolerance = 2e-4, info = case$name)
-    expect_equal(fit$W, ref$W, tolerance = 2e-6, info = case$name)
-    expect_equal(fit$p, ref$p, tolerance = 1e-6, info = case$name)
-    expect_equal(fit$muDeltaCI, ref$muDeltaCI, tolerance = 1e-5, info = case$name)
-    expect_equal(fit$alphaDeltaCI, ref$alphaDeltaCI, tolerance = 5e-4, info = case$name)
+    expect_equal(fit$W, numeric_lrt, tolerance = 1e-6)
+    expect_equal(fit$W, fit$W_A + fit$W_Y, tolerance = 1e-12)
+    expect_equal(fit$p, stats::pchisq(fit$W, df = 2, lower.tail = FALSE), tolerance = 1e-12)
   }
 })
 
 test_that("public LRT path returns the expected object and keeps init compatible", {
-  fixture <- readRDS(fixture_path("lrt_reference.rds"))
-  case <- fixture$cases[[1]]
+  case <- interior_lrt_case(20260424, 12, 2.4, 3.0, 0.9, 0.50, 0.70)
+  reference <- runtime_model_reference(case)
   custom_init <- list(alpha = 0, alphaDelta = 0, mu = 0, muDelta = 0, sigma = 1)
 
-  fit <- truncComp(Y ~ R, atom = 0, data = case$data, method = "LRT", init = custom_init)
+  fit <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT", init = custom_init)
 
   expect_s3_class(fit, "TruncComp2")
   expect_true(fit$success)
   expect_equal(fit$method, "Parametric Likelihood Ratio Test")
   expect_equal(fit$DeltaCI, c(NA_real_, NA_real_))
   expect_equal(fit$init, custom_init)
+  expect_equal(fit$muDelta, reference$muDelta, tolerance = 1e-10)
+  expect_equal(fit$alphaDelta, reference$alphaDelta, tolerance = 1e-10)
+  expect_equal(fit$W, reference$W_A + reference$W_Y, tolerance = 1e-10)
+  expect_equal(fit$muDeltaCI, reference$muDeltaCI, tolerance = 1e-10)
+  expect_equal(fit$alphaDeltaCI, reference$alphaDeltaCI, tolerance = 1e-10)
 
   expect_match(paste(capture.output(summary(fit)), collapse = "\n"), "Joint test statistic")
   expect_match(paste(capture.output(print(fit)), collapse = "\n"), "Parametric Likelihood Ratio Test")
@@ -193,6 +177,8 @@ test_that("LRT boundary cases keep the statistic even when Wald intervals are un
   )
   same_fit <- truncComp.default(same_constants$Y, same_constants$A, same_constants$R, method = "LRT")
   expect_true(same_fit$success)
+  expect_equal(same_fit$muDelta, 0)
+  expect_equal(same_fit$alphaDelta, 1)
   expect_equal(same_fit$W, 0)
   expect_true(all(is.na(same_fit$muDeltaCI)))
 
@@ -206,6 +192,7 @@ test_that("LRT boundary cases keep the statistic even when Wald intervals are un
                                      separated_constants$R,
                                      method = "LRT")
   expect_true(separated_fit$success)
+  expect_equal(separated_fit$muDelta, 1)
   expect_true(is.infinite(separated_fit$W))
   expect_equal(separated_fit$p, 0)
   expect_true(all(is.na(separated_fit$muDeltaCI)))
@@ -220,7 +207,7 @@ test_that("LRT boundary cases keep the statistic even when Wald intervals are un
                                     all_observed_arm$R,
                                     method = "LRT")
   expect_true(boundary_fit$success)
-  expect_true(is.infinite(boundary_fit$alphaDelta) || boundary_fit$alphaDelta == 0)
+  expect_equal(boundary_fit$alphaDelta, 0)
   expect_true(all(is.na(boundary_fit$alphaDeltaCI)))
   expect_true(is.finite(boundary_fit$W) || is.infinite(boundary_fit$W))
 })

@@ -8,7 +8,7 @@ The package implements:
 
 The current implementation keeps the same public API for both methods, but now computes both paths internally:
 
-- the parametric method uses a closed-form likelihood-ratio calculation built from the Bernoulli and Normal sufficient statistics
+- the parametric method uses `glm` and observed-outcome `lm` fits with ML log-likelihood comparison, plus explicit fallbacks for singular boundary cases
 - the semi-parametric method uses an internal pure-R empirical-likelihood implementation for the observed-outcome mean difference
 
 As a result, the package no longer depends on `EL` or `bbmle` at runtime.

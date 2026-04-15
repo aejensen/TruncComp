@@ -173,11 +173,14 @@ where `f_Y` is the normal density. This means:
 - if `A_i = 1`, the observation contributes both a Bernoulli term and a normal-density term
 - if `A_i = 0`, the normal term is raised to the power zero and the contribution is only `(1 - \pi_i)`
 
-The current implementation evaluates this likelihood through its Bernoulli and Normal sufficient statistics rather than by fitting a generic optimizer object.
+The current implementation evaluates this likelihood by fitting the Bernoulli and observed-outcome components separately:
+
+- `glm(A ~ 1, family = binomial())` and `glm(A ~ R, family = binomial())` for the observation model
+- `lm(Y ~ 1)` and `lm(Y ~ R)` on the `A = 1` subset for the observed outcomes
 
 ### Test statistic
 
-The package computes the maximized likelihood-ratio statistic directly:
+In regular cases the package computes the maximized likelihood-ratio statistic from model log-likelihoods:
 
 ```math
 W = 2(\ell_{HA} - \ell_{H0}),
@@ -191,8 +194,10 @@ W = W_A + W_Y,
 
 where:
 
-- `W_A` is the grouped Bernoulli likelihood-ratio statistic for the observation indicator
-- `W_Y` is the Normal likelihood-ratio statistic for the observed outcomes with common variance
+- `W_A` is obtained from the difference in `glm` log-likelihoods for the observation indicator
+- `W_Y` is obtained from the difference in ML `lm` log-likelihoods for the observed outcomes with common variance
+
+When the fitted models hit boundary cases such as zero cells in the Bernoulli table or zero residual variance in the observed outcomes, the implementation falls back to explicit grouped-count or residual-sum-of-squares logic so the returned statistic remains stable and interpretable.
 
 The returned p-value is computed from a chi-squared reference distribution with 2 degrees of freedom.
 

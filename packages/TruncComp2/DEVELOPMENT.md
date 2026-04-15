@@ -52,7 +52,6 @@ Frozen reference fixtures can be regenerated with:
 
 ```sh
 Rscript tools/generate-el-fixture.R
-Rscript tools/generate-lrt-fixture.R
 ```
 
-These scripts are package-local and write only into `tests/testthat/fixtures/`.
+This script is package-local and writes only into `tests/testthat/fixtures/`.

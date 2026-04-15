@@ -65,7 +65,12 @@ rather than silently pretending it can recompute the stored intervals.
 
 ## Parametric Path
 
-The parametric likelihood-ratio implementation in [R/LRT.R](R/LRT.R) now computes the null and alternative likelihoods directly from sufficient statistics instead of fitting two generic optimizer objects.
+The parametric likelihood-ratio implementation in [R/LRT.R](R/LRT.R) now uses standard model fits as its primary engine:
+
+- `glm(A ~ 1, family = binomial())` and `glm(A ~ R, family = binomial())` for the observation component
+- `lm(Y ~ 1)` and `lm(Y ~ R)` on the observed-outcome subset for the Normal component
+
+The test statistic is then assembled from ML log-likelihood differences, with explicit fallback logic for singular boundary cases.
 
 The model is unchanged:
 
@@ -74,35 +79,31 @@ The model is unchanged:
 
 ### Bernoulli component
 
-For the observation indicator, the code works with grouped counts:
+For the observation indicator, the code fits:
 
-- `n0`, `n1`: group sizes
-- `k0`, `k1`: numbers observed in each group
+- `glm(A ~ 1, family = binomial(), data = data)`
+- `glm(A ~ R, family = binomial(), data = data)`
 
-It computes:
+In regular cases it computes `W_A` from the fitted log-likelihoods and derives:
 
-- the maximized Bernoulli log-likelihood under `HA` using `pi0 = k0 / n0` and `pi1 = k1 / n1`
-- the maximized Bernoulli log-likelihood under `H0` using the pooled `pi = (k0 + k1) / (n0 + n1)`
-- the component LR statistic `W_A`
+- `alphaDelta = exp(coef(m1)["R"])`
+- a Wald interval on the log-odds scale from the fitted coefficient variance
 
-The point estimate `alphaDelta` is then derived as the odds ratio implied by `pi1` and `pi0`.
+When the observation table hits a boundary, the code preserves exact `0` / `Inf` odds-ratio behavior by falling back to empirical group proportions and returns `NA` intervals.
 
 ### Normal component
 
-For the observed outcomes, the code works with:
+For the observed outcomes, the code fits:
 
-- the observed group means `mu0` and `mu1`
-- the pooled observed mean under `H0`
-- the within-group sum of squares `SSE1`
-- the pooled sum of squares `SSE0`
+- `lm(Y ~ 1, data = observed_data)`
+- `lm(Y ~ R, data = observed_data)`
 
-From these summaries it computes:
+In regular cases it computes `W_Y` from `logLik(..., REML = FALSE)` and derives:
 
-- the maximized Normal log-likelihood under `HA`
-- the maximized Normal log-likelihood under `H0`
-- the component LR statistic `W_Y`
+- `muDelta` from the treatment coefficient in the observed-outcome model
+- a Wald interval from the fitted coefficient variance
 
-The estimate `muDelta` is the observed-mean difference `mu1 - mu0`.
+When the observed outcomes have zero residual variance, the code falls back to explicit residual-sum-of-squares rules so exact-fit cases still return the intended `0` or `Inf` LR contribution and `NA` intervals.
 
 ### Final statistic
 
@@ -119,7 +120,7 @@ The treatment effects returned to the user are:
 - `muDelta`: difference in means among observed outcomes
 - `alphaDelta`: odds ratio of being observed
 
-The public `init` argument is still accepted for compatibility, but the current closed-form parametric path does not use it for estimation.
+The public `init` argument is still accepted for compatibility, but the current model-backed parametric path does not use it for estimation.
 
 ## Semi-Parametric Path
 
@@ -414,25 +415,20 @@ and can be regenerated with:
 
 This lets the tests compare against upstream behavior without requiring `EL` at runtime.
 
-### 3. Frozen parametric LRT parity fixtures
+### 3. Parametric model-fit and optimization cross-checks
 
-A second frozen fixture stores outputs from the previous optimizer-based
-parametric implementation:
+The parametric tests now compare the package results against:
 
-[tests/testthat/fixtures/lrt_reference.rds](tests/testthat/fixtures/lrt_reference.rds)
+- direct `glm` / `lm` references on regular interior datasets
+- a separate numerical optimization of the full joint likelihood
 
-and can be regenerated with:
-
-[tools/generate-lrt-fixture.R](tools/generate-lrt-fixture.R)
-
-This allows the closed-form parametric implementation to be checked against the
-earlier `bbmle`-based path on regular interior datasets.
+This checks both the model-backed implementation details and the underlying LR statistic without depending on a frozen fixture from an older implementation.
 
 ### 4. TruncComp2 integration tests
 
 These verify that:
 
-- `LRT` matches the frozen optimizer reference on regular cases
+- `LRT` matches direct `glm` / `lm` references on regular cases
 - `LRT` boundary cases still return a usable test statistic even when Wald intervals are undefined
 - `SPLRT` still reproduces the package example outputs
 - marginal confidence intervals still print correctly

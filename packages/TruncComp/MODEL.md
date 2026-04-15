@@ -13,7 +13,7 @@ The current package implementation is narrower than the general framework discus
 
 This document describes the model as it is implemented in the package source, with the manuscript used for interpretation and motivation.
 
-For an engineering-focused walkthrough of the current code paths and the internal empirical-likelihood routine, see [IMPLEMENTATION.md](/Users/czv146/Documents/GitHub/TruncComp/IMPLEMENTATION.md).
+For an engineering-focused walkthrough of the current code paths and the internal empirical-likelihood routine, see [IMPLEMENTATION.md](/Users/czv146/Documents/GitHub/TruncComp/packages/TruncComp/IMPLEMENTATION.md).
 
 ## Observed Data and Notation
 

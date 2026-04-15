@@ -1,7 +1,20 @@
+script_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+script_path <- if(length(script_arg) > 0) {
+  normalizePath(sub("^--file=", "", script_arg[1]), winslash = "/", mustWork = TRUE)
+} else {
+  normalizePath("tools/generate-el-fixture.R", winslash = "/", mustWork = FALSE)
+}
+package_root <- normalizePath(file.path(dirname(script_path), ".."), winslash = "/", mustWork = TRUE)
+
 args <- commandArgs(trailingOnly = TRUE)
 output_path <- if(length(args) > 0) args[1] else {
-  file.path("tests", "testthat", "fixtures", "el_means_reference.rds")
+  file.path(package_root, "tests", "testthat", "fixtures", "el_means_reference.rds")
 }
+output_path <- normalizePath(output_path, winslash = "/", mustWork = FALSE)
+
+old_wd <- getwd()
+setwd(package_root)
+on.exit(setwd(old_wd), add = TRUE)
 
 lib_dir <- tempfile("el-lib-")
 dir.create(lib_dir, recursive = TRUE, showWarnings = FALSE)

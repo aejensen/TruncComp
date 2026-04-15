@@ -12,3 +12,4 @@
 *.gz
 *.toc
 .Rhistory
+!packages/*/tests/testthat/fixtures/*.rds

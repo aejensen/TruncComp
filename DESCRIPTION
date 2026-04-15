@@ -4,16 +4,17 @@ Title: Two-sample comparison of truncated continuous outcome by parametric or se
 Version: 0.1
 Author: Andreas Kryger Jensen
 Maintainer: Andreas Kryger Jensen <aeje@sund.ku.dk>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: Implements likelihood-ratio methods for comparing two groups when
+    a continuous outcome has a distinguished atom value representing an
+    unobserved or undefined outcome. The package provides both a fully
+    parametric approach and a semi-parametric approach based on an internal
+    empirical-likelihood routine for the observed-outcome mean difference.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports:
     bbmle,
     fields
-Suggests: knitr,
-    rmarkdown,
+Suggests:
     testthat
 Config/testthat/edition: 3
-VignetteBuilder: knitr

@@ -76,20 +76,16 @@ LRT <- function(data, init, conf.level = 0.95) {
   W <- LRT[2,"Chisq"]
   p <- LRT[2, "Pr(>Chisq)"]
 
-  out <- list(muDelta = muDelta,
-              muDeltaCI = muDeltaCI,
-              alphaDelta = alphaDelta,
-              alphaDeltaCI = alphaDeltaCI,
-              Delta = delta,
-              DeltaCI = deltaCI,
-              W = W,
-              p = p,
-              method = "Parametric Likelihood Ratio Test",
-              conf.level = conf.level,
-              success = TRUE,
-              error = "",
-              init = init)
-  class(out) <- append(class(out), "TruncComp")
-  out
+  newTruncComp(muDelta = muDelta,
+               muDeltaCI = muDeltaCI,
+               alphaDelta = alphaDelta,
+               alphaDeltaCI = alphaDeltaCI,
+               Delta = delta,
+               DeltaCI = deltaCI,
+               W = W,
+               p = p,
+               method = "LRT",
+               conf.level = conf.level,
+               success = TRUE,
+               init = init)
 }
-

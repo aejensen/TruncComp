@@ -15,19 +15,47 @@ isValid <- function(truncCompObj) {
   truncCompObj$success
 }
 
-returnErrorData <- function(error, method, conf.level) {
-  out <- list(muDelta = NULL,
-              muDeltaCI = NULL,
-              alphaDelta = NULL,
-              alphaDeltaCI = NULL,
-              W = NULL,
-              p = NULL,
-              method = method,
+truncCompMethod <- function(method) {
+  if(identical(method, "LRT") || identical(method, "Parametric Likelihood Ratio Test")) {
+    return("Parametric Likelihood Ratio Test")
+  }
+
+  if(identical(method, "SPLRT") || identical(method, "Semi-empirical Likelihood Ratio Test")) {
+    return("Semi-empirical Likelihood Ratio Test")
+  }
+
+  method
+}
+
+newTruncComp <- function(muDelta = NULL, muDeltaCI = NULL,
+                         alphaDelta = NULL, alphaDeltaCI = NULL,
+                         Delta = NULL, DeltaCI = NULL,
+                         W = NULL, p = NULL,
+                         method, conf.level, success,
+                         error = "", init = NULL, data = NULL) {
+  out <- list(muDelta = muDelta,
+              muDeltaCI = muDeltaCI,
+              alphaDelta = alphaDelta,
+              alphaDeltaCI = alphaDeltaCI,
+              Delta = Delta,
+              DeltaCI = DeltaCI,
+              W = W,
+              p = p,
+              method = truncCompMethod(method),
               conf.level = conf.level,
-              success = FALSE,
+              success = success,
               error = error,
-              init = NULL,
-              data = NULL)
-  class(out) <- append(class(out), "CompositeOutcomeEstimation")
+              init = init,
+              data = data)
+  class(out) <- c("TruncComp", "list")
   out
+}
+
+returnErrorData <- function(error, method, conf.level, init = NULL, data = NULL) {
+  newTruncComp(method = method,
+               conf.level = conf.level,
+               success = FALSE,
+               error = error,
+               init = init,
+               data = data)
 }

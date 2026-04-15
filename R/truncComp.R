@@ -45,8 +45,7 @@ truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL) {
   if(!isDataOkay(d)) {
     error <- "Estimation failed due to data error."
     warning(error)
-    out <- returnErrorData(error, method, conf.level)
-    return(out)
+    return(returnErrorData(error, method, conf.level, init = init, data = d))
   }
 
   if(method == "LRT") {
@@ -59,7 +58,7 @@ truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL) {
     if(is.null(out)) {
       error <- "Estimation failed due to optimization error."
       warning(error)
-      out <- returnErrorData(error, method, conf.level)
+      out <- returnErrorData(error, method, conf.level, init = init, data = d)
     }
   } else if(method == "SPLRT") {
     #SPLRT cannot fail? Yes it can.

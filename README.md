@@ -10,7 +10,7 @@ The semi-parametric method now uses an internal pure-R empirical-likelihood impl
 
 To install the development version of TruncComp run the following commands from within R
 
-```{r}
+```r
 library(devtools)
 install_github('aejensen/TruncComp')
 ```
@@ -21,7 +21,7 @@ install_github('aejensen/TruncComp')
 - Implementation walkthrough: [IMPLEMENTATION.md](IMPLEMENTATION.md)
 
 # Example
-```{r}
+```r
 library(TruncComp)
 
 #Define the two distributions for the observed data
@@ -45,3 +45,10 @@ confint(model, type="marginal")
 #Get simultaneous confidence region
 confint(model, type="simultaneous", plot=TRUE, resolution = 10)
 ```
+
+# Development
+
+The repository includes a GitHub Actions workflow that runs package install,
+the `testthat` suite, and `R CMD check --no-manual --no-build-vignettes` on
+changes. That check combination should be treated as the release gate for
+package changes.

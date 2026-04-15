@@ -1,2 +1,7 @@
-^.*\.Rproj$
+^\.github($|/)
+^\.git$
+^\.gitignore$
 ^\.Rproj\.user$
+^TruncComp\.Rproj$
+^manuscript$
+^\.\.?Rcheck$

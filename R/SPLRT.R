@@ -33,20 +33,16 @@ SPLRT <- function(data, conf.level = 0.95) {
   W <- as.numeric(muW + alphaW) #Joint test statistic
   p <- 1 - stats::pchisq(W, 2)  #Joint p-value
 
-  out <- list(muDelta = muDelta,
-              muDeltaCI = muDeltaCI,
-              alphaDelta = alphaDelta,
-              alphaDeltaCI = alphaDeltaCI,
-              Delta = delta,
-              DeltaCI = deltaCI,
-              W = W,
-              p = p,
-              method ="Semi-empirical Likelihood Ratio Test",
-              conf.level = conf.level,
-              success = TRUE,
-              error = "",
-              init = NULL)
-
-  class(out) <- append(class(out), "TruncComp")
-  out
+  newTruncComp(muDelta = muDelta,
+               muDeltaCI = muDeltaCI,
+               alphaDelta = alphaDelta,
+               alphaDeltaCI = alphaDeltaCI,
+               Delta = delta,
+               DeltaCI = deltaCI,
+               W = W,
+               p = p,
+               method = "SPLRT",
+               conf.level = conf.level,
+               success = TRUE,
+               init = NULL)
 }

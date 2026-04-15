@@ -54,6 +54,10 @@ There are two layers of validation:
 
 If the internal data check fails, `truncComp.default()` now returns an error object immediately rather than continuing into estimation.
 
+Failed fits use the same top-level S3 class as successful fits, so
+\code{print()}, \code{summary()}, and \code{confint()} dispatch consistently
+even when estimation does not succeed.
+
 ## Parametric Path
 
 The parametric likelihood-ratio implementation in [R/LRT.R](/Users/czv146/Documents/GitHub/TruncComp/R/LRT.R) is organized around two nested likelihoods:
@@ -309,7 +313,21 @@ This function evaluates `jointContrastLRT()` on a rectangular grid and returns:
 - `logORdelta`
 - `surface`
 
+Before building the surface, it now checks that the supplied object:
+
+- inherits from `TruncComp`
+- represents a successful fit
+- was fitted with `method = "SPLRT"`
+
+The default grids are also guarded so that non-finite odds-ratio confidence
+limits fall back to a finite centered grid rather than propagating `log(0)` or
+`log(Inf)` into plotting and surface evaluation.
+
 When `plot = TRUE`, it renders the heat map and contour using the joint `chisq(df = 2)` threshold.
+
+To avoid repeated work in the inner loop, `jointContrastCI()` caches the
+unconstrained logistic fit and the alive-only outcome splits before evaluating
+the grid.
 
 ## Numerical Stability Choices
 

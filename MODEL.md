@@ -250,6 +250,7 @@ At a high level, the implementation:
 - solves the one-sample empirical-likelihood lambda equations with `stats::uniroot()`
 - falls back to `stats::optimize()` for the nuisance parameter if the `theta` gradient is numerically awkward
 - constructs the confidence interval by solving `W_mu(delta) = qchisq(conf.level, 1)` over the feasible parameter range
+- uses a cached logistic baseline when evaluating simultaneous confidence-region surfaces so the unconstrained logistic fit is not recomputed at every grid point
 
 This design keeps the `SPLRT` output compatible with the previous package behavior while removing the runtime dependency on `EL`.
 
@@ -271,6 +272,7 @@ For both methods, the returned model object contains:
 - `muDelta` and `alphaDelta` are estimated for both `LRT` and `SPLRT`
 - marginal confidence intervals for `muDelta` and `alphaDelta` are implemented for both methods
 - simultaneous confidence regions are implemented only for the semi-parametric method
+- `jointContrastCI()` is exported for compatibility but is only defined for successful `SPLRT` fits
 
 ### Current implementation detail: `DeltaCI`
 

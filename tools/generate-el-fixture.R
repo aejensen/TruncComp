@@ -67,4 +67,4 @@ fixture <- list(
 )
 
 dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
-saveRDS(fixture, output_path)
+saveRDS(fixture, output_path, version = 2)

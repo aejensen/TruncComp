@@ -19,7 +19,9 @@ The input object, returned invisibly.
 
 \examples{
 library(TruncComp)
-d <- simTruncData(n = 40, mu0 = 3, mu1 = 3.5, pi0 = 0.6, pi1 = 0.5)
+f0 <- function(n) stats::rnorm(n, 3, 1)
+f1 <- function(n) stats::rnorm(n, 3.5, 1)
+d <- simulateTruncatedData(n = 40, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
 fit <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 summary(fit)
 }

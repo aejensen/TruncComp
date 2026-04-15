@@ -54,12 +54,15 @@ and \code{R}.}
 \author{Andreas Kryger Jensen <aeje@sund.ku.dk>}
 
 \seealso{
-\code{\link{print.TruncComp}}, \code{\link{summary.TruncComp}}
+\code{\link{print.TruncComp}}, \code{\link{summary.TruncComp}},
+\code{\link{confint.TruncComp}}, \code{\link{jointContrastCI}}
 }
 
 \examples{
 library(TruncComp)
-d <- simTruncData(n = 100, mu0 = 3, mu1 = 3.5, pi0 = 0.6, pi1 = 0.5)
+f0 <- function(n) stats::rnorm(n, 3, 1)
+f1 <- function(n) stats::rnorm(n, 3.5, 1)
+d <- simulateTruncatedData(n = 100, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
 
 # Formula interface
 truncComp(Y ~ R, atom = 0, data = d, method = "LRT")

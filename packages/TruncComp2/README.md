@@ -52,6 +52,9 @@ The fitted object reports:
 
 - `muDelta`: difference in means among the observed
 - `alphaDelta`: odds ratio of being observed
+- `Delta`: combined-outcome mean difference at the fitted atom value
+- `DeltaMarginalCI`, `DeltaProfileCI`: the stored unadjusted confidence intervals for `Delta`, with `DeltaProfileCI` computed by the default grid-based profile approximation
+- `DeltaProjectedCI`: available on demand through `confint(..., type = "delta_projected")`
 - `W`: joint likelihood-ratio test statistic
 - `p`: joint p-value
 
@@ -61,8 +64,104 @@ submodels. In that adjusted setting, `Delta` is not reported and remains `NA`.
 
 For both `method = "LRT"` and `method = "SPLRT"`, simultaneous
 confidence-region surfaces are available for unadjusted fits through
-`confint(..., type = "simultaneous")`. Adjusted fits currently support only
+`confint(..., type = "simultaneous")`. If `offset` is omitted, the default
+surface window is expanded adaptively from the fitted data, and the plot is
+rendered with `ggplot2::theme_minimal()`. Adjusted fits currently support only
 marginal intervals.
+
+# Confidence Intervals
+
+`TruncComp2` reports several different inferential objects, and they do not all
+answer the same question.
+
+For the two primary treatment-effect components:
+
+- `muDeltaCI` is a one-dimensional confidence interval for the treatment effect
+  on the observed-outcome mean.
+- `alphaDeltaCI` is a one-dimensional confidence interval for the treatment
+  effect on the odds of being observed.
+
+These are componentwise intervals. They describe uncertainty about one
+parameter at a time, not about the pair jointly.
+
+For successful unadjusted fits, the package also supports a two-dimensional
+simultaneous region in
+
+```text
+(muDelta, logORdelta)
+```
+
+defined by
+
+```text
+C_joint = { (mu, psi) : W(mu, psi) <= qchisq(conf.level, 2) }.
+```
+
+This is what `confint(fit, type = "simultaneous")` and `jointContrastCI(fit)`
+compute.
+
+For the derived combined-outcome contrast
+
+```text
+Delta = [p1 * mu1 + (1 - p1) * atom] - [p0 * mu0 + (1 - p0) * atom],
+```
+
+the package distinguishes three different intervals for successful unadjusted
+fits:
+
+1. `DeltaMarginalCI`
+   This is a Welch interval for the raw combined-outcome mean difference. It is
+   fast, model-light, and answers the question "what is the uncertainty in the
+   ordinary two-sample mean difference on the combined outcome scale?"
+
+2. `DeltaProjectedCI`
+   This is the projection of the two-dimensional simultaneous region onto
+   `Delta`:
+
+   ```text
+   [ min Delta(mu, psi), max Delta(mu, psi) ] over (mu, psi) in C_joint.
+   ```
+
+   By default it is computed numerically from a high-resolution evaluation of
+   the same 2D joint surface used for the simultaneous region, then projecting
+   the accepted surface points onto the `Delta` scale. It is available on
+   demand through `confint(..., type = "delta_projected")`. If you want the
+   slower direct constrained-optimization version instead, call
+   `confint(..., type = "delta_projected", algorithm = "optimize")`. Because
+   it inherits the full two-parameter simultaneous guarantee, it is usually
+   more conservative than the profile interval.
+
+3. `DeltaProfileCI`
+   This is the one-dimensional profile interval for `Delta`:
+
+   ```text
+   C_profile = { d : W_Delta(d) <= qchisq(conf.level, 1) }
+   ```
+
+   By default, `TruncComp2` estimates this interval from the same evaluated 2D
+   surface but with the `chi^2_1` cutoff, so the stored `DeltaProfileCI` and
+   backward-compatible alias `DeltaCI` come from a grid-based profile
+   approximation. If you want the slower direct optimization-based version,
+   call `confint(..., type = "delta_profile", algorithm = "optimize")`, which
+   profiles in `Delta` itself rather than reading the interval off the surface.
+
+Practical guidance:
+
+- Use `muDeltaCI` and `alphaDeltaCI` when the scientific question is about the
+  two component effects separately.
+- Use `confint(..., type = "simultaneous")` when you want joint inference on the
+  pair `(muDelta, logORdelta)`.
+- Use `DeltaMarginalCI` when you want a simple descriptive interval for the raw
+  combined-outcome mean difference.
+- Use `DeltaProfileCI` when `Delta` itself is the inferential target and you
+  want the model-based one-dimensional interval. The stored version is the
+  default grid-based approximation; use `confint(..., type = "delta_profile",
+  algorithm = "optimize")` when you specifically want the direct
+  optimization-based profile interval.
+- Use `DeltaProjectedCI` when you want the range of `Delta` values compatible
+  with the full joint simultaneous region. Use
+  `algorithm = "optimize"` only when you explicitly want the slower direct
+  optimization-based projection.
 
 # Example
 ```r
@@ -77,12 +176,15 @@ pi0 <- 0.35
 pi1 <- 0.6
 
 #Simulate data
-d <- TruncComp2::simulateTruncatedData(25, f0, f1, pi0, pi1)
+d <- TruncComp2::simulateTruncatedData(25, f0, f1, pi0, pi1, atom = 0)
 
 #Estimate parameters using the parametric method
 fit_lrt <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
 summary(fit_lrt)
 confint(fit_lrt, type = "marginal")
+confint(fit_lrt, type = "delta_projected")
+confint(fit_lrt, type = "delta_profile")
+confint(fit_lrt, type = "delta_profile", algorithm = "optimize")
 
 #Load the fixed adjusted example and compare unadjusted vs adjusted LRT
 d_adjusted <- loadTruncComp2AdjustedExample()
@@ -100,6 +202,9 @@ summary(fit_splrt_adjusted)
 #Estimate parameters using the semi-parametric method
 fit_splrt <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 summary(fit_splrt)
+
+#The default interface also accepts atom explicitly and can infer it when y[a == 0]
+truncComp.default(d$Y, d$A, d$R, method = "LRT", atom = 0)
 
 #Get simultaneous confidence region for an unadjusted fit
 confint(fit_lrt, type = "simultaneous", plot = TRUE, resolution = 10)

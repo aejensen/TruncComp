@@ -4,13 +4,13 @@
 \title{Simulate two-group truncated outcome data}
 
 \usage{
-simulateTruncatedData(n, f0, f1, pi0, pi1)
+simulateTruncatedData(n, f0, f1, pi0, pi1, atom = 0)
 }
 
 \description{
 Simulates two groups of data with a binary observation indicator and a
 continuous outcome among observed subjects. Unobserved outcomes are encoded as
-zero in the returned \code{Y} column.
+the supplied \code{atom} value in the returned \code{Y} column.
 }
 
 \arguments{
@@ -25,19 +25,20 @@ It may return a finite numeric vector of length \code{n} when called with
 \code{1}.}
 \item{pi0}{Probability that the outcome is observed in group \code{R = 0}.}
 \item{pi1}{Probability that the outcome is observed in group \code{R = 1}.}
+\item{atom}{Numeric atom value inserted into \code{Y} when \code{A = 0}.}
 }
 
 \value{
 A \code{data.frame} with columns:
 \item{R}{Binary treatment indicator.}
 \item{A}{Binary indicator for whether the continuous outcome is observed.}
-\item{Y}{Observed outcome, with unobserved values encoded as zero.}
+\item{Y}{Observed outcome, with unobserved values encoded as \code{atom}.}
 }
 
 \examples{
 f0 <- function(n) stats::rnorm(n, 3, 1)
 f1 <- function(n) stats::rnorm(n, 3.5, 1)
 
-d <- simulateTruncatedData(25, f0 = f0, f1 = f1, pi0 = 0.35, pi1 = 0.6)
+d <- simulateTruncatedData(25, f0 = f0, f1 = f1, pi0 = 0.35, pi1 = 0.6, atom = -5)
 head(d)
 }

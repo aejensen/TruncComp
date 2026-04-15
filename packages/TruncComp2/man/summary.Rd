@@ -6,7 +6,11 @@
 }
 \description{
 Prints the estimated treatment contrasts, their confidence intervals, and the
-joint likelihood-ratio test result for a fitted \code{TruncComp2} object.
+joint likelihood-ratio test result for a fitted \code{TruncComp2} object. For
+successful unadjusted fits, this includes the stored \code{DeltaMarginalCI}
+and the default grid-based \code{DeltaProfileCI}. The projected interval
+\code{DeltaProjectedCI} remains available on demand through
+\code{\link{confint.TruncComp2}}.
 }
 \arguments{
 \item{object}{A \code{TruncComp2} object returned by \code{\link{truncComp}}.}

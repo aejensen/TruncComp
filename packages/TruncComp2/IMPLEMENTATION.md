@@ -44,7 +44,9 @@ The formula interface expects:
 A = as.numeric(Y != atom)
 ```
 
-before passing the data to `truncComp.default()`.
+before passing the data to `truncComp.default()`. The fitted object now stores
+that `atom` value explicitly, and `truncComp.default()` can also accept it
+directly or infer it when `y[a == 0]` has a single unique value.
 
 ### 2. Internal standardized data representation
 
@@ -157,7 +159,10 @@ The treatment effects returned to the user are:
 - `muDelta`: difference in means among observed outcomes
 - `alphaDelta`: odds ratio of being observed
 
-When `adjust` is supplied, those quantities become conditional treatment effects and `Delta` / `DeltaCI` are stored as `NA`, because the package does not yet implement a standardized marginal combined-outcome contrast for the adjusted model.
+When `adjust` is supplied, those quantities become conditional treatment effects
+and `Delta` plus all `Delta` interval variants are stored as `NA`, because the
+package does not implement a standardized marginal combined-outcome contrast for
+the adjusted model.
 
 The public `init` argument is still accepted for compatibility, but the current model-backed parametric path does not use it for estimation.
 
@@ -468,10 +473,121 @@ unadjusted `LRT`, it instead evaluates constrained `glm`/`lm` fits with fixed
 `logORdelta` and `muDelta` offsets and adds the resulting two LR components
 pointwise on the grid.
 
-For the marginal path, `confint.TruncComp2()` now prints only the implemented
-intervals. The stored `DeltaCI` placeholder remains on the fit object for API
-compatibility, but it is omitted from the printed matrix until a real interval
-is implemented.
+For successful unadjusted fits, the package now computes three `Delta`
+intervals from the stored atom-aware combined-outcome contrast. They are
+numerically and conceptually different.
+
+### `DeltaMarginalCI`
+
+This is the cheapest interval computationally. The helper in `R/delta.R`
+
+- splits the raw combined outcome `Y` by treatment arm
+- computes the raw mean difference `mean(Y1) - mean(Y0)`
+- computes the Welch standard error `sqrt(s1^2 / n1 + s0^2 / n0)`
+- uses Welch-Satterthwaite degrees of freedom and a `t` critical value
+
+This interval does not use the joint truncated-outcome model beyond the fact
+that `Y` already contains the atom value. It should be read as the ordinary
+two-sample interval for the combined-outcome mean difference.
+
+### `DeltaProjectedCI`
+
+This interval is available only on demand through
+`confint(..., type = "delta_projected")` because it is materially more
+expensive. The default implementation is grid-based, with a direct
+optimization-based alternative retained for explicit use.
+
+Default numerical path:
+
+- build an adaptive high-resolution joint surface with `include_delta = TRUE`
+- keep the accepted surface points satisfying the 2 d.f. condition
+  `W(muDelta, logORdelta) <= qchisq(conf.level, 2)`
+- project those accepted points onto the `Delta` scale
+- return the minimum and maximum accepted `Delta`
+
+Optional optimization path:
+
+- call `confint(..., type = "delta_projected", algorithm = "optimize")`
+- build a candidate evaluator for the chosen method:
+  - unadjusted `LRT`: constrained `glm`/`lm` fits
+  - unadjusted `SPLRT`: constrained logistic profile plus the EL continuous fit
+- define the feasible set by the same 2 d.f. condition
+- optimize for the smallest and largest feasible `Delta`
+- use multiple starting points, expanding boxes, and boundary refinement to
+  avoid returning a solution that is only locally optimal inside a too-small box
+
+This interval should be interpreted as the projection of the simultaneous joint
+statement onto the `Delta` scale. It is therefore usually more conservative than
+the one-dimensional profile interval.
+
+### `DeltaProfileCI`
+
+This is the stored model-based one-dimensional interval for `Delta`. By
+default, it is computed from the joint surface grid, while a slower direct
+optimization-based alternative remains available on demand.
+
+Default numerical path:
+
+- build the same adaptive joint surface used for simultaneous inference, with
+  `include_delta = TRUE`
+- retain the surface points satisfying the 1 d.f. cutoff
+  `W(muDelta, logORdelta) <= qchisq(conf.level, 1)`
+- map those accepted points to `Delta`
+- store the resulting range as `DeltaProfileCI` and the backward-compatible
+  alias `DeltaCI`
+
+Optional optimization path:
+
+- call `confint(..., type = "delta_profile", algorithm = "optimize")`
+- build a direct profile evaluator `W_Delta(d)`
+- for a fixed target `Delta = d`, profile over the nuisance structure rather
+  than over a grid of `Delta`
+- optimize the remaining one-dimensional nuisance coordinate
+  `logORdelta` with deterministic interval expansion and `stats::optimize()`
+- at each candidate `logORdelta`, solve the method-specific continuous nuisance
+  problem needed to satisfy the `Delta = d` constraint
+
+Method-specific details:
+
+- unadjusted `LRT`
+  - profile the logistic intercept for a fixed `logORdelta`
+  - derive the implied observation probabilities `(p0, p1)`
+  - solve the implied `muDelta` needed to hit the target `Delta = d`
+  - evaluate the constrained Gaussian contribution with `lm(..., offset = ...)`
+  - add the constrained logistic and Gaussian likelihood-ratio pieces
+
+- unadjusted `SPLRT`
+  - profile the logistic intercept for a fixed `logORdelta`
+  - derive `(p0, p1)` from the constrained logistic fit
+  - solve the EL-compatible continuous nuisance structure for the target
+    `Delta = d`
+  - evaluate the total constrained statistic as `W_mu + W_alpha`
+
+After `W_Delta(d)` is available, the lower and upper bounds are found by:
+
+- stepping outward from the fitted `Delta`
+- identifying where the profiled statistic crosses `qchisq(conf.level, 1)`
+- refining each bound by bisection
+
+The legacy `DeltaCI` field remains as an alias of the stored default
+`DeltaProfileCI`.
+
+To avoid making ordinary fits expensive, the fitted object does not precompute
+`DeltaProjectedCI`; it is obtained only when explicitly requested through
+`confint(..., type = "delta_projected")`.
+
+Practical interpretation:
+
+- `DeltaMarginalCI` is the right interval when the user wants a simple combined
+  mean-difference summary with minimal modeling assumptions.
+- `DeltaProjectedCI` is the right interval when the user wants the `Delta`
+  values compatible with the full joint two-parameter simultaneous statement.
+  The default public version is grid-based; the optimization-based version is
+  available explicitly when needed.
+- `DeltaProfileCI` is the right interval when `Delta` itself is the primary
+  inferential target under the fitted truncated-outcome model. The fitted
+  object stores the grid-based approximation; the direct optimization-based
+  profile interval is available explicitly through `confint()`.
 
 ## Numerical Stability Choices
 

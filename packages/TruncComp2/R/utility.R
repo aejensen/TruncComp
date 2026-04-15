@@ -43,16 +43,22 @@ truncCompMethod <- function(method) {
 newTruncComp2 <- function(muDelta = NULL, muDeltaCI = NULL,
                          alphaDelta = NULL, alphaDeltaCI = NULL,
                          Delta = NULL, DeltaCI = NULL,
+                         DeltaMarginalCI = NULL,
+                         DeltaProjectedCI = NULL,
+                         DeltaProfileCI = NULL,
                          W = NULL, p = NULL,
                          method, conf.level, success,
                          error = "", init = NULL, data = NULL,
-                         adjust = NULL) {
+                         adjust = NULL, atom = NULL) {
   out <- list(muDelta = muDelta,
               muDeltaCI = muDeltaCI,
               alphaDelta = alphaDelta,
               alphaDeltaCI = alphaDeltaCI,
               Delta = Delta,
               DeltaCI = DeltaCI,
+              DeltaMarginalCI = DeltaMarginalCI,
+              DeltaProjectedCI = DeltaProjectedCI,
+              DeltaProfileCI = DeltaProfileCI,
               W = W,
               p = p,
               method = truncCompMethod(method),
@@ -61,18 +67,20 @@ newTruncComp2 <- function(muDelta = NULL, muDeltaCI = NULL,
               error = error,
               init = init,
               data = data,
-              adjust = adjust)
+              adjust = adjust,
+              atom = atom)
   class(out) <- c("TruncComp2", "list")
   out
 }
 
 returnErrorData <- function(error, method, conf.level, init = NULL, data = NULL,
-                            adjust = NULL) {
+                            adjust = NULL, atom = NULL) {
   newTruncComp2(method = method,
                conf.level = conf.level,
                success = FALSE,
                error = error,
                init = init,
                data = data,
-               adjust = adjust)
+               adjust = adjust,
+               atom = atom)
 }

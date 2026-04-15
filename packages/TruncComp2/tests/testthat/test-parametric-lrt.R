@@ -307,7 +307,11 @@ test_that("public LRT path returns the expected object and keeps init compatible
   expect_s3_class(fit, "TruncComp2")
   expect_true(fit$success)
   expect_equal(fit$method, "Parametric Likelihood Ratio Test")
-  expect_equal(fit$DeltaCI, c(NA_real_, NA_real_))
+  expect_equal(fit$atom, 0)
+  expect_equal(fit$DeltaCI, fit$DeltaProfileCI, tolerance = 1e-12)
+  expect_true(all(is.finite(fit$DeltaMarginalCI)))
+  expect_true(all(is.na(fit$DeltaProjectedCI)))
+  expect_true(all(is.finite(fit$DeltaProfileCI)))
   expect_equal(fit$init, custom_init)
   expect_equal(fit$muDelta, reference$muDelta, tolerance = 1e-10)
   expect_equal(fit$alphaDelta, reference$alphaDelta, tolerance = 1e-10)
@@ -321,6 +325,17 @@ test_that("public LRT path returns the expected object and keeps init compatible
   capture.output(ci <- confint(fit, type = "marginal"))
   expect_equal(unname(ci["Difference in means among the observed:", ]), fit$muDeltaCI)
   expect_equal(unname(ci["Odds ratio of being observed:", ]), fit$alphaDeltaCI)
+  expect_equal(unname(ci["Delta (marginal)", ]), fit$DeltaMarginalCI, tolerance = 1e-10)
+  expect_equal(unname(ci["Delta (profile likelihood)", ]), fit$DeltaProfileCI, tolerance = 1e-10)
+
+  capture.output(delta_projected <- confint(fit, type = "delta_projected", plot = FALSE))
+  expect_equal(rownames(delta_projected), "Delta (projected)")
+  expect_lte(unname(delta_projected[1, 1]), fit$Delta)
+  expect_gte(unname(delta_projected[1, 2]), fit$Delta)
+
+  capture.output(delta_profile <- confint(fit, type = "delta_profile", plot = FALSE))
+  expect_equal(rownames(delta_profile), "Delta (profile likelihood)")
+  expect_equal(unname(delta_profile[1, ]), fit$DeltaProfileCI, tolerance = 1e-10)
 })
 
 test_that("parametric simultaneous confidence helpers work for unadjusted fits", {
@@ -350,6 +365,24 @@ test_that("parametric simultaneous confidence helpers work for unadjusted fits",
     0,
     tolerance = 1e-10
   )
+})
+
+test_that("parametric simultaneous helpers derive default offsets from fitted data", {
+  case <- interior_lrt_case(20260602, 18, 2.0, 2.7, 0.8, 0.40, 0.75)
+  fit <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT")
+  expect_true(fit$success)
+
+  offsets <- TruncComp2:::jointContrastDefaultOffsets(fit)
+  joint <- jointContrastCI(fit, plot = FALSE, resolution = 5)
+
+  expect_equal(joint$muDelta,
+               seq(fit$muDeltaCI[1] - offsets[1],
+                   fit$muDeltaCI[2] + offsets[1],
+                   length.out = 5))
+  expect_equal(joint$logORdelta,
+               seq(log(fit$alphaDeltaCI[1]) - offsets[2],
+                   log(fit$alphaDeltaCI[2]) + offsets[2],
+                   length.out = 5))
 })
 
 test_that("parametric simultaneous surface matches direct constrained model fits", {
@@ -404,6 +437,8 @@ test_that("adjusted formula interface stores adjustment metadata and conditional
   expect_equal(unname(ci["Difference in means among the observed:", ]), fit$muDeltaCI)
   expect_equal(unname(ci["Odds ratio of being observed:", ]), fit$alphaDeltaCI)
   expect_error(confint(fit, type = "simultaneous"), "adjusted fits")
+  expect_error(confint(fit, type = "delta_projected"), "adjusted fits")
+  expect_error(confint(fit, type = "delta_profile"), "adjusted fits")
   expect_error(jointContrastCI(fit, plot = FALSE), "adjusted fits")
 })
 

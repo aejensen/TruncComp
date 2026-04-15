@@ -1,4 +1,5 @@
-adjusted_SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL) {
+adjusted_SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL,
+                           atom = NULL) {
   if(is.null(adjust_spec)) {
     adjust_spec <- adjustmentSpecification(adjust)
   }
@@ -13,7 +14,8 @@ adjusted_SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec =
       method = "SPLRT",
       conf.level = conf.level,
       data = data,
-      adjust = adjust_spec
+      adjust = adjust_spec,
+      atom = atom
     ))
   }
 
@@ -28,7 +30,8 @@ adjusted_SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec =
       method = "SPLRT",
       conf.level = conf.level,
       data = data,
-      adjust = adjust_spec
+      adjust = adjust_spec,
+      atom = atom
     ))
   }
 
@@ -46,7 +49,8 @@ adjusted_SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec =
       method = "SPLRT",
       conf.level = conf.level,
       data = data,
-      adjust = adjust_spec
+      adjust = adjust_spec,
+      atom = atom
     ))
   }
 
@@ -59,20 +63,26 @@ adjusted_SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec =
     alphaDelta = as.numeric(alphaDelta),
     alphaDeltaCI = as.numeric(alphaDeltaCI),
     Delta = NA_real_,
-    DeltaCI = c(NA_real_, NA_real_),
+    DeltaCI = delta_na_interval(),
+    DeltaMarginalCI = delta_na_interval(),
+    DeltaProjectedCI = delta_na_interval(),
+    DeltaProfileCI = delta_na_interval(),
     W = W,
     p = stats::pchisq(W, 2, lower.tail = FALSE),
     method = "SPLRT",
     conf.level = conf.level,
     success = TRUE,
     init = NULL,
-    adjust = adjust_spec
+    data = data,
+    adjust = adjust_spec,
+    atom = atom
   )
 }
 
-SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL) {
+SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, atom = NULL) {
   if(!is.null(adjust)) {
-    return(adjusted_SPLRT(data, conf.level = conf.level, adjust = adjust, adjust_spec = adjust_spec))
+    return(adjusted_SPLRT(data, conf.level = conf.level, adjust = adjust, adjust_spec = adjust_spec,
+                          atom = atom))
   }
 
   yAlive1 <- data[data$R == 0 & data$A == 1, "Y"]
@@ -101,24 +111,27 @@ SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL) {
   #alphaP <- binomTest$"Pr(>Chi)"[2]
   #W.binom <- 2 * (logLik(m1) - logLik(m0))
 
-  #Get Delta
-  delta <- mean(data$Y[data$R == 1]) - mean(data$Y[data$R == 0])
-  deltaCI <- c(NA, NA)
-
   #Joint likelihood ratio test
   W <- as.numeric(muW + alphaW) #Joint test statistic
   p <- 1 - stats::pchisq(W, 2)  #Joint p-value
 
-  newTruncComp2(muDelta = muDelta,
-               muDeltaCI = muDeltaCI,
-               alphaDelta = alphaDelta,
-               alphaDeltaCI = alphaDeltaCI,
-               Delta = delta,
-               DeltaCI = deltaCI,
-               W = W,
-               p = p,
-               method = "SPLRT",
-               conf.level = conf.level,
-               success = TRUE,
-               init = NULL)
+  out <- newTruncComp2(muDelta = muDelta,
+                       muDeltaCI = muDeltaCI,
+                       alphaDelta = alphaDelta,
+                       alphaDeltaCI = alphaDeltaCI,
+                       Delta = NA_real_,
+                       DeltaCI = delta_na_interval(),
+                       DeltaMarginalCI = delta_na_interval(),
+                       DeltaProjectedCI = delta_na_interval(),
+                       DeltaProfileCI = delta_na_interval(),
+                       W = W,
+                       p = p,
+                       method = "SPLRT",
+                       conf.level = conf.level,
+                       success = TRUE,
+                       init = NULL,
+                       data = data,
+                       atom = atom)
+
+  augmentDeltaInference(out)
 }

@@ -11,12 +11,15 @@ The package has two main estimation paths:
 
 The exported entry point for both methods is [R/truncComp.R](R/truncComp.R).
 
-Only the parametric path currently supports covariate adjustment. If `adjust` is supplied with `method = "SPLRT"`, the exported entry point errors before estimation.
+Both methods now accept the same additive covariate-adjustment interface through
+`adjust = ~ ...`. The adjusted `SPLRT` path is a genuine extension beyond the
+original manuscript; the implementation details and methodological assumptions
+are summarized in [ADJUSTED_SPLRT.md](ADJUSTED_SPLRT.md).
 
 The package now ships two fixed example loaders:
 
 - `loadTruncComp2Example()` for the original two-column example used by the semi-parametric path
-- `loadTruncComp2AdjustedExample()` for a 3-level categorical-covariate example used to illustrate parametric adjustment
+- `loadTruncComp2AdjustedExample()` for a 3-level categorical-covariate example used to illustrate both parametric and semi-parametric adjustment
 
 ## End-to-End Control Flow
 
@@ -33,7 +36,7 @@ The formula interface expects:
 - a single outcome on the left-hand side
 - one binary treatment indicator on the right-hand side
 - one atom value indicating the unobserved or undefined outcome
-- optional baseline covariates passed separately through a one-sided `adjust = ~ ...` formula for the parametric method
+- optional baseline covariates passed separately through a one-sided `adjust = ~ ...` formula
 
 `truncComp()` extracts the variables from the main formula, validates the optional `adjust` specification, checks that the treatment is binary, and reconstructs
 
@@ -162,7 +165,7 @@ The public `init` argument is still accepted for compatibility, but the current 
 
 The semi-parametric method in [R/SPLRT.R](R/SPLRT.R) decomposes the joint test into two components:
 
-- a mean-difference empirical likelihood ratio for the observed outcomes
+- an empirical-likelihood ratio for the observed-outcome treatment effect
 - a logistic likelihood-ratio test for the observation indicator
 
 The returned joint statistic is
@@ -175,7 +178,7 @@ and the p-value is computed from `chisq(df = 2)`.
 
 ### Observed-outcome component
 
-For the continuous part, `SPLRT()` extracts
+For unadjusted fits, `SPLRT()` extracts
 
 - `yAlive1`: observed outcomes in the control group
 - `yAlive2`: observed outcomes in the treatment group
@@ -192,15 +195,27 @@ This returns:
 - `conf.int`: the empirical-likelihood confidence interval
 - `statistic`: the observed-outcome likelihood-ratio statistic
 
-The result is then mapped into the package-level outputs:
+For adjusted fits, `SPLRT()` instead builds the observed-outcome design matrix
+for the additive model `Y ~ R + L` on the `A = 1` rows and calls the regression
+empirical-likelihood helper:
 
-- `muDelta`
-- `muDeltaCI`
-- `muW`
+```r
+el_regression_fit(observed_data, Y ~ R + L, term = "R", mu = 0, conf.level = conf.level)
+```
+
+This adjusted helper:
+
+- uses the unconstrained OLS treatment coefficient as `muDelta`
+- profiles the nuisance coefficients for fixed candidate treatment effects
+- solves the EL dual problem for the moment equations `X_i (Y_i - X_i^T \beta)`
+- inverts the profiled statistic to obtain `muDeltaCI`
+
+The result is then mapped into the package-level outputs `muDelta`, `muDeltaCI`,
+and `muW`.
 
 ### Observation component
 
-For the binary part, `SPLRT()` fits:
+For the binary part, unadjusted `SPLRT()` fits:
 
 ```r
 m0 <- glm(A ~ 1, family = binomial(), data = data)
@@ -213,6 +228,16 @@ and derives:
 - `alphaDeltaCI` from `confint(m1)`
 - `alphaW` from the logistic likelihood-ratio test `anova(m0, m1, test = "LRT")`
 
+For adjusted `SPLRT`, the binary component is shared conceptually with adjusted
+`LRT`:
+
+- logistic null: `A ~ L`
+- logistic alternative: `A ~ R + L`
+
+The implementation reuses the model-fitting helpers from [R/LRT.R](R/LRT.R) to
+obtain `alphaDelta`, `alphaDeltaCI`, and `alphaW`, but the continuous component
+remains semi-parametric.
+
 ### Final semi-parametric result
 
 The package combines the two components as:
@@ -222,11 +247,22 @@ W <- as.numeric(muW + alphaW)
 p <- 1 - stats::pchisq(W, 2)
 ```
 
-The returned object still has the same external shape as before, so the public API did not change when the empirical-likelihood dependency was internalized.
+For adjusted `SPLRT`, the returned object keeps the same top-level fields, but:
+
+- `muDelta` and `alphaDelta` are conditional treatment effects
+- `Delta = NA` and `DeltaCI = c(NA, NA)`
+- simultaneous confidence regions are intentionally rejected
+
+The returned object still has the same external shape as before, so the public
+API did not change when the empirical-likelihood dependency was internalized or
+when the adjusted semi-parametric extension was added.
 
 ## Internal Empirical-Likelihood Engine
 
-The file [R/empiricalLikelihood.R](R/empiricalLikelihood.R) contains a focused implementation of the two-sample empirical likelihood for a difference in means. It intentionally implements only the slice of functionality that `TruncComp2` needs.
+The file [R/empiricalLikelihood.R](R/empiricalLikelihood.R) contains a focused empirical-likelihood implementation. It now covers both:
+
+- the original two-sample mean-difference EL needed by unadjusted `SPLRT`
+- the regression-coefficient EL profile needed by adjusted `SPLRT`
 
 ### Design goals
 
@@ -236,6 +272,7 @@ The replacement was designed to:
 - keep the user-facing `SPLRT` results stable
 - preserve the `htest`-like shape needed by the current code
 - provide a fast statistic-only path for simultaneous confidence-region calculations
+- extend the semi-parametric method to additive covariate adjustment without introducing new runtime dependencies
 
 ### Main internal helpers
 
@@ -364,6 +401,20 @@ mean(x) - mean(y)
 
 rather than being obtained by a numerical optimizer.
 
+#### `el_regression_fit()`
+
+This is the adjusted semi-parametric analogue of `el_mean_diff_fit()`. It:
+
+- builds the observed-outcome design matrix for the adjusted model
+- uses the OLS treatment coefficient as the unconstrained estimate
+- profiles the nuisance coefficients for a fixed treatment coefficient
+- solves the EL dual problem for the stacked estimating equations
+- inverts the profiled statistic for the marginal interval
+
+For the special no-covariate design `Y ~ R`, it deliberately delegates back to
+`el_mean_diff_fit()` so the extension collapses exactly to the original
+two-sample EL behavior.
+
 ## Confidence-Region Implementation
 
 The simultaneous-confidence-region code lives in [R/CI.R](R/CI.R).
@@ -395,6 +446,7 @@ Before building the surface, it now checks that the supplied object:
 - inherits from `TruncComp2`
 - represents a successful fit
 - was fitted with `method = "SPLRT"`
+- is not an adjusted semi-parametric fit
 
 The default grids are also guarded so that non-finite odds-ratio confidence
 limits fall back to a finite centered grid rather than propagating `log(0)` or

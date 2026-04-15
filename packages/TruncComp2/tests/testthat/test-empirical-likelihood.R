@@ -105,3 +105,52 @@ test_that("empirical-likelihood helpers reject invalid inputs", {
   expect_error(TruncComp2:::el_mean_diff_fit(1, 1:3), "at least two")
   expect_error(TruncComp2:::el_mean_diff_fit(1:3, 1:3, conf.level = 1), "strictly between 0 and 1")
 })
+
+test_that("regression empirical likelihood is zero at the unconstrained OLS coefficient", {
+  observed <- data.frame(
+    Y = c(2.1, 1.9, 2.8, 3.0, 2.4, 3.3, 3.1, 4.0),
+    R = c(0, 0, 0, 0, 1, 1, 1, 1),
+    L = factor(c("a", "b", "a", "b", "a", "b", "a", "b"))
+  )
+
+  design <- TruncComp2:::el_regression_design(Y ~ R + L, observed)
+  expect_true(design$success)
+
+  profile <- TruncComp2:::el_regression_profile_fit(design, design$estimate)
+  expect_true(profile$success)
+  expect_equal(profile$statistic, 0, tolerance = 1e-12)
+  expect_equal(profile$nuisance,
+               as.numeric(design$coefficients[seq_along(design$coefficients) != design$term_index]),
+               tolerance = 1e-12)
+  expect_true(all(profile$dual$weights > 0))
+  expect_equal(sum(profile$dual$weights), 1, tolerance = 1e-10)
+  expect_true(max(abs(profile$dual$weighted_moments)) < 1e-10)
+})
+
+test_that("regression empirical likelihood is finite and non-negative on regular cases", {
+  observed <- data.frame(
+    Y = c(2.1, 1.9, 2.8, 3.0, 2.4, 3.3, 3.1, 4.0),
+    R = c(0, 0, 0, 0, 1, 1, 1, 1),
+    L = factor(c("a", "b", "a", "b", "a", "b", "a", "b"))
+  )
+
+  design <- TruncComp2:::el_regression_design(Y ~ R + L, observed)
+  statistic <- TruncComp2:::el_regression_statistic(design, design$estimate + 0.25)
+
+  expect_true(is.finite(statistic))
+  expect_gte(statistic, 0)
+})
+
+test_that("regression empirical likelihood reduces to the two-sample mean-difference EL without covariates", {
+  x <- c(2.2, 2.7, 2.9, 3.1, 2.5)
+  y <- c(1.8, 2.0, 2.4, 2.6, 2.9)
+  observed <- data.frame(Y = c(y, x), R = c(rep(0, length(y)), rep(1, length(x))))
+
+  mean_fit <- TruncComp2:::el_mean_diff_fit(x, y)
+  regression_fit <- TruncComp2:::el_regression_fit(observed, Y ~ R, mu = 0)
+
+  expect_true(regression_fit$success)
+  expect_equal(regression_fit$estimate, as.numeric(mean_fit$estimate), tolerance = 1e-10)
+  expect_equal(regression_fit$statistic, as.numeric(mean_fit$statistic), tolerance = 1e-8)
+  expect_equal(as.numeric(regression_fit$conf.int), as.numeric(mean_fit$conf.int), tolerance = 1e-7)
+})

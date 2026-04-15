@@ -33,8 +33,10 @@ the returned object if supplied, but does not use it for estimation.}
 \item{adjust}{Optional covariate adjustment. For the formula interface, this
 must be \code{NULL} or a one-sided formula such as \code{~ age + sex}. For the
 default interface, this must be \code{NULL}, a data frame, or a matrix of
-baseline covariates. Covariate adjustment is currently implemented only for
-\code{method = "LRT"}.}
+baseline covariates. The same additive adjustment specification is used in both
+the observed-outcome and observation components. For adjusted \code{SPLRT}
+fits, only marginal intervals are implemented; simultaneous confidence regions
+remain unavailable.}
 }
 
 \value{
@@ -46,7 +48,7 @@ following elements:
 \item{alphaDeltaCI}{Confidence interval for \code{alphaDelta}.}
 \item{Delta}{Empirical difference in means of the combined observed outcome.}
 \item{DeltaCI}{Placeholder for a confidence interval for \code{Delta}; currently
-returned as \code{c(NA, NA)}. For adjusted parametric fits, \code{Delta} is
+returned as \code{c(NA, NA)}. For adjusted fits, \code{Delta} is
 also returned as \code{NA} because the reported treatment effects are
 conditional on the supplied covariates.}
 \item{W}{Joint likelihood-ratio test statistic.}
@@ -80,6 +82,7 @@ truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
 d_adjusted <- loadTruncComp2AdjustedExample()
 truncComp(Y ~ R, atom = 0, data = d_adjusted[, c("Y", "R")], method = "LRT")
 truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
+truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "SPLRT", adjust = ~ L)
 truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 
 # Default interface

@@ -41,7 +41,8 @@ If \code{type = "simultaneous"}, a list with components \code{muDelta},
 
 \details{
 Simultaneous confidence regions are only implemented for fits obtained with
-\code{method = "SPLRT"}.
+\code{method = "SPLRT"} and no covariate adjustment. Adjusted semi-parametric
+fits support only \code{type = "marginal"} in the current version.
 
 Marginal confidence intervals are stored on the fitted object. For
 \code{type = "marginal"}, the requested \code{conf.level} must therefore match

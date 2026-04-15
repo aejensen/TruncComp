@@ -444,7 +444,7 @@ test_that("covariate adjustment changes the conditional fit under strong confoun
   expect_lt(adjusted$W, unadjusted$W)
 })
 
-test_that("adjusted interface validates formulas and rejects unsupported SPLRT adjustment", {
+test_that("adjusted interface validates formulas and default adjustment shapes", {
   case <- adjusted_lrt_case(20260525, 16)
   formula_data <- model_data_for_formula(case, adjust = ~ L1 + L2)
 
@@ -474,11 +474,6 @@ test_that("adjusted interface validates formulas and rejects unsupported SPLRT a
   expect_error(
     truncComp.default(case$Y, case$A, case$R, method = "LRT", adjust = case["L1"][1:5, , drop = FALSE]),
     "same number of rows"
-  )
-
-  expect_error(
-    truncComp(Y ~ R, atom = 0, data = formula_data, method = "SPLRT", adjust = ~ L1),
-    "only implemented for method = \"LRT\""
   )
 })
 

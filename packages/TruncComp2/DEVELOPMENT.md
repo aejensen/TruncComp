@@ -55,3 +55,14 @@ Rscript tools/generate-el-fixture.R
 ```
 
 This script is package-local and writes only into `tests/testthat/fixtures/`.
+
+For the adjusted semi-parametric extension, a package-local validation script is
+also available:
+
+```sh
+Rscript tools/validate-adjusted-splrt.R
+```
+
+That script runs fixed-seed mini-simulation checks for approximate null
+calibration and basic power. It is intended for methodological validation, not
+for routine CI.

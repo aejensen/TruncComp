@@ -119,14 +119,10 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
                            adjust = adjust_spec))
   }
 
-  if(!is.null(adjust_formula) && method == "SPLRT") {
-    stop('Covariate adjustment is currently only implemented for method = "LRT".')
-  }
-
   if(method == "LRT") {
     out <- LRT(d, init, conf.level, adjust = adjust_formula, adjust_spec = adjust_spec)
   } else if(method == "SPLRT") {
-    out <- SPLRT(d, conf.level)
+    out <- SPLRT(d, conf.level, adjust = adjust_formula, adjust_spec = adjust_spec)
   }
 
   out$data <- d

@@ -35,7 +35,8 @@ A list with components:
 
 \details{
 This helper is exported for compatibility, but it is only defined for
-successful semi-parametric fits. Parametric fits and failed fits are rejected.
+successful unadjusted semi-parametric fits. Parametric fits, failed fits, and
+adjusted semi-parametric fits are rejected.
 }
 
 \examples{

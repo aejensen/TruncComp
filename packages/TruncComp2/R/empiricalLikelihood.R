@@ -242,3 +242,559 @@ el_mean_diff_fit <- function(x, y, mu = 0, conf.level = 0.95) {
   class(out) <- "htest"
   out
 }
+
+el_regression_design <- function(formula, data, term = "R") {
+  model_frame <- stats::model.frame(formula, data = data, na.action = stats::na.fail)
+  y <- stats::model.response(model_frame)
+  X <- stats::model.matrix(stats::terms(model_frame), model_frame)
+  term_index <- match(term, colnames(X))
+
+  if(is.na(term_index)) {
+    return(list(success = FALSE,
+                error = paste0("The treatment term '", term, "' is not identifiable in the observed-outcome design.")))
+  }
+
+  qr_x <- qr(X)
+  if(qr_x$rank < ncol(X)) {
+    return(list(success = FALSE,
+                error = "The observed-outcome design matrix is rank deficient."))
+  }
+
+  if(nrow(X) <= ncol(X)) {
+    return(list(success = FALSE,
+                error = "There are too few observed outcomes relative to the adjusted design."))
+  }
+
+  lm_fit <- stats::lm.fit(x = X, y = y)
+  coefficients <- as.numeric(lm_fit$coefficients)
+  names(coefficients) <- colnames(X)
+
+  list(
+    success = TRUE,
+    formula = formula,
+    y = as.numeric(y),
+    X = unname(X),
+    X_names = colnames(X),
+    term = term,
+    term_index = term_index,
+    qr = qr_x,
+    lm_fit = lm_fit,
+    coefficients = coefficients,
+    estimate = as.numeric(coefficients[[term]])
+  )
+}
+
+el_regression_beta <- function(delta, nuisance, term_index, p) {
+  beta <- numeric(p)
+  nuisance_index <- seq_len(p) != term_index
+  beta[term_index] <- delta
+  beta[nuisance_index] <- nuisance
+  beta
+}
+
+el_regression_restricted_ls <- function(design, delta) {
+  nuisance_index <- seq_len(ncol(design$X)) != design$term_index
+  Z <- design$X[, nuisance_index, drop = FALSE]
+  response <- design$y - design$X[, design$term_index] * delta
+
+  if(ncol(Z) == 0) {
+    return(numeric(0))
+  }
+
+  restricted_fit <- stats::lm.fit(x = Z, y = response)
+  coefficients <- as.numeric(restricted_fit$coefficients)
+
+  if(any(!is.finite(coefficients))) {
+    stop("Unable to construct restricted least-squares starting values for the empirical-likelihood profile.")
+  }
+
+  coefficients
+}
+
+el_regression_moments <- function(design, beta) {
+  residuals <- as.numeric(design$y - design$X %*% beta)
+  design$X * residuals
+}
+
+el_dual_state <- function(lambda, G) {
+  t_val <- as.numeric(G %*% lambda)
+  denom <- 1 + t_val
+  feasible <- all(is.finite(denom)) && all(denom > 0)
+
+  if(!feasible) {
+    return(list(feasible = FALSE,
+                objective = Inf,
+                statistic = Inf,
+                score = rep(NA_real_, ncol(G)),
+                hessian = matrix(NA_real_, ncol(G), ncol(G)),
+                denom = denom))
+  }
+
+  inv_denom <- 1 / denom
+  score <- -colSums(G * inv_denom)
+  hessian <- crossprod(G, G * (inv_denom ^ 2))
+  objective <- -sum(log(denom))
+
+  list(feasible = TRUE,
+       objective = objective,
+       statistic = 2 * sum(log(denom)),
+       score = score,
+       hessian = hessian,
+       denom = denom)
+}
+
+el_dual_fit_newton <- function(G, tol = 1e-8, maxit = 100) {
+  p <- ncol(G)
+  lambda <- rep(0, p)
+  state <- el_dual_state(lambda, G)
+
+  if(max(abs(colSums(G))) <= tol) {
+    return(list(success = TRUE,
+                feasible = TRUE,
+                lambda = lambda,
+                statistic = 0,
+                score = colSums(G),
+                denom = rep(1, nrow(G)),
+                iterations = 0,
+                method = "newton"))
+  }
+
+  for(iter in seq_len(maxit)) {
+    if(max(abs(state$score)) <= tol) {
+      return(list(success = TRUE,
+                  feasible = TRUE,
+                  lambda = lambda,
+                  statistic = max(0, state$statistic),
+                  score = state$score,
+                  denom = state$denom,
+                  iterations = iter,
+                  method = "newton"))
+    }
+
+    step_direction <- tryCatch(
+      as.numeric(solve(state$hessian, state$score)),
+      error = function(e) NULL
+    )
+
+    if(is.null(step_direction) || any(!is.finite(step_direction))) {
+      break
+    }
+
+    step_size <- 1
+    accepted <- FALSE
+    for(backtrack in seq_len(60)) {
+      candidate <- lambda - step_size * step_direction
+      candidate_state <- el_dual_state(candidate, G)
+      if(candidate_state$feasible && candidate_state$objective < state$objective) {
+        lambda <- candidate
+        state <- candidate_state
+        accepted <- TRUE
+        break
+      }
+      step_size <- step_size / 2
+    }
+
+    if(!accepted) {
+      break
+    }
+  }
+
+  list(success = FALSE,
+       feasible = FALSE,
+       lambda = lambda,
+       statistic = Inf,
+       score = state$score,
+       denom = state$denom,
+       iterations = maxit,
+       method = "newton")
+}
+
+el_dual_fit_nlminb <- function(G, start = NULL, tol = 1e-8) {
+  p <- ncol(G)
+  if(is.null(start)) {
+    start <- rep(0, p)
+  }
+
+  objective <- function(lambda) {
+    el_dual_state(lambda, G)$objective
+  }
+
+  gradient <- function(lambda) {
+    el_dual_state(lambda, G)$score
+  }
+
+  fit <- tryCatch(
+    suppressWarnings(stats::nlminb(
+      start = start,
+      objective = objective,
+      gradient = gradient,
+      control = list(rel.tol = tol, x.tol = tol, eval.max = 500, iter.max = 500)
+    )),
+    error = function(e) NULL
+  )
+
+  if(is.null(fit)) {
+    return(list(success = FALSE,
+                feasible = FALSE,
+                lambda = start,
+                statistic = Inf,
+                score = rep(NA_real_, p),
+                denom = rep(NA_real_, nrow(G)),
+                iterations = NA_integer_,
+                method = "nlminb"))
+  }
+
+  state <- el_dual_state(fit$par, G)
+  converged <- fit$convergence == 0 &&
+    state$feasible &&
+    max(abs(state$score)) <= max(tol * 10, 1e-7)
+
+  list(success = converged,
+       feasible = state$feasible,
+       lambda = fit$par,
+       statistic = if(converged) max(0, state$statistic) else Inf,
+       score = state$score,
+       denom = state$denom,
+       iterations = fit$iterations,
+       method = "nlminb")
+}
+
+el_dual_fit <- function(G, tol = 1e-8) {
+  G <- as.matrix(G)
+
+  if(nrow(G) < 1 || ncol(G) < 1) {
+    stop("G must have positive dimensions.")
+  }
+
+  if(any(!is.finite(G))) {
+    return(list(success = FALSE,
+                feasible = FALSE,
+                statistic = Inf))
+  }
+
+  fit <- el_dual_fit_newton(G, tol = tol)
+  if(!isTRUE(fit$success)) {
+    fit <- el_dual_fit_nlminb(G, start = fit$lambda, tol = tol)
+  }
+
+  if(!isTRUE(fit$success)) {
+    return(list(success = FALSE,
+                feasible = FALSE,
+                statistic = Inf))
+  }
+
+  weights <- 1 / (nrow(G) * fit$denom)
+
+  list(
+    success = TRUE,
+    feasible = TRUE,
+    lambda = fit$lambda,
+    statistic = max(0, fit$statistic),
+    score = fit$score,
+    weights = as.numeric(weights),
+    weighted_moments = as.numeric(colSums(G * weights)),
+    method = fit$method
+  )
+}
+
+el_regression_profile_fit <- function(design, delta, tol = 1e-8) {
+  if(!isTRUE(design$success)) {
+    return(list(success = FALSE,
+                feasible = FALSE,
+                statistic = Inf,
+                error = design$error))
+  }
+
+  p <- ncol(design$X)
+  nuisance_index <- seq_len(p) != design$term_index
+  nuisance_hat <- design$coefficients[nuisance_index]
+
+  if(abs(delta - design$estimate) <= tol) {
+    beta_hat <- as.numeric(design$coefficients)
+    moments_hat <- el_regression_moments(design, beta_hat)
+    return(list(
+      success = TRUE,
+      feasible = TRUE,
+      beta = beta_hat,
+      nuisance = as.numeric(nuisance_hat),
+      statistic = 0,
+      dual = list(
+        success = TRUE,
+        feasible = TRUE,
+        lambda = rep(0, p),
+        statistic = 0,
+        score = colSums(moments_hat),
+        weights = rep(1 / nrow(design$X), nrow(design$X)),
+        weighted_moments = colSums(moments_hat) / nrow(design$X),
+        method = "closed-form"
+      )
+    ))
+  }
+
+  objective <- function(nuisance) {
+    beta <- el_regression_beta(delta, nuisance, design$term_index, p)
+    moments <- el_regression_moments(design, beta)
+    dual <- el_dual_fit(moments, tol = tol)
+
+    if(!isTRUE(dual$success)) {
+      return(Inf)
+    }
+
+    dual$statistic
+  }
+
+  nuisance_start <- tryCatch(
+    el_regression_restricted_ls(design, delta),
+    error = function(e) NULL
+  )
+
+  if(is.null(nuisance_start)) {
+    return(list(success = FALSE,
+                feasible = FALSE,
+                statistic = Inf,
+                error = "Unable to profile nuisance coefficients for the empirical-likelihood regression fit."))
+  }
+
+  if(length(nuisance_start) == 0) {
+    beta <- el_regression_beta(delta, numeric(0), design$term_index, p)
+    moments <- el_regression_moments(design, beta)
+    dual <- el_dual_fit(moments, tol = tol)
+
+    if(!isTRUE(dual$success)) {
+      return(list(success = FALSE,
+                  feasible = FALSE,
+                  statistic = Inf,
+                  error = "Unable to solve the empirical-likelihood dual problem for the constrained treatment effect."))
+    }
+
+    return(list(success = TRUE,
+                feasible = TRUE,
+                beta = beta,
+                nuisance = numeric(0),
+                statistic = dual$statistic,
+                dual = dual))
+  }
+
+  optimizer <- tryCatch(
+    suppressWarnings(stats::nlminb(
+      start = nuisance_start,
+      objective = objective,
+      control = list(rel.tol = tol, x.tol = tol, eval.max = 500, iter.max = 500)
+    )),
+    error = function(e) NULL
+  )
+
+  if(is.null(optimizer) || optimizer$convergence != 0 || !is.finite(optimizer$objective)) {
+    return(list(success = FALSE,
+                feasible = FALSE,
+                statistic = Inf,
+                error = "Unable to profile nuisance coefficients for the empirical-likelihood regression fit."))
+  }
+
+  beta <- el_regression_beta(delta, optimizer$par, design$term_index, p)
+  moments <- el_regression_moments(design, beta)
+  dual <- el_dual_fit(moments, tol = tol)
+
+  if(!isTRUE(dual$success)) {
+    return(list(success = FALSE,
+                feasible = FALSE,
+                statistic = Inf,
+                error = "Unable to solve the empirical-likelihood dual problem for the constrained treatment effect."))
+  }
+
+  list(
+    success = TRUE,
+    feasible = TRUE,
+    beta = beta,
+    nuisance = optimizer$par,
+    statistic = dual$statistic,
+    dual = dual
+  )
+}
+
+el_regression_statistic <- function(design, delta, tol = 1e-8) {
+  profile <- el_regression_profile_fit(design, delta, tol = tol)
+
+  if(!isTRUE(profile$success)) {
+    return(Inf)
+  }
+
+  as.numeric(profile$statistic)
+}
+
+el_regression_variance <- function(design) {
+  n <- nrow(design$X)
+  p <- ncol(design$X)
+  residuals <- as.numeric(design$y - design$X %*% design$coefficients)
+  rss <- sum(residuals ^ 2)
+
+  if(!is.finite(rss) || rss <= 0 || n <= p) {
+    return(NA_real_)
+  }
+
+  xtx_inverse <- tryCatch(
+    solve(crossprod(design$X)),
+    error = function(e) NULL
+  )
+
+  if(is.null(xtx_inverse)) {
+    return(NA_real_)
+  }
+
+  sigma2 <- rss / (n - p)
+  variance <- sigma2 * xtx_inverse[design$term_index, design$term_index]
+  as.numeric(variance)
+}
+
+el_regression_ci_bound <- function(design, estimate, crit, direction, se, tol = 1e-8) {
+  step <- max(0.5, 2 * se, abs(estimate) * 0.25)
+  if(!is.finite(step) || step <= 0) {
+    step <- 1
+  }
+
+  inner <- estimate
+
+  for(i in seq_len(40)) {
+    candidate <- estimate + direction * step
+    value <- suppressWarnings(el_regression_statistic(design, candidate, tol = tol) - crit)
+
+    if(!is.finite(value)) {
+      outer <- candidate
+      for(j in seq_len(80)) {
+        midpoint <- (inner + outer) / 2
+        midpoint_value <- suppressWarnings(el_regression_statistic(design, midpoint, tol = tol) - crit)
+
+        if(is.finite(midpoint_value) && midpoint_value >= 0) {
+          outer <- midpoint
+          break
+        }
+
+        if(is.finite(midpoint_value)) {
+          inner <- midpoint
+        } else {
+          outer <- midpoint
+        }
+      }
+
+      left <- min(inner, outer)
+      right <- max(inner, outer)
+      for(j in seq_len(120)) {
+        midpoint <- (left + right) / 2
+        midpoint_value <- suppressWarnings(el_regression_statistic(design, midpoint, tol = tol) - crit)
+
+        if(!is.finite(midpoint_value) || midpoint_value >= 0) {
+          right <- midpoint
+        } else {
+          left <- midpoint
+        }
+
+        if(abs(right - left) <= tol) {
+          break
+        }
+      }
+
+      return(as.numeric((left + right) / 2))
+    }
+
+    if(value >= 0) {
+      left <- min(inner, candidate)
+      right <- max(inner, candidate)
+      for(j in seq_len(120)) {
+        midpoint <- (left + right) / 2
+        midpoint_value <- suppressWarnings(el_regression_statistic(design, midpoint, tol = tol) - crit)
+
+        if(!is.finite(midpoint_value) || midpoint_value >= 0) {
+          right <- midpoint
+        } else {
+          left <- midpoint
+        }
+
+        if(abs(right - left) <= tol) {
+          break
+        }
+      }
+
+      return(as.numeric((left + right) / 2))
+    }
+
+    inner <- candidate
+    step <- step * 2
+  }
+
+  NA_real_
+}
+
+el_regression_confint <- function(design, estimate, conf.level, tol = 1e-8) {
+  variance <- el_regression_variance(design)
+  if(!is.finite(variance) || variance <= 0) {
+    return(c(NA_real_, NA_real_))
+  }
+
+  se <- sqrt(variance)
+  crit <- stats::qchisq(conf.level, 1)
+  lower <- el_regression_ci_bound(design, estimate, crit, -1, se, tol = tol)
+  upper <- el_regression_ci_bound(design, estimate, crit, 1, se, tol = tol)
+
+  if(!all(is.finite(c(lower, upper)))) {
+    return(c(NA_real_, NA_real_))
+  }
+
+  conf_int <- c(lower, upper)
+  attr(conf_int, "conf.level") <- conf.level
+  conf_int
+}
+
+el_regression_fit <- function(data, formula, term = "R", mu = 0, conf.level = 0.95, tol = 1e-8) {
+  conf.level <- validateConfidenceLevel(conf.level)
+  design <- el_regression_design(formula, data, term = term)
+
+  if(!isTRUE(design$success)) {
+    return(list(success = FALSE, error = design$error))
+  }
+
+  if(identical(design$X_names, c("(Intercept)", "R"))) {
+    x <- design$y[design$X[, design$term_index] == 1]
+    y <- design$y[design$X[, design$term_index] == 0]
+    mean_fit <- el_mean_diff_fit(x, y, mu = mu, conf.level = conf.level)
+    profile_at_estimate <- el_regression_profile_fit(design, as.numeric(mean_fit$estimate), tol = tol)
+
+    return(list(
+      success = TRUE,
+      estimate = as.numeric(mean_fit$estimate),
+      conf.int = as.numeric(mean_fit$conf.int),
+      statistic = as.numeric(mean_fit$statistic),
+      p.value = as.numeric(mean_fit$p.value),
+      null.value = mu,
+      design = design,
+      profile = profile_at_estimate
+    ))
+  }
+
+  estimate <- as.numeric(design$estimate)
+  statistic <- el_regression_statistic(design, mu, tol = tol)
+
+  if(!is.finite(statistic)) {
+    return(list(success = FALSE,
+                error = "Adjusted semi-parametric EL is not estimable under the supplied covariates."))
+  }
+
+  conf_int <- el_regression_confint(design, estimate, conf.level, tol = tol)
+  if(!all(is.finite(conf_int))) {
+    return(list(success = FALSE,
+                error = "Adjusted semi-parametric EL is not estimable under the supplied covariates."))
+  }
+
+  p_value <- stats::pchisq(statistic, 1, lower.tail = FALSE)
+  profile_at_estimate <- el_regression_profile_fit(design, estimate, tol = tol)
+
+  list(
+    success = TRUE,
+    estimate = estimate,
+    conf.int = conf_int,
+    statistic = statistic,
+    p.value = p_value,
+    null.value = mu,
+    design = design,
+    profile = profile_at_estimate
+  )
+}

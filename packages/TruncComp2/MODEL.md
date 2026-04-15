@@ -8,8 +8,8 @@ The current package implementation is narrower than the general framework discus
 
 - one binary treatment indicator only
 - one atom value only
-- optional baseline-covariate adjustment for `method = "LRT"` through `adjust = ~ ...`
-- no covariate-adjusted `method = "SPLRT"` implementation yet
+- optional additive baseline-covariate adjustment for both `method = "LRT"` and `method = "SPLRT"` through `adjust = ~ ...`
+- adjusted `method = "SPLRT"` currently implements fitted tests and marginal confidence intervals, but not simultaneous confidence regions
 - two estimation methods: parametric likelihood-ratio (`method = "LRT"`) and semi-parametric likelihood-ratio (`method = "SPLRT"`)
 
 This document describes the model as it is implemented in the package source, with the manuscript used for interpretation and motivation.
@@ -66,7 +66,7 @@ Without covariate adjustment, this is the contrast in the continuous component a
 \mu_\delta = E[Y \mid A = 1, R = 1] - E[Y \mid A = 1, R = 0].
 ```
 
-For adjusted parametric fits, `muDelta` is instead the conditional treatment coefficient from the adjusted linear model described below.
+For adjusted fits, `muDelta` is instead the conditional treatment coefficient from the adjusted observed-outcome model described below.
 
 In user-facing output this is labeled:
 
@@ -83,7 +83,7 @@ The binary component models the probability that the continuous outcome is obser
 \right).
 ```
 
-For adjusted parametric fits, `alphaDelta = exp(\beta_\delta)` is the conditional odds ratio from the adjusted logistic model.
+For adjusted fits, `alphaDelta = exp(\beta_\delta)` is the conditional odds ratio from the adjusted logistic model.
 
 In user-facing output this is labeled:
 
@@ -101,7 +101,7 @@ implemented as the empirical difference in sample means of the observed combined
 
 Important: the main package hypothesis test is **not** a direct test of `\Delta = 0`. A treatment can change the observation probability and the observed-outcome mean in offsetting directions, making `\Delta` close to zero even when the treatment clearly affects the joint distribution.
 
-For adjusted parametric fits, `Delta` is returned as `NA` because the implemented treatment effects are conditional regression coefficients rather than standardized marginal combined-outcome contrasts.
+For adjusted fits, `Delta` is returned as `NA` because the implemented treatment effects are conditional regression coefficients rather than standardized marginal combined-outcome contrasts.
 
 ## Why the Joint Test Has Two Degrees of Freedom
 
@@ -276,6 +276,27 @@ This produces:
 
 The continuous outcome distribution is otherwise left unspecified beyond the mean constraint.
 
+When `adjust = ~ L` is supplied, the semi-parametric continuous component switches to an empirical-likelihood regression-coefficient test on the observed outcomes. Let
+
+```math
+X_i = (1, R_i, h(L_i)^T)
+```
+
+and define the estimating equations
+
+```math
+g_i(\beta) = X_i \left(Y_i - X_i^T \beta\right).
+```
+
+The adjusted semi-parametric implementation:
+
+- uses the OLS treatment coefficient as `muDelta`
+- profiles over the nuisance coefficients when testing a candidate treatment coefficient `\delta`
+- solves the empirical-likelihood dual problem for the constrained estimating equations
+- inverts the profiled statistic to obtain `muDeltaCI`
+
+This is a genuine extension beyond the original manuscript and is documented further in [ADJUSTED_SPLRT.md](ADJUSTED_SPLRT.md).
+
 ### Binary component
 
 For the observation indicator, the package fits:
@@ -290,6 +311,13 @@ From this step it obtains:
 - `alphaDelta = exp(coef(m1)["R"])`
 - a confidence interval for `alphaDelta`
 - a likelihood-ratio statistic for the observation model, denoted here by `W_alpha`
+
+With covariate adjustment, the binary component becomes:
+
+- logistic null: `A ~ L`
+- logistic alternative: `A ~ R + L`
+
+and the reported treatment effect remains `alphaDelta = exp(\beta_\delta)`.
 
 ### Joint statistic
 
@@ -307,9 +335,14 @@ p = 1 - F_{\chi^2_2}(W).
 
 This additive construction is also used by the simultaneous confidence-region code in `R/CI.R`, where the joint surface is evaluated over a grid of candidate values for the two treatment-effect parameters.
 
+For adjusted `SPLRT`, the additive statistic is still used, but simultaneous confidence regions are not implemented in this version.
+
 ### Implementation notes
 
-The internal empirical-likelihood engine is implemented in `R/empiricalLikelihood.R` and is intentionally narrower than the former external dependency. It only supports the two-sample mean-difference problem needed by `TruncComp2`.
+The internal empirical-likelihood engine is implemented in `R/empiricalLikelihood.R` and now supports two related problems needed by `TruncComp2`:
+
+- the original two-sample mean-difference empirical likelihood
+- an empirical-likelihood regression-coefficient profile used by adjusted `SPLRT`
 
 At a high level, the implementation:
 
@@ -321,7 +354,7 @@ At a high level, the implementation:
 - constructs the confidence interval by solving `W_mu(delta) = qchisq(conf.level, 1)` over the feasible parameter range
 - uses a cached logistic baseline when evaluating simultaneous confidence-region surfaces so the unconstrained logistic fit is not recomputed at every grid point
 
-This design keeps the `SPLRT` output compatible with the previous package behavior while removing the runtime dependency on `EL`.
+This design keeps the unadjusted `SPLRT` output compatible with the previous package behavior while extending the semi-parametric method to additive covariate adjustment without a runtime dependency on `EL`.
 
 ## Estimation and Confidence Intervals
 
@@ -340,8 +373,8 @@ For both methods, the returned model object contains:
 
 - `muDelta` and `alphaDelta` are estimated for both `LRT` and `SPLRT`
 - marginal confidence intervals for `muDelta` and `alphaDelta` are implemented for both methods
-- simultaneous confidence regions are implemented only for the semi-parametric method
-- `jointContrastCI()` is exported for compatibility but is only defined for successful `SPLRT` fits
+- simultaneous confidence regions are implemented only for unadjusted `SPLRT`
+- `jointContrastCI()` is exported for compatibility but is only defined for successful unadjusted `SPLRT` fits
 - `confint()` uses the fitted model's `conf.level` by default and treats a different requested marginal confidence level as requiring a refit
 
 ### Current implementation detail: `DeltaCI`
@@ -354,7 +387,7 @@ c(NA, NA)
 
 The summary and confidence-interval methods also omit `Delta` from the displayed treatment-contrast table.
 
-For adjusted parametric fits, both `Delta` and `DeltaCI` are stored as `NA` because no standardized marginal combined-outcome contrast is currently implemented for the conditional model.
+For adjusted fits, both `Delta` and `DeltaCI` are stored as `NA` because no standardized marginal combined-outcome contrast is currently implemented for the conditional model.
 
 ## Code-Level Mapping
 
@@ -384,11 +417,10 @@ The following restrictions are part of the current implementation, regardless of
 - the method is not applicable when all outcomes are observed
 - normality of the observed continuous outcomes is assumed only for `method = "LRT"`
 - `method = "SPLRT"` leaves the observed-outcome distribution unspecified beyond mean restrictions
-- covariate adjustment is currently implemented only for `method = "LRT"`
-- the same additive covariate specification is used in both adjusted parametric submodels
+- the same additive covariate specification is used in both adjusted `LRT` submodels and in the adjusted `SPLRT` logistic and observed-outcome components
 - adjusted treatment effects are conditional coefficients with no `R * L` interactions
 - `DeltaCI` is not implemented
-- simultaneous confidence regions are only implemented for `SPLRT`
+- simultaneous confidence regions are only implemented for unadjusted `SPLRT`
 
 ## Worked Example
 
@@ -409,10 +441,10 @@ Interpretation:
 - `alphaDelta` estimates the treatment effect on the odds of being observed rather than taking the atom value
 - `W` and `p` provide the joint test of no treatment effect on either component
 
-If you supply `adjust = ~ L1 + L2` in the parametric method, the interpretation changes slightly:
+If you supply `adjust = ~ L1 + L2`, the interpretation changes slightly:
 
-- `muDelta` is the conditional treatment coefficient from `lm(Y ~ R + L1 + L2)` on the observed outcomes
-- `alphaDelta` is the conditional odds ratio `exp(coef_R)` from `glm(A ~ R + L1 + L2, family = binomial())`
+- `muDelta` is the conditional treatment coefficient from the adjusted observed-outcome model
+- `alphaDelta` is the conditional odds ratio `exp(coef_R)` from the adjusted logistic model
 - `W` and `p` test the joint null that both adjusted treatment coefficients are zero
 
 The packaged adjusted example data make this concrete:
@@ -422,9 +454,11 @@ d_adjusted <- loadTruncComp2AdjustedExample()
 
 fit_unadjusted <- truncComp(Y ~ R, atom = 0, data = d_adjusted[, c("Y", "R")], method = "LRT")
 fit_adjusted <- truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
+fit_splrt_unadjusted <- truncComp(Y ~ R, atom = 0, data = d_adjusted[, c("Y", "R")], method = "SPLRT")
+fit_splrt_adjusted <- truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "SPLRT", adjust = ~ L)
 ```
 
-In that fixed example, `L` is prognostic for both being observed and for the observed outcome value, and the treatment groups are imbalanced in `L`. As a result, the unadjusted parametric `LRT` is significant at the 5% level while the adjusted parametric `LRT` is not, but the adjusted effects remain in the same direction and are only moderately attenuated rather than disappearing completely.
+In that fixed example, `L` is prognostic for both being observed and for the observed outcome value, and the treatment groups are imbalanced in `L`. As a result, both the parametric and semi-parametric fits attenuate after adjustment. In the semi-parametric case, the unadjusted fit is below the 5% level while the adjusted fit is above it, but the adjusted effects remain in the same direction and are only moderately attenuated rather than disappearing completely.
 
 This differs from a standard two-sample t-test or Wilcoxon test on `Y` alone. Those procedures work directly on the combined outcome scale and can miss important effects when the treatment changes the observation probability and the observed-outcome distribution in different directions.
 

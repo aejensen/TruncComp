@@ -68,6 +68,12 @@ confint.TruncComp2 <- function(object, type = "marginal", muDelta = NULL, logORd
     stop("Simultaneous confidence regions are only implemented for the semi-parametric likelihood ratio model.")
   }
 
+  if(object$method == "Semi-empirical Likelihood Ratio Test" &&
+     type == "simultaneous" &&
+     !is.null(object$adjust)) {
+    stop("Simultaneous confidence regions are not implemented for adjusted semi-parametric fits.")
+  }
+
   if (type == "marginal") {
     if(!isTRUE(all.equal(conf.level, object$conf.level, tolerance = sqrt(.Machine$double.eps)))) {
       stop(paste0("Marginal confidence intervals are stored at the fitted confidence level (",
@@ -119,6 +125,10 @@ jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL,
 
   if(!identical(m$method, "Semi-empirical Likelihood Ratio Test")) {
     stop("Simultaneous confidence regions are only implemented for the semi-parametric likelihood ratio model.")
+  }
+
+  if(!is.null(m$adjust)) {
+    stop("Simultaneous confidence regions are not implemented for adjusted semi-parametric fits.")
   }
 
   yAlive1 <- m$data[m$data$R == 0 & m$data$A == 1, "Y"]

@@ -9,7 +9,7 @@ loadTruncComp2AdjustedExample()
 
 \description{
 Loads the packaged example data used to illustrate covariate adjustment in the
-parametric likelihood-ratio test.
+parametric and semi-parametric likelihood-ratio tests.
 }
 
 \value{

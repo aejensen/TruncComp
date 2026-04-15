@@ -22,14 +22,17 @@ The main user entry points are:
 }
 
 The semi-parametric method uses an internal empirical-likelihood implementation
-for the two-sample mean-difference problem and no longer requires the external
-\code{EL} package at runtime.
+for the observed-outcome component and no longer requires the external
+\code{EL} package at runtime. The same package now also supports additive
+covariate adjustment for \code{method = "SPLRT"} through an empirical-likelihood
+regression-coefficient extension.
 
 The helper \code{\link{jointContrastCI}} is intended for fitted
 \code{method = "SPLRT"} objects and computes a simultaneous confidence-region
-surface for the semi-parametric procedure.
+surface for the semi-parametric procedure. This remains available only for
+unadjusted semi-parametric fits.
 
-For illustrating covariate adjustment in the parametric model, the package also
+For illustrating covariate adjustment in both methods, the package also
 ships \code{\link{loadTruncComp2AdjustedExample}}, a fixed example with a
 3-level categorical covariate.
 }
@@ -56,4 +59,6 @@ f1 <- function(n) stats::rnorm(n, 3.5, 1)
 d <- simulateTruncatedData(n = 100, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
 truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
 truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+d_adjusted <- loadTruncComp2AdjustedExample()
+truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "SPLRT", adjust = ~ L)
 }

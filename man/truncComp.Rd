@@ -25,9 +25,9 @@ observation indicator is reconstructed internally as \code{Y != atom}.}
 \item{method}{\code{LRT} for the parametric likelihood-ratio method and
 \code{SPLRT} for the semi-parametric likelihood-ratio method.}
 \item{conf.level}{The level for the confidence intervals (default = 0.95)}
-\item{init}{An optional named list of initial values for the parametric maximum
-likelihood optimization. If omitted, the function attempts to construct
-moment-based starting values.}
+\item{init}{An optional object accepted for compatibility with older
+parametric fits. The current closed-form \code{LRT} implementation stores it on
+the returned object if supplied, but does not use it for estimation.}
 }
 
 \value{

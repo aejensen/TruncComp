@@ -65,26 +65,61 @@ rather than silently pretending it can recompute the stored intervals.
 
 ## Parametric Path
 
-The parametric likelihood-ratio implementation in [R/LRT.R](/Users/czv146/Documents/GitHub/TruncComp/R/LRT.R) is organized around two nested likelihoods:
+The parametric likelihood-ratio implementation in [R/LRT.R](/Users/czv146/Documents/GitHub/TruncComp/R/LRT.R) now computes the null and alternative likelihoods directly from sufficient statistics instead of fitting two generic optimizer objects.
 
-- `logLikH0()`: common observation probability and common observed-outcome mean across groups
-- `logLikHA()`: treatment effect allowed in both components
+The model is unchanged:
 
-The helper `dQoL()` computes the observation-level contribution
+- `A | R` is Bernoulli with one probability per arm under `HA` and a common probability under `H0`
+- `Y | A = 1, R` is Normal with one mean per arm under `HA`, a common mean under `H0`, and a common variance in both models
+
+### Bernoulli component
+
+For the observation indicator, the code works with grouped counts:
+
+- `n0`, `n1`: group sizes
+- `k0`, `k1`: numbers observed in each group
+
+It computes:
+
+- the maximized Bernoulli log-likelihood under `HA` using `pi0 = k0 / n0` and `pi1 = k1 / n1`
+- the maximized Bernoulli log-likelihood under `H0` using the pooled `pi = (k0 + k1) / (n0 + n1)`
+- the component LR statistic `W_A`
+
+The point estimate `alphaDelta` is then derived as the odds ratio implied by `pi1` and `pi0`.
+
+### Normal component
+
+For the observed outcomes, the code works with:
+
+- the observed group means `mu0` and `mu1`
+- the pooled observed mean under `H0`
+- the within-group sum of squares `SSE1`
+- the pooled sum of squares `SSE0`
+
+From these summaries it computes:
+
+- the maximized Normal log-likelihood under `HA`
+- the maximized Normal log-likelihood under `H0`
+- the component LR statistic `W_Y`
+
+The estimate `muDelta` is the observed-mean difference `mu1 - mu0`.
+
+### Final statistic
+
+The parametric joint test is assembled additively:
 
 ```math
-f_Y(Y_i \mid \mu_i, \sigma)^{A_i}\pi_i^{A_i}(1-\pi_i)^{1-A_i}.
+W = W_A + W_Y,
 ```
 
-The models are fitted with `bbmle::mle2()`, and the nested-model comparison from `bbmle::anova()` produces:
-
-- the joint statistic `W`
-- the p-value `p`
+and the p-value is computed from `chisq(df = 2)`.
 
 The treatment effects returned to the user are:
 
 - `muDelta`: difference in means among observed outcomes
 - `alphaDelta`: odds ratio of being observed
+
+The public `init` argument is still accepted for compatibility, but the current closed-form parametric path does not use it for estimation.
 
 ## Semi-Parametric Path
 
@@ -356,7 +391,7 @@ These choices are what allow the implementation to match the previous `EL`-based
 
 ## Test Coverage
 
-The current test suite in [tests/testthat](/Users/czv146/Documents/GitHub/TruncComp/tests/testthat) covers four layers.
+The current test suite in [tests/testthat](/Users/czv146/Documents/GitHub/TruncComp/tests/testthat) covers five layers.
 
 ### 1. Low-level numerical tests
 
@@ -379,16 +414,32 @@ and can be regenerated with:
 
 This lets the tests compare against upstream behavior without requiring `EL` at runtime.
 
-### 3. TruncComp integration tests
+### 3. Frozen parametric LRT parity fixtures
+
+A second frozen fixture stores outputs from the previous optimizer-based
+parametric implementation:
+
+[tests/testthat/fixtures/lrt_reference.rds](/Users/czv146/Documents/GitHub/TruncComp/tests/testthat/fixtures/lrt_reference.rds)
+
+and can be regenerated with:
+
+[tools/generate-lrt-fixture.R](/Users/czv146/Documents/GitHub/TruncComp/tools/generate-lrt-fixture.R)
+
+This allows the closed-form parametric implementation to be checked against the
+earlier `bbmle`-based path on regular interior datasets.
+
+### 4. TruncComp integration tests
 
 These verify that:
 
+- `LRT` matches the frozen optimizer reference on regular cases
+- `LRT` boundary cases still return a usable test statistic even when Wald intervals are undefined
 - `SPLRT` still reproduces the package example outputs
 - marginal confidence intervals still print correctly
 - the joint confidence-region surface is finite and well-shaped
 - the null and fitted-point joint statistics behave as expected
 
-### 4. Failure-mode and property tests
+### 5. Failure-mode and property tests
 
 These cover:
 

@@ -152,10 +152,13 @@ with
 
 The implemented nested models are:
 
-- Under `H0`: common `alpha`, common `mu`, common `sigma`
-- Under `HA`: `alpha + alphaDelta * R`, `mu + muDelta * R`, common `sigma`
+- Under `H0`: common observation probability `pi`, common observed-outcome mean `mu`, and common `sigma`
+- Under `HA`: arm-specific observation probabilities `pi_0`, `pi_1`, arm-specific observed-outcome means `mu_0`, `mu_1`, and common `sigma`
 
-The code works on the log-odds scale internally and stores the continuous-component effect as `muDelta`. For the binary component it fits the coefficient on the log-odds scale and reports `alphaDelta = exp(coef)` as an odds ratio.
+The package still reports the treatment effects as:
+
+- `muDelta = mu_1 - mu_0`
+- `alphaDelta`, the odds ratio implied by `pi_1` and `pi_0`
 
 ### Observation-level likelihood contribution
 
@@ -170,17 +173,28 @@ where `f_Y` is the normal density. This means:
 - if `A_i = 1`, the observation contributes both a Bernoulli term and a normal-density term
 - if `A_i = 0`, the normal term is raised to the power zero and the contribution is only `(1 - \pi_i)`
 
-This is exactly how `dQoL()` is coded in `R/LRT.R`.
+The current implementation evaluates this likelihood through its Bernoulli and Normal sufficient statistics rather than by fitting a generic optimizer object.
 
 ### Test statistic
 
-The package fits the null and alternative models with `bbmle::mle2()` and then compares them using a likelihood-ratio test:
+The package computes the maximized likelihood-ratio statistic directly:
 
 ```math
 W = 2(\ell_{HA} - \ell_{H0}),
 ```
 
-with the returned p-value taken from the nested-model comparison in `bbmle::anova(mH0, mHA)`.
+which decomposes into:
+
+```math
+W = W_A + W_Y,
+```
+
+where:
+
+- `W_A` is the grouped Bernoulli likelihood-ratio statistic for the observation indicator
+- `W_Y` is the Normal likelihood-ratio statistic for the observed outcomes with common variance
+
+The returned p-value is computed from a chi-squared reference distribution with 2 degrees of freedom.
 
 ### Reported quantities
 

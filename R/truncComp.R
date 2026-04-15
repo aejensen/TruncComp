@@ -49,17 +49,7 @@ truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL) {
   }
 
   if(method == "LRT") {
-    if(is.null(init)) {
-      init <- getLRstartingValues(d)
-    }
-
     out <- LRT(d, init, conf.level)
-
-    if(is.null(out)) {
-      error <- "Estimation failed due to optimization error."
-      warning(error)
-      out <- returnErrorData(error, method, conf.level, init = init, data = d)
-    }
   } else if(method == "SPLRT") {
     out <- SPLRT(d, conf.level)
   }

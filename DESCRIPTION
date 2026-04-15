@@ -1,7 +1,7 @@
 Package: TruncComp
 Type: Package
 Title: Two-sample comparison of truncated continuous outcome by parametric or semi-parametric maximum likelihood
-Version: 0.1
+Version: 0.2.0
 Author: Andreas Kryger Jensen
 Maintainer: Andreas Kryger Jensen <aeje@sund.ku.dk>
 Description: Implements likelihood-ratio methods for comparing two groups when

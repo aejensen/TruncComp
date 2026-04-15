@@ -17,6 +17,8 @@ The main user entry points are:
   \item{\code{\link{summary.TruncComp2}} and \code{\link{print.TruncComp2}} for reporting results}
   \item{\code{\link{confint.TruncComp2}} for marginal confidence intervals and simultaneous confidence regions}
   \item{\code{\link{simulateTruncatedData}} for generating example two-group data}
+  \item{\code{\link{loadTruncComp2Example}} for loading the packaged example data}
+  \item{\code{\link{loadTruncComp2AdjustedExample}} for loading the packaged adjusted example data}
 }
 
 The semi-parametric method uses an internal empirical-likelihood implementation
@@ -26,6 +28,10 @@ for the two-sample mean-difference problem and no longer requires the external
 The helper \code{\link{jointContrastCI}} is intended for fitted
 \code{method = "SPLRT"} objects and computes a simultaneous confidence-region
 surface for the semi-parametric procedure.
+
+For illustrating covariate adjustment in the parametric model, the package also
+ships \code{\link{loadTruncComp2AdjustedExample}}, a fixed example with a
+3-level categorical covariate.
 }
 
 \author{

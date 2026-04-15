@@ -23,70 +23,81 @@ interior_lrt_case <- function(seed, n, mu0, mu1, sigma, pi0, pi1) {
   stop("Unable to generate an interior parametric LRT case.")
 }
 
-parametric_null_nll <- function(par, data) {
-  alpha <- par[1]
-  mu <- par[2]
-  sigma <- exp(par[3])
-  pi <- stats::plogis(alpha)
+adjusted_lrt_case <- function(seed, n, treatment_effect = 0.7, confounded = FALSE) {
+  for(offset in 0:1000) {
+    set.seed(seed + offset)
+    total_n <- 2 * n
+    l1 <- stats::rnorm(total_n)
+    l2 <- factor(sample(c("a", "b"), total_n, replace = TRUE))
 
-  y_alive <- data$Y[data$A == 1]
-  loglik_a <- sum(data$A * log(pi) + (1 - data$A) * log1p(-pi))
-  loglik_y <- sum(stats::dnorm(y_alive, mean = mu, sd = sigma, log = TRUE))
+    if(confounded) {
+      r <- stats::rbinom(total_n, 1, stats::plogis(0.9 * l1 + 0.8 * (l2 == "b")))
+      if(sum(r == 0) < n / 2 || sum(r == 1) < n / 2) {
+        next
+      }
+    } else {
+      r <- c(rep(0, n), rep(1, n))
+    }
 
-  -(loglik_a + loglik_y)
+    lp_a <- -0.4 + 0.5 * r + 0.7 * l1 - 0.5 * (l2 == "b")
+    a <- stats::rbinom(total_n, 1, stats::plogis(lp_a))
+
+    if(sum(a[r == 0]) < 3 || sum(a[r == 1]) < 3 || all(a == 1)) {
+      next
+    }
+
+    mu <- 1.6 + treatment_effect * r + 0.6 * l1 + 0.5 * (l2 == "b")
+    y <- numeric(total_n)
+    y[a == 1] <- stats::rnorm(sum(a), mu[a == 1], 0.7)
+
+    observed <- data.frame(Y = y[a == 1], R = r[a == 1], L1 = l1[a == 1], L2 = l2[a == 1])
+    gaussian_fit <- stats::lm(Y ~ R + L1 + L2, data = observed)
+    bernoulli_fit <- suppressWarnings(stats::glm(A ~ R + L1 + L2,
+                                                 family = stats::binomial(),
+                                                 data = data.frame(A = a, R = r, L1 = l1, L2 = l2)))
+
+    if(anyNA(stats::coef(gaussian_fit)) ||
+       anyNA(stats::coef(bernoulli_fit)) ||
+       summary(gaussian_fit)$sigma <= 0) {
+      next
+    }
+
+    fitted_probs <- stats::fitted(bernoulli_fit)
+    if(any(!is.finite(fitted_probs)) || any(fitted_probs <= 1e-6 | fitted_probs >= 1 - 1e-6)) {
+      next
+    }
+
+    return(data.frame(Y = y, A = a, R = r, L1 = l1, L2 = l2))
+  }
+
+  stop("Unable to generate an interior adjusted parametric LRT case.")
 }
 
-parametric_alt_nll <- function(par, data) {
-  alpha0 <- par[1]
-  alpha1 <- par[2]
-  mu0 <- par[3]
-  mu1 <- par[4]
-  sigma <- exp(par[5])
+model_data_for_formula <- function(data, adjust = NULL) {
+  variables <- c("Y", "R")
+  if(!is.null(adjust)) {
+    variables <- unique(c(variables, all.vars(adjust)))
+  }
 
-  pi <- ifelse(data$R == 0, stats::plogis(alpha0), stats::plogis(alpha1))
-  mu <- ifelse(data$R == 0, mu0, mu1)
-
-  loglik_a <- sum(data$A * log(pi) + (1 - data$A) * log1p(-pi))
-  loglik_y <- sum(stats::dnorm(data$Y[data$A == 1],
-                               mean = mu[data$A == 1],
-                               sd = sigma,
-                               log = TRUE))
-
-  -(loglik_a + loglik_y)
+  data[, variables, drop = FALSE]
 }
 
-optim_parametric_lrt <- function(data) {
-  observed <- data[data$A == 1, , drop = FALSE]
-  start_null <- c(stats::qlogis(mean(data$A)),
-                  mean(observed$Y),
-                  log(stats::sd(observed$Y)))
-  start_alt <- c(stats::qlogis(mean(data$A[data$R == 0])),
-                 stats::qlogis(mean(data$A[data$R == 1])),
-                 mean(observed$Y[observed$R == 0]),
-                 mean(observed$Y[observed$R == 1]),
-                 log(stats::sd(observed$Y)))
+runtime_model_reference <- function(data, conf.level = 0.95, adjust = NULL) {
+  formulas <- TruncComp2:::parametric_model_formulas(adjust)
+  observed_variables <- c("Y", "R")
+  if(!is.null(adjust)) {
+    observed_variables <- unique(c(observed_variables, all.vars(adjust)))
+  }
+  observed <- data[data$A == 1, observed_variables, drop = FALSE]
 
-  opt_null <- stats::optim(start_null,
-                           parametric_null_nll,
-                           data = data,
-                           method = "BFGS",
-                           control = list(reltol = 1e-12, maxit = 1000))
-  opt_alt <- stats::optim(start_alt,
-                          parametric_alt_nll,
-                          data = data,
-                          method = "BFGS",
-                          control = list(reltol = 1e-12, maxit = 1000))
-
-  2 * (-opt_alt$value + opt_null$value)
-}
-
-runtime_model_reference <- function(data, conf.level = 0.95) {
-  observed <- data[data$A == 1, c("Y", "R"), drop = FALSE]
-
-  glm_null <- stats::glm(A ~ 1, family = stats::binomial(), data = data)
-  glm_alt <- stats::glm(A ~ R, family = stats::binomial(), data = data)
-  lm_null <- stats::lm(Y ~ 1, data = observed)
-  lm_alt <- stats::lm(Y ~ R, data = observed)
+  glm_null <- suppressWarnings(stats::glm(formulas$bernoulli_null,
+                                          family = stats::binomial(),
+                                          data = data))
+  glm_alt <- suppressWarnings(stats::glm(formulas$bernoulli_alt,
+                                         family = stats::binomial(),
+                                         data = data))
+  lm_null <- stats::lm(formulas$normal_null, data = observed)
+  lm_alt <- stats::lm(formulas$normal_alt, data = observed)
 
   z <- stats::qnorm((1 + conf.level) / 2)
   log_or <- stats::coef(glm_alt)[["R"]]
@@ -103,6 +114,79 @@ runtime_model_reference <- function(data, conf.level = 0.95) {
   )
 }
 
+parametric_null_nll <- function(par, data, adjust = NULL) {
+  formulas <- TruncComp2:::parametric_model_formulas(adjust)
+  adjust_vars <- if(is.null(adjust)) character(0) else all.vars(adjust)
+  bernoulli_x <- stats::model.matrix(formulas$bernoulli_null, data = data)
+  observed <- data[data$A == 1, unique(c("Y", "R", adjust_vars)), drop = FALSE]
+  gaussian_x <- stats::model.matrix(formulas$normal_null, data = observed)
+
+  n_bernoulli <- ncol(bernoulli_x)
+  n_gaussian <- ncol(gaussian_x)
+
+  beta_bernoulli <- par[seq_len(n_bernoulli)]
+  beta_gaussian <- par[n_bernoulli + seq_len(n_gaussian)]
+  sigma <- exp(par[n_bernoulli + n_gaussian + 1])
+
+  pi <- stats::plogis(drop(bernoulli_x %*% beta_bernoulli))
+  mu <- drop(gaussian_x %*% beta_gaussian)
+
+  loglik_a <- sum(data$A * log(pi) + (1 - data$A) * log1p(-pi))
+  loglik_y <- sum(stats::dnorm(observed$Y, mean = mu, sd = sigma, log = TRUE))
+
+  -(loglik_a + loglik_y)
+}
+
+parametric_alt_nll <- function(par, data, adjust = NULL) {
+  formulas <- TruncComp2:::parametric_model_formulas(adjust)
+  adjust_vars <- if(is.null(adjust)) character(0) else all.vars(adjust)
+  bernoulli_x <- stats::model.matrix(formulas$bernoulli_alt, data = data)
+  observed <- data[data$A == 1, unique(c("Y", "R", adjust_vars)), drop = FALSE]
+  gaussian_x <- stats::model.matrix(formulas$normal_alt, data = observed)
+
+  n_bernoulli <- ncol(bernoulli_x)
+  n_gaussian <- ncol(gaussian_x)
+
+  beta_bernoulli <- par[seq_len(n_bernoulli)]
+  beta_gaussian <- par[n_bernoulli + seq_len(n_gaussian)]
+  sigma <- exp(par[n_bernoulli + n_gaussian + 1])
+
+  pi <- stats::plogis(drop(bernoulli_x %*% beta_bernoulli))
+  mu <- drop(gaussian_x %*% beta_gaussian)
+
+  loglik_a <- sum(data$A * log(pi) + (1 - data$A) * log1p(-pi))
+  loglik_y <- sum(stats::dnorm(observed$Y, mean = mu, sd = sigma, log = TRUE))
+
+  -(loglik_a + loglik_y)
+}
+
+optim_parametric_lrt <- function(data, adjust = NULL) {
+  fits <- TruncComp2:::parametric_fit_models(data, adjust = adjust)
+  sigma_start <- log(summary(fits$normal_alt)$sigma)
+
+  start_null <- c(unname(stats::coef(fits$bernoulli_null)),
+                  unname(stats::coef(fits$normal_null)),
+                  sigma_start)
+  start_alt <- c(unname(stats::coef(fits$bernoulli_alt)),
+                 unname(stats::coef(fits$normal_alt)),
+                 sigma_start)
+
+  opt_null <- stats::optim(start_null,
+                           parametric_null_nll,
+                           data = data,
+                           adjust = adjust,
+                           method = "BFGS",
+                           control = list(reltol = 1e-12, maxit = 5000))
+  opt_alt <- stats::optim(start_alt,
+                          parametric_alt_nll,
+                          data = data,
+                          adjust = adjust,
+                          method = "BFGS",
+                          control = list(reltol = 1e-12, maxit = 5000))
+
+  2 * (-opt_alt$value + opt_null$value)
+}
+
 test_that("model-backed parametric engine matches direct glm/lm references on regular data", {
   cases <- list(
     interior_lrt_case(20260411, 12, 2.5, 2.5, 1.0, 0.55, 0.55),
@@ -114,6 +198,7 @@ test_that("model-backed parametric engine matches direct glm/lm references on re
     fit <- TruncComp2:::parametric_lrt_fit(case)
     ref <- runtime_model_reference(case)
 
+    expect_true(fit$success)
     expect_equal(fit$W_A, ref$W_A, tolerance = 1e-10)
     expect_equal(fit$W_Y, ref$W_Y, tolerance = 1e-10)
     expect_equal(fit$W, ref$W_A + ref$W_Y, tolerance = 1e-10)
@@ -137,9 +222,50 @@ test_that("model-backed parametric engine matches direct numerical optimization"
     fit <- TruncComp2:::parametric_lrt_fit(case)
     numeric_lrt <- optim_parametric_lrt(case)
 
+    expect_true(fit$success)
     expect_equal(fit$W, numeric_lrt, tolerance = 1e-6)
     expect_equal(fit$W, fit$W_A + fit$W_Y, tolerance = 1e-12)
     expect_equal(fit$p, stats::pchisq(fit$W, df = 2, lower.tail = FALSE), tolerance = 1e-12)
+  }
+})
+
+test_that("adjusted parametric engine matches direct glm/lm references", {
+  cases <- list(
+    list(data = adjusted_lrt_case(20260501, 16), adjust = ~ L1),
+    list(data = adjusted_lrt_case(20260502, 16), adjust = ~ L2),
+    list(data = adjusted_lrt_case(20260503, 18), adjust = ~ L1 + L2)
+  )
+
+  for(case in cases) {
+    fit <- TruncComp2:::parametric_lrt_fit(case$data, adjust = case$adjust)
+    ref <- runtime_model_reference(case$data, adjust = case$adjust)
+
+    expect_true(fit$success)
+    expect_equal(fit$W_A, ref$W_A, tolerance = 1e-10)
+    expect_equal(fit$W_Y, ref$W_Y, tolerance = 1e-10)
+    expect_equal(fit$W, ref$W_A + ref$W_Y, tolerance = 1e-10)
+    expect_equal(fit$alphaDelta, ref$alphaDelta, tolerance = 1e-10)
+    expect_equal(fit$muDelta, ref$muDelta, tolerance = 1e-10)
+    expect_equal(fit$alphaDeltaCI, ref$alphaDeltaCI, tolerance = 1e-10)
+    expect_equal(fit$muDeltaCI, ref$muDeltaCI, tolerance = 1e-10)
+    expect_true(is.na(fit$Delta))
+    expect_equal(fit$DeltaCI, c(NA_real_, NA_real_))
+  }
+})
+
+test_that("adjusted parametric engine matches direct numerical optimization", {
+  cases <- list(
+    list(data = adjusted_lrt_case(20260511, 16), adjust = ~ L1),
+    list(data = adjusted_lrt_case(20260512, 18), adjust = ~ L1 + L2)
+  )
+
+  for(case in cases) {
+    fit <- TruncComp2:::parametric_lrt_fit(case$data, adjust = case$adjust)
+    numeric_lrt <- optim_parametric_lrt(case$data, adjust = case$adjust)
+
+    expect_true(fit$success)
+    expect_equal(fit$W, numeric_lrt, tolerance = 1e-6)
+    expect_equal(fit$W, fit$W_A + fit$W_Y, tolerance = 1e-12)
   }
 })
 
@@ -167,6 +293,215 @@ test_that("public LRT path returns the expected object and keeps init compatible
   capture.output(ci <- confint(fit, type = "marginal"))
   expect_equal(unname(ci["Difference in means among the observed:", ]), fit$muDeltaCI)
   expect_equal(unname(ci["Odds ratio of being observed:", ]), fit$alphaDeltaCI)
+})
+
+test_that("adjusted formula interface stores adjustment metadata and conditional outputs", {
+  case <- adjusted_lrt_case(20260521, 18)
+  fit <- truncComp(Y ~ R,
+                   atom = 0,
+                   data = model_data_for_formula(case, adjust = ~ L1 + L2),
+                   method = "LRT",
+                   adjust = ~ L1 + L2)
+
+  expect_s3_class(fit, "TruncComp2")
+  expect_true(fit$success)
+  expect_equal(fit$adjust, "L1 + L2")
+  expect_true(all(c("L1", "L2") %in% names(fit$data)))
+  expect_true(is.na(fit$Delta))
+  expect_equal(fit$DeltaCI, c(NA_real_, NA_real_))
+
+  summary_text <- paste(capture.output(summary(fit)), collapse = "\n")
+  expect_match(summary_text, "Adjusted for: L1 \\+ L2")
+
+  capture.output(ci <- confint(fit, type = "marginal"))
+  expect_equal(unname(ci["Difference in means among the observed:", ]), fit$muDeltaCI)
+  expect_equal(unname(ci["Odds ratio of being observed:", ]), fit$alphaDeltaCI)
+})
+
+test_that("packaged adjusted example illustrates attenuation after covariate adjustment", {
+  example_data <- loadTruncComp2AdjustedExample()
+
+  expect_s3_class(example_data, "data.frame")
+  expect_equal(names(example_data), c("R", "L", "Y"))
+  expect_equal(nrow(example_data), 50)
+  expect_equal(as.integer(table(example_data$R)), c(25, 25))
+  expect_true(is.factor(example_data$L))
+  expect_equal(levels(example_data$L), c("low", "mid", "high"))
+
+  expect_gte(sum(example_data$Y[example_data$R == 0] != 0), 2)
+  expect_gte(sum(example_data$Y[example_data$R == 1] != 0), 2)
+  expect_false(all(example_data$Y != 0))
+  expect_equal(unname(as.integer(table(example_data$L, example_data$R)[, "0"])),
+               c(14, 6, 5))
+  expect_equal(unname(as.integer(table(example_data$L, example_data$R)[, "1"])),
+               c(3, 8, 14))
+
+  fit_unadjusted <- truncComp(Y ~ R,
+                              atom = 0,
+                              data = example_data[, c("Y", "R")],
+                              method = "LRT")
+  fit_adjusted <- truncComp(Y ~ R,
+                            atom = 0,
+                            data = example_data,
+                            method = "LRT",
+                            adjust = ~ L)
+
+  expect_true(fit_unadjusted$success)
+  expect_true(fit_adjusted$success)
+  expect_equal(fit_adjusted$adjust, "L")
+
+  expect_lt(fit_unadjusted$p, 0.05)
+  expect_gt(fit_adjusted$p, 0.05)
+  expect_lt(fit_adjusted$W, fit_unadjusted$W)
+  expect_lt(abs(fit_adjusted$muDelta), abs(fit_unadjusted$muDelta))
+  expect_lt(abs(log(as.numeric(fit_adjusted$alphaDelta))),
+            abs(log(as.numeric(fit_unadjusted$alphaDelta))))
+
+  expect_equal(fit_unadjusted$p, 0.04787936, tolerance = 1e-4)
+  expect_equal(fit_adjusted$p, 0.14451384, tolerance = 1e-4)
+  expect_equal(fit_unadjusted$W, 6.078142, tolerance = 1e-4)
+  expect_equal(fit_adjusted$W, 3.86876, tolerance = 1e-4)
+  expect_equal(fit_unadjusted$muDelta, 0.6720578, tolerance = 1e-4)
+  expect_equal(fit_adjusted$muDelta, 0.5511571, tolerance = 1e-4)
+  expect_equal(as.numeric(fit_unadjusted$alphaDelta), 3.160494, tolerance = 1e-5)
+  expect_equal(as.numeric(fit_adjusted$alphaDelta), 1.836725, tolerance = 1e-5)
+})
+
+test_that("adjust equals ~1 reproduces the unadjusted parametric fit", {
+  case <- adjusted_lrt_case(20260522, 18)
+
+  unadjusted <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT")
+  intercept_only <- truncComp(Y ~ R,
+                              atom = 0,
+                              data = case[, c("Y", "R")],
+                              method = "LRT",
+                              adjust = ~ 1)
+
+  expect_true(unadjusted$success)
+  expect_true(intercept_only$success)
+  expect_equal(intercept_only$adjust, NULL)
+  expect_equal(intercept_only$muDelta, unadjusted$muDelta, tolerance = 1e-12)
+  expect_equal(intercept_only$alphaDelta, unadjusted$alphaDelta, tolerance = 1e-12)
+  expect_equal(intercept_only$W, unadjusted$W, tolerance = 1e-12)
+  expect_equal(intercept_only$muDeltaCI, unadjusted$muDeltaCI, tolerance = 1e-12)
+  expect_equal(intercept_only$alphaDeltaCI, unadjusted$alphaDeltaCI, tolerance = 1e-12)
+})
+
+test_that("adjusted default interface accepts data.frame and matrix covariates", {
+  case <- adjusted_lrt_case(20260523, 18)
+
+  fit_df <- truncComp.default(case$Y,
+                              case$A,
+                              case$R,
+                              method = "LRT",
+                              adjust = case["L1"])
+  fit_matrix <- truncComp.default(case$Y,
+                                  case$A,
+                                  case$R,
+                                  method = "LRT",
+                                  adjust = as.matrix(case["L1"]))
+  fit_formula <- truncComp(Y ~ R,
+                           atom = 0,
+                           data = model_data_for_formula(case, adjust = ~ L1),
+                           method = "LRT",
+                           adjust = ~ L1)
+
+  expect_true(fit_df$success)
+  expect_true(fit_matrix$success)
+  expect_true(fit_formula$success)
+  expect_equal(fit_df$muDelta, fit_formula$muDelta, tolerance = 1e-10)
+  expect_equal(fit_df$alphaDelta, fit_formula$alphaDelta, tolerance = 1e-10)
+  expect_equal(fit_df$W, fit_formula$W, tolerance = 1e-10)
+  expect_equal(fit_matrix$muDelta, fit_formula$muDelta, tolerance = 1e-10)
+  expect_equal(fit_matrix$alphaDelta, fit_formula$alphaDelta, tolerance = 1e-10)
+  expect_equal(fit_matrix$W, fit_formula$W, tolerance = 1e-10)
+})
+
+test_that("covariate adjustment changes the conditional fit under strong confounding", {
+  set.seed(20260524)
+  n <- 40
+  l1 <- c(stats::rnorm(n, -1, 0.25), stats::rnorm(n, 1, 0.25))
+  r <- c(rep(0, n), rep(1, n))
+  a <- stats::rbinom(2 * n, 1, stats::plogis(-0.2 + 1.2 * l1))
+  y <- numeric(2 * n)
+  y[a == 1] <- stats::rnorm(sum(a == 1), mean = 2 + 1.4 * l1[a == 1], sd = 0.4)
+  case <- data.frame(Y = y, A = a, R = r, L1 = l1)
+
+  expect_gte(sum(a[r == 0]), 3)
+  expect_gte(sum(a[r == 1]), 3)
+  expect_false(all(a == 1))
+
+  unadjusted <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT")
+  adjusted <- truncComp(Y ~ R,
+                        atom = 0,
+                        data = case[, c("Y", "R", "L1")],
+                        method = "LRT",
+                        adjust = ~ L1)
+
+  expect_true(unadjusted$success)
+  expect_true(adjusted$success)
+  expect_lt(abs(adjusted$muDelta), abs(unadjusted$muDelta))
+  expect_lt(adjusted$W, unadjusted$W)
+})
+
+test_that("adjusted interface validates formulas and rejects unsupported SPLRT adjustment", {
+  case <- adjusted_lrt_case(20260525, 16)
+  formula_data <- model_data_for_formula(case, adjust = ~ L1 + L2)
+
+  expect_error(
+    truncComp(Y ~ R, atom = 0, data = formula_data, method = "LRT", adjust = Y ~ L1),
+    "one-sided formula"
+  )
+  expect_error(
+    truncComp(Y ~ R, atom = 0, data = formula_data, method = "LRT", adjust = ~ R + L1),
+    "must not include the outcome or treatment variable"
+  )
+
+  missing_outcome <- formula_data
+  missing_outcome$Y[1] <- NA_real_
+  expect_error(
+    truncComp(Y ~ R, atom = 0, data = missing_outcome, method = "LRT", adjust = ~ L1 + L2),
+    "missing values"
+  )
+
+  missing_covariate <- formula_data
+  missing_covariate$L1[1] <- NA_real_
+  expect_error(
+    truncComp(Y ~ R, atom = 0, data = missing_covariate, method = "LRT", adjust = ~ L1 + L2),
+    "missing values"
+  )
+
+  expect_error(
+    truncComp.default(case$Y, case$A, case$R, method = "LRT", adjust = case["L1"][1:5, , drop = FALSE]),
+    "same number of rows"
+  )
+
+  expect_error(
+    truncComp(Y ~ R, atom = 0, data = formula_data, method = "SPLRT", adjust = ~ L1),
+    "only implemented for method = \"LRT\""
+  )
+})
+
+test_that("adjusted fits fail cleanly when treatment is aliased or the logistic model separates", {
+  case <- adjusted_lrt_case(20260526, 18)
+
+  aliased_fit <- truncComp.default(case$Y,
+                                   case$A,
+                                   case$R,
+                                   method = "LRT",
+                                   adjust = data.frame(Rcopy = case$R))
+  expect_s3_class(aliased_fit, "TruncComp2")
+  expect_false(aliased_fit$success)
+  expect_match(aliased_fit$error, "not estimable")
+
+  separation_fit <- truncComp.default(case$Y,
+                                      case$A,
+                                      case$R,
+                                      method = "LRT",
+                                      adjust = data.frame(Lsep = case$A))
+  expect_s3_class(separation_fit, "TruncComp2")
+  expect_false(separation_fit$success)
+  expect_match(separation_fit$error, "not estimable")
 })
 
 test_that("LRT boundary cases keep the statistic even when Wald intervals are undefined", {

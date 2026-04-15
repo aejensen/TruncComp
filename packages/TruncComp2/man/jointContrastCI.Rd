@@ -40,8 +40,8 @@ successful semi-parametric fits. Parametric fits and failed fits are rejected.
 
 \examples{
 library(TruncComp2)
-data("TruncComp2Example")
-fit <- truncComp(Y ~ R, atom = 0, data = TruncComp2Example, method = "SPLRT")
+d <- loadTruncComp2Example()
+fit <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 
 joint <- jointContrastCI(fit, plot = FALSE, offset = 1, resolution = 5)
 str(joint)

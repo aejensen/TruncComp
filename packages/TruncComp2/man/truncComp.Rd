@@ -3,9 +3,11 @@
 \alias{truncComp.default}
 \title{Two-sample comparison of truncated continuous outcome}
 \usage{
-truncComp(formula, atom, data, method, conf.level = 0.95, init = NULL)
+truncComp(formula, atom, data, method, conf.level = 0.95, init = NULL,
+  adjust = NULL)
 
-truncComp.default(y, a, r, method, conf.level = 0.95, init = NULL)
+truncComp.default(y, a, r, method, conf.level = 0.95, init = NULL,
+  adjust = NULL)
 }
 \description{
 Two-sample comparison of a continuous outcome with a distinguished atom value
@@ -28,6 +30,11 @@ observation indicator is reconstructed internally as \code{Y != atom}.}
 \item{init}{An optional object accepted for compatibility with older
 parametric fits. The current model-backed \code{LRT} implementation stores it on
 the returned object if supplied, but does not use it for estimation.}
+\item{adjust}{Optional covariate adjustment. For the formula interface, this
+must be \code{NULL} or a one-sided formula such as \code{~ age + sex}. For the
+default interface, this must be \code{NULL}, a data frame, or a matrix of
+baseline covariates. Covariate adjustment is currently implemented only for
+\code{method = "LRT"}.}
 }
 
 \value{
@@ -39,7 +46,9 @@ following elements:
 \item{alphaDeltaCI}{Confidence interval for \code{alphaDelta}.}
 \item{Delta}{Empirical difference in means of the combined observed outcome.}
 \item{DeltaCI}{Placeholder for a confidence interval for \code{Delta}; currently
-returned as \code{c(NA, NA)}.}
+returned as \code{c(NA, NA)}. For adjusted parametric fits, \code{Delta} is
+also returned as \code{NA} because the reported treatment effects are
+conditional on the supplied covariates.}
 \item{W}{Joint likelihood-ratio test statistic.}
 \item{p}{Joint p-value for no treatment effect on either component.}
 \item{method}{Description of the estimation method used.}
@@ -48,7 +57,9 @@ returned as \code{c(NA, NA)}.}
 \item{error}{Error message when estimation fails.}
 \item{init}{Initial values used for the parametric method, if applicable.}
 \item{data}{Internal standardized data frame with columns \code{Y}, \code{A},
-and \code{R}.}
+and \code{R}, plus any supplied adjustment covariates.}
+\item{adjust}{Human-readable adjustment specification stored on the fitted
+object, or \code{NULL} for unadjusted fits.}
 }
 
 \author{Andreas Kryger Jensen <aeje@sund.ku.dk>}
@@ -66,6 +77,9 @@ d <- simulateTruncatedData(n = 100, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
 
 # Formula interface
 truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+d_adjusted <- loadTruncComp2AdjustedExample()
+truncComp(Y ~ R, atom = 0, data = d_adjusted[, c("Y", "R")], method = "LRT")
+truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
 truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 
 # Default interface

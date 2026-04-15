@@ -11,6 +11,13 @@ The package has two main estimation paths:
 
 The exported entry point for both methods is [R/truncComp.R](R/truncComp.R).
 
+Only the parametric path currently supports covariate adjustment. If `adjust` is supplied with `method = "SPLRT"`, the exported entry point errors before estimation.
+
+The package now ships two fixed example loaders:
+
+- `loadTruncComp2Example()` for the original two-column example used by the semi-parametric path
+- `loadTruncComp2AdjustedExample()` for a 3-level categorical-covariate example used to illustrate parametric adjustment
+
 ## End-to-End Control Flow
 
 ### 1. User interface
@@ -18,7 +25,7 @@ The exported entry point for both methods is [R/truncComp.R](R/truncComp.R).
 The public entry point is:
 
 ```r
-truncComp(formula, atom, data, method, conf.level = 0.95, init = NULL)
+truncComp(formula, atom, data, method, conf.level = 0.95, init = NULL, adjust = NULL)
 ```
 
 The formula interface expects:
@@ -26,8 +33,9 @@ The formula interface expects:
 - a single outcome on the left-hand side
 - one binary treatment indicator on the right-hand side
 - one atom value indicating the unobserved or undefined outcome
+- optional baseline covariates passed separately through a one-sided `adjust = ~ ...` formula for the parametric method
 
-`truncComp()` extracts the variables from the formula, checks that the treatment is binary, and reconstructs
+`truncComp()` extracts the variables from the main formula, validates the optional `adjust` specification, checks that the treatment is binary, and reconstructs
 
 ```text
 A = as.numeric(Y != atom)
@@ -42,6 +50,7 @@ Inside `truncComp.default()` the data are stored in a standardized frame with co
 - `Y`: combined observed outcome
 - `A`: observation indicator
 - `R`: treatment indicator
+- any raw adjustment covariates referenced by `adjust`
 
 This representation is used by both the parametric and semi-parametric paths, as well as by the confidence-region code.
 
@@ -49,8 +58,10 @@ This representation is used by both the parametric and semi-parametric paths, as
 
 There are two layers of validation:
 
-- `truncComp()` ensures that the formula is valid, the treatment variable is binary, the atom is numeric, and that there is at least one observed outcome in each arm.
+- `truncComp()` ensures that the formula is valid, the treatment variable is binary, the atom is numeric, any adjustment specification is coherent, and that there is at least one observed outcome in each arm.
 - `isDataOkay()` in [R/utility.R](R/utility.R) requires at least two observed outcomes in each treatment arm.
+
+For formula-based adjusted fits, `truncComp()` builds a coherent analysis frame with `na.action = na.fail`, so missing values in the outcome, treatment, or adjustment covariates stop before estimation.
 
 If the internal data check fails, `truncComp.default()` now returns an error object immediately rather than continuing into estimation.
 
@@ -65,17 +76,36 @@ rather than silently pretending it can recompute the stored intervals.
 
 ## Parametric Path
 
-The parametric likelihood-ratio implementation in [R/LRT.R](R/LRT.R) now uses standard model fits as its primary engine:
+The parametric likelihood-ratio implementation in [R/LRT.R](R/LRT.R) now uses standard model fits as its primary engine.
+
+For unadjusted fits it uses:
 
 - `glm(A ~ 1, family = binomial())` and `glm(A ~ R, family = binomial())` for the observation component
 - `lm(Y ~ 1)` and `lm(Y ~ R)` on the observed-outcome subset for the Normal component
 
-The test statistic is then assembled from ML log-likelihood differences, with explicit fallback logic for singular boundary cases.
+For adjusted fits it uses the same shared covariate specification in both submodels:
 
-The model is unchanged:
+- `glm(A ~ L, family = binomial())` and `glm(A ~ R + L, family = binomial())`
+- `lm(Y ~ L)` and `lm(Y ~ R + L)` on the observed-outcome subset
+
+The test statistic is assembled from ML log-likelihood differences in both cases, with explicit fallback logic for singular boundary cases only in the unadjusted path.
+
+The unadjusted model is unchanged:
 
 - `A | R` is Bernoulli with one probability per arm under `HA` and a common probability under `H0`
 - `Y | A = 1, R` is Normal with one mean per arm under `HA`, a common mean under `H0`, and a common variance in both models
+
+When `adjust` is supplied, the implementation switches to conditional additive models:
+
+- logistic null: `A ~ L`
+- logistic alternative: `A ~ R + L`
+- linear null on observed outcomes: `Y ~ L`
+- linear alternative on observed outcomes: `Y ~ R + L`
+
+The adjusted treatment effects are then:
+
+- `muDelta`: the treatment coefficient from the adjusted linear model
+- `alphaDelta`: `exp()` of the treatment coefficient from the adjusted logistic model
 
 ### Bernoulli component
 
@@ -89,7 +119,9 @@ In regular cases it computes `W_A` from the fitted log-likelihoods and derives:
 - `alphaDelta = exp(coef(m1)["R"])`
 - a Wald interval on the log-odds scale from the fitted coefficient variance
 
-When the observation table hits a boundary, the code preserves exact `0` / `Inf` odds-ratio behavior by falling back to empirical group proportions and returns `NA` intervals.
+When the observation table hits a boundary, the unadjusted code preserves exact `0` / `Inf` odds-ratio behavior by falling back to empirical group proportions and returns `NA` intervals.
+
+For adjusted fits, the logistic component must remain regular: finite treatment coefficient, finite treatment variance, finite log-likelihood, and fitted probabilities strictly inside `(0, 1)`. If those conditions fail, the whole adjusted fit is returned as a failed `TruncComp2` object.
 
 ### Normal component
 
@@ -103,7 +135,9 @@ In regular cases it computes `W_Y` from `logLik(..., REML = FALSE)` and derives:
 - `muDelta` from the treatment coefficient in the observed-outcome model
 - a Wald interval from the fitted coefficient variance
 
-When the observed outcomes have zero residual variance, the code falls back to explicit residual-sum-of-squares rules so exact-fit cases still return the intended `0` or `Inf` LR contribution and `NA` intervals.
+When the observed outcomes have zero residual variance, the unadjusted code falls back to explicit residual-sum-of-squares rules so exact-fit cases still return the intended `0` or `Inf` LR contribution and `NA` intervals.
+
+For adjusted fits, the linear component must also remain regular: no aliased design, finite treatment coefficient, finite treatment variance, and finite positive residual scale. Otherwise the adjusted fit fails cleanly.
 
 ### Final statistic
 
@@ -119,6 +153,8 @@ The treatment effects returned to the user are:
 
 - `muDelta`: difference in means among observed outcomes
 - `alphaDelta`: odds ratio of being observed
+
+When `adjust` is supplied, those quantities become conditional treatment effects and `Delta` / `DeltaCI` are stored as `NA`, because the package does not yet implement a standardized marginal combined-outcome contrast for the adjusted model.
 
 The public `init` argument is still accepted for compatibility, but the current model-backed parametric path does not use it for estimation.
 
@@ -428,8 +464,11 @@ This checks both the model-backed implementation details and the underlying LR s
 
 These verify that:
 
-- `LRT` matches direct `glm` / `lm` references on regular cases
-- `LRT` boundary cases still return a usable test statistic even when Wald intervals are undefined
+- unadjusted `LRT` matches direct `glm` / `lm` references on regular cases
+- adjusted `LRT` matches direct `glm` / `lm` references for continuous, factor, and mixed covariate sets
+- adjusted `LRT` matches separate numerical optimization of the full conditional likelihood on regular datasets
+- adjusted `LRT` fails cleanly for aliased designs or logistic separation rather than returning misleading conditional effects
+- unadjusted `LRT` boundary cases still return a usable test statistic even when Wald intervals are undefined
 - `SPLRT` still reproduces the package example outputs
 - marginal confidence intervals still print correctly
 - the joint confidence-region surface is finite and well-shaped

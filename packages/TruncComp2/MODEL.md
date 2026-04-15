@@ -8,7 +8,8 @@ The current package implementation is narrower than the general framework discus
 
 - one binary treatment indicator only
 - one atom value only
-- no additional covariates in the public interface
+- optional baseline-covariate adjustment for `method = "LRT"` through `adjust = ~ ...`
+- no covariate-adjusted `method = "SPLRT"` implementation yet
 - two estimation methods: parametric likelihood-ratio (`method = "LRT"`) and semi-parametric likelihood-ratio (`method = "SPLRT"`)
 
 This document describes the model as it is implemented in the package source, with the manuscript used for interpretation and motivation.
@@ -44,11 +45,12 @@ where `\mathcal{E}` is the atom supplied to `truncComp()` as `atom`. In the curr
 The exported formula method in `R/truncComp.R` enforces the following:
 
 - the model must be specified with a formula
-- the formula must contain exactly one covariate
-- the covariate must be binary with unique values `0` and `1`
+- the main formula must contain exactly one binary treatment indicator
+- the treatment indicator must be binary with unique values `0` and `1`
 - `atom` must be a single numeric value
 - each treatment group must contain at least one observed outcome
 - the method is not intended for data where all outcomes are observed
+- when `adjust` is supplied, it must be a one-sided formula and may not include the outcome or treatment variable
 
 An additional internal data check requires at least two observed outcomes in each treatment group before estimation proceeds.
 
@@ -58,11 +60,13 @@ The package reports two primary treatment-effect components and one derived cont
 
 ### 1. Difference in means among observed outcomes: `muDelta`
 
-This is the contrast in the continuous component among subjects with `A = 1`:
+Without covariate adjustment, this is the contrast in the continuous component among subjects with `A = 1`:
 
 ```math
 \mu_\delta = E[Y \mid A = 1, R = 1] - E[Y \mid A = 1, R = 0].
 ```
+
+For adjusted parametric fits, `muDelta` is instead the conditional treatment coefficient from the adjusted linear model described below.
 
 In user-facing output this is labeled:
 
@@ -70,7 +74,7 @@ In user-facing output this is labeled:
 
 ### 2. Odds ratio of being observed: `alphaDelta`
 
-The binary component models the probability that the continuous outcome is observed. The package reports the treatment effect as an odds ratio:
+The binary component models the probability that the continuous outcome is observed. Without covariate adjustment, the package reports the treatment effect as an odds ratio:
 
 ```math
 \alpha_\delta = \exp\left(
@@ -79,13 +83,15 @@ The binary component models the probability that the continuous outcome is obser
 \right).
 ```
 
+For adjusted parametric fits, `alphaDelta = exp(\beta_\delta)` is the conditional odds ratio from the adjusted logistic model.
+
 In user-facing output this is labeled:
 
 `Odds ratio of being observed`
 
 ### 3. Derived combined-outcome mean contrast: `Delta`
 
-The package also computes
+For unadjusted fits, the package also computes
 
 ```math
 \Delta = E[\tilde Y \mid R = 1] - E[\tilde Y \mid R = 0],
@@ -94,6 +100,8 @@ The package also computes
 implemented as the empirical difference in sample means of the observed combined outcome values in the two groups.
 
 Important: the main package hypothesis test is **not** a direct test of `\Delta = 0`. A treatment can change the observation probability and the observed-outcome mean in offsetting directions, making `\Delta` close to zero even when the treatment clearly affects the joint distribution.
+
+For adjusted parametric fits, `Delta` is returned as `NA` because the implemented treatment effects are conditional regression coefficients rather than standardized marginal combined-outcome contrasts.
 
 ## Why the Joint Test Has Two Degrees of Freedom
 
@@ -124,7 +132,7 @@ The parametric likelihood-ratio implementation lives in `R/LRT.R`.
 
 ### Model factorization
 
-The code factorizes the likelihood into:
+Without covariate adjustment, the code factorizes the likelihood into:
 
 ```math
 A_i \mid R_i \sim \operatorname{Bernoulli}(\pi_i)
@@ -148,6 +156,22 @@ with
 \mu_i = \mu + \mu_\delta R_i.
 ```
 
+When `adjust = ~ L` is supplied to `truncComp(..., method = "LRT")`, the package extends both submodels with the same additive covariate specification:
+
+```math
+\operatorname{logit} P(A_i = 1 \mid R_i, L_i) = \beta_0 + \beta_\delta R_i + s_\beta(L_i)
+```
+
+```math
+E[Y_i \mid A_i = 1, R_i, L_i] = \mu_0 + \mu_\delta R_i + s_\mu(L_i).
+```
+
+The adjusted joint null is still two-dimensional:
+
+```math
+H_0:\ \beta_\delta = 0 \text{ and } \mu_\delta = 0.
+```
+
 ### Null and alternative models
 
 The implemented nested models are:
@@ -159,6 +183,18 @@ The package still reports the treatment effects as:
 
 - `muDelta = mu_1 - mu_0`
 - `alphaDelta`, the odds ratio implied by `pi_1` and `pi_0`
+
+With covariate adjustment, the fitted null and alternative models become:
+
+- logistic null: `A ~ L`
+- logistic alternative: `A ~ R + L`
+- linear null on observed outcomes: `Y ~ L`
+- linear alternative on observed outcomes: `Y ~ R + L`
+
+and the reported treatment effects are the conditional treatment coefficients:
+
+- `muDelta = \mu_\delta`
+- `alphaDelta = exp(\beta_\delta)`
 
 ### Observation-level likelihood contribution
 
@@ -177,6 +213,11 @@ The current implementation evaluates this likelihood by fitting the Bernoulli an
 
 - `glm(A ~ 1, family = binomial())` and `glm(A ~ R, family = binomial())` for the observation model
 - `lm(Y ~ 1)` and `lm(Y ~ R)` on the `A = 1` subset for the observed outcomes
+
+For adjusted fits, the same pattern becomes:
+
+- `glm(A ~ L, family = binomial())` and `glm(A ~ R + L, family = binomial())`
+- `lm(Y ~ L)` and `lm(Y ~ R + L)` on the `A = 1` subset
 
 ### Test statistic
 
@@ -201,6 +242,8 @@ When the fitted models hit boundary cases such as zero cells in the Bernoulli ta
 
 The returned p-value is computed from a chi-squared reference distribution with 2 degrees of freedom.
 
+Adjusted parametric fits deliberately require regular model estimation. If the adjusted treatment effect is aliased, has non-finite variance, or the fitted likelihood contribution is non-finite, the package returns a failed `TruncComp2` object rather than attempting separation-specific or penalized fallback logic.
+
 ### Reported quantities
 
 The parametric method returns:
@@ -209,6 +252,13 @@ The parametric method returns:
 - `alphaDelta` as an odds ratio and its confidence interval
 - `Delta` as the empirical mean difference in the combined outcome
 - `W` and `p` for the joint likelihood-ratio test
+
+For adjusted parametric fits, the reported quantities are:
+
+- `muDelta` and `muDeltaCI` from the treatment coefficient in the adjusted observed-outcome `lm`
+- `alphaDelta` and `alphaDeltaCI` from the treatment coefficient in the adjusted logistic `glm`
+- `Delta = NA` and `DeltaCI = c(NA, NA)`
+- `W` and `p` from the summed logistic and linear likelihood-ratio statistics
 
 ## Semi-Parametric Model (`method = "SPLRT"`)
 
@@ -296,13 +346,15 @@ For both methods, the returned model object contains:
 
 ### Current implementation detail: `DeltaCI`
 
-`Delta` is computed in both methods as the empirical difference in sample means of the combined outcome, but `DeltaCI` is not currently implemented. In both `R/LRT.R` and `R/SPLRT.R`, it is set to:
+For unadjusted fits, `Delta` is computed as the empirical difference in sample means of the combined outcome, but `DeltaCI` is not currently implemented. In both `R/LRT.R` and `R/SPLRT.R`, it is set to:
 
 ```r
 c(NA, NA)
 ```
 
 The summary and confidence-interval methods also omit `Delta` from the displayed treatment-contrast table.
+
+For adjusted parametric fits, both `Delta` and `DeltaCI` are stored as `NA` because no standardized marginal combined-outcome contrast is currently implemented for the conditional model.
 
 ## Code-Level Mapping
 
@@ -325,14 +377,16 @@ The summary and confidence-interval methods also omit `Delta` from the displayed
 The following restrictions are part of the current implementation, regardless of broader possibilities discussed in the manuscript:
 
 - treatment must be binary and coded `0/1`
-- the formula interface accepts exactly one covariate
+- the main formula interface accepts exactly one treatment variable
 - only one atom value can be specified
 - there must be at least one observed outcome in each treatment group
 - the internal data check effectively requires at least two observed outcomes in each treatment group
 - the method is not applicable when all outcomes are observed
 - normality of the observed continuous outcomes is assumed only for `method = "LRT"`
 - `method = "SPLRT"` leaves the observed-outcome distribution unspecified beyond mean restrictions
-- no covariate adjustment is currently available in the public package interface
+- covariate adjustment is currently implemented only for `method = "LRT"`
+- the same additive covariate specification is used in both adjusted parametric submodels
+- adjusted treatment effects are conditional coefficients with no `R * L` interactions
 - `DeltaCI` is not implemented
 - simultaneous confidence regions are only implemented for `SPLRT`
 
@@ -342,10 +396,10 @@ The package example data contains the combined outcome `Y` and the treatment ind
 
 ```r
 library(TruncComp2)
-data("TruncComp2Example")
+d <- loadTruncComp2Example()
 
 atom <- 0
-model <- truncComp(Y ~ R, atom = atom, data = TruncComp2Example, method = "SPLRT")
+model <- truncComp(Y ~ R, atom = atom, data = d, method = "SPLRT")
 summary(model)
 ```
 
@@ -354,6 +408,23 @@ Interpretation:
 - `muDelta` estimates how much the mean outcome differs between treatment groups among subjects with observed non-atom outcomes
 - `alphaDelta` estimates the treatment effect on the odds of being observed rather than taking the atom value
 - `W` and `p` provide the joint test of no treatment effect on either component
+
+If you supply `adjust = ~ L1 + L2` in the parametric method, the interpretation changes slightly:
+
+- `muDelta` is the conditional treatment coefficient from `lm(Y ~ R + L1 + L2)` on the observed outcomes
+- `alphaDelta` is the conditional odds ratio `exp(coef_R)` from `glm(A ~ R + L1 + L2, family = binomial())`
+- `W` and `p` test the joint null that both adjusted treatment coefficients are zero
+
+The packaged adjusted example data make this concrete:
+
+```r
+d_adjusted <- loadTruncComp2AdjustedExample()
+
+fit_unadjusted <- truncComp(Y ~ R, atom = 0, data = d_adjusted[, c("Y", "R")], method = "LRT")
+fit_adjusted <- truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
+```
+
+In that fixed example, `L` is prognostic for both being observed and for the observed outcome value, and the treatment groups are imbalanced in `L`. As a result, the unadjusted parametric `LRT` is significant at the 5% level while the adjusted parametric `LRT` is not, but the adjusted effects remain in the same direction and are only moderately attenuated rather than disappearing completely.
 
 This differs from a standard two-sample t-test or Wilcoxon test on `Y` alone. Those procedures work directly on the combined outcome scale and can miss important effects when the treatment changes the observation probability and the observed-outcome distribution in different directions.
 

@@ -23,7 +23,7 @@ install.packages("EL", repos = "https://cran.r-project.org", lib = lib_dir, quie
 old_lib_paths <- .libPaths(c(lib_dir, .libPaths()))
 on.exit(.libPaths(old_lib_paths), add = TRUE)
 
-load("data/TruncComp2Example.RData")
+TruncComp2Example <- readRDS(file.path("inst", "extdata", "TruncComp2Example.rds"))
 library(EL)
 
 cases <- list(

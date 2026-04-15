@@ -38,6 +38,24 @@ parametric_loglik_bernoulli <- function(k, n, p) {
   sum(parametric_safe_xlogy(c(k, n - k), c(p, 1 - p)))
 }
 
+parametric_model_formulas <- function(adjust = NULL) {
+  if(is.null(adjust)) {
+    return(list(
+      bernoulli_null = A ~ 1,
+      bernoulli_alt = A ~ R,
+      normal_null = Y ~ 1,
+      normal_alt = Y ~ R
+    ))
+  }
+
+  list(
+    bernoulli_null = stats::update(adjust, A ~ .),
+    bernoulli_alt = stats::update(adjust, A ~ R + .),
+    normal_null = stats::update(adjust, Y ~ .),
+    normal_alt = stats::update(adjust, Y ~ R + .)
+  )
+}
+
 parametric_fit_glm <- function(formula, data) {
   suppressWarnings(tryCatch(
     stats::glm(formula, family = stats::binomial(), data = data),
@@ -52,15 +70,21 @@ parametric_fit_lm <- function(formula, data) {
   ))
 }
 
-parametric_fit_models <- function(data) {
-  observed_data <- data[data$A == 1, c("Y", "R"), drop = FALSE]
+parametric_fit_models <- function(data, adjust = NULL) {
+  formulas <- parametric_model_formulas(adjust)
+  observed_variables <- c("Y", "R")
+  if(!is.null(adjust)) {
+    observed_variables <- unique(c(observed_variables, all.vars(adjust)))
+  }
+  observed_data <- data[data$A == 1, observed_variables, drop = FALSE]
 
   list(
-    bernoulli_null = parametric_fit_glm(A ~ 1, data),
-    bernoulli_alt = parametric_fit_glm(A ~ R, data),
+    formulas = formulas,
+    bernoulli_null = parametric_fit_glm(formulas$bernoulli_null, data),
+    bernoulli_alt = parametric_fit_glm(formulas$bernoulli_alt, data),
     normal_data = observed_data,
-    normal_null = parametric_fit_lm(Y ~ 1, observed_data),
-    normal_alt = parametric_fit_lm(Y ~ R, observed_data)
+    normal_null = parametric_fit_lm(formulas$normal_null, observed_data),
+    normal_alt = parametric_fit_lm(formulas$normal_alt, observed_data)
   )
 }
 
@@ -91,31 +115,99 @@ parametric_clamp_statistic <- function(statistic, tol = 1e-12) {
   statistic
 }
 
-parametric_term_interval <- function(fit, term, conf.level, transform = identity) {
-  if(is.null(fit)) {
-    return(c(NA_real_, NA_real_))
-  }
-
-  coefficients <- tryCatch(stats::coef(fit), error = function(e) NULL)
+parametric_term_variance <- function(fit, term) {
   covariance <- tryCatch(stats::vcov(fit), error = function(e) NULL)
 
-  if(is.null(coefficients) || !(term %in% names(coefficients))) {
-    return(c(NA_real_, NA_real_))
-  }
-
   if(is.null(covariance) || !(term %in% rownames(covariance))) {
+    return(NA_real_)
+  }
+
+  as.numeric(covariance[term, term])
+}
+
+parametric_term_estimate <- function(fit, term) {
+  coefficients <- tryCatch(stats::coef(fit), error = function(e) NULL)
+
+  if(is.null(coefficients) || !(term %in% names(coefficients))) {
+    return(NA_real_)
+  }
+
+  as.numeric(coefficients[[term]])
+}
+
+parametric_term_interval <- function(fit, term, conf.level, transform = identity) {
+  estimate <- parametric_term_estimate(fit, term)
+  variance <- parametric_term_variance(fit, term)
+
+  if(!is.finite(estimate) || !is.finite(variance) || variance < 0) {
     return(c(NA_real_, NA_real_))
   }
 
-  estimate <- as.numeric(coefficients[[term]])
-  se <- sqrt(as.numeric(covariance[term, term]))
-  interval <- transform(parametric_wald_interval(estimate, se, conf.level))
+  interval <- transform(parametric_wald_interval(estimate, sqrt(variance), conf.level))
 
   if(!all(is.finite(interval))) {
     return(c(NA_real_, NA_real_))
   }
 
   as.numeric(interval)
+}
+
+parametric_glm_is_regular <- function(fit, term = NULL, tol = 1e-8) {
+  if(is.null(fit) || !isTRUE(fit$converged)) {
+    return(FALSE)
+  }
+
+  design <- tryCatch(stats::model.matrix(fit), error = function(e) NULL)
+  if(is.null(design) || fit$rank < ncol(design)) {
+    return(FALSE)
+  }
+
+  ll <- parametric_loglik_value(fit)
+  if(!is.finite(ll)) {
+    return(FALSE)
+  }
+
+  fitted_values <- tryCatch(stats::fitted(fit), error = function(e) NULL)
+  if(is.null(fitted_values) ||
+     any(!is.finite(fitted_values)) ||
+     any(fitted_values <= tol | fitted_values >= 1 - tol)) {
+    return(FALSE)
+  }
+
+  if(is.null(term)) {
+    return(TRUE)
+  }
+
+  estimate <- parametric_term_estimate(fit, term)
+  variance <- parametric_term_variance(fit, term)
+
+  is.finite(estimate) && is.finite(variance) && variance > tol
+}
+
+parametric_lm_is_regular <- function(fit, term = NULL, tol = 1e-8) {
+  if(is.null(fit)) {
+    return(FALSE)
+  }
+
+  design <- tryCatch(stats::model.matrix(fit), error = function(e) NULL)
+  if(is.null(design) || fit$rank < ncol(design)) {
+    return(FALSE)
+  }
+
+  ll <- parametric_loglik_value(fit, reml = FALSE)
+  sigma <- tryCatch(summary(fit)$sigma, error = function(e) NA_real_)
+  if(!is.finite(ll) || !is.finite(sigma) || sigma <= tol) {
+    return(FALSE)
+  }
+
+  if(is.null(term)) {
+    return(TRUE)
+  }
+
+  estimate <- parametric_term_estimate(fit, term)
+  variance <- parametric_term_variance(fit, term)
+
+  is.finite(estimate) && is.finite(variance) && variance > tol
 }
 
 parametric_bernoulli_summary <- function(a, r, fits, conf.level, tol = 1e-12) {
@@ -149,8 +241,8 @@ parametric_bernoulli_summary <- function(a, r, fits, conf.level, tol = 1e-12) {
   W <- parametric_clamp_statistic(W, tol = tol)
 
   regular_cells <- all(c(k0, n0 - k0, k1, n1 - k1) > 0)
-  coefficient <- tryCatch(stats::coef(fits$bernoulli_alt)[["R"]], error = function(e) NA_real_)
-  alpha_model <- exp(as.numeric(coefficient))
+  coefficient <- parametric_term_estimate(fits$bernoulli_alt, "R")
+  alpha_model <- exp(coefficient)
   alpha_exact <- parametric_odds_ratio(pi1, pi0)
 
   if(regular_cells && is.finite(alpha_model)) {
@@ -218,8 +310,8 @@ parametric_normal_summary <- function(y0, y1, fits, conf.level, tol = 1e-12) {
     muDeltaCI <- c(NA_real_, NA_real_)
   }
 
-  coefficient <- tryCatch(stats::coef(fits$normal_alt)[["R"]], error = function(e) NA_real_)
-  muDelta <- if(is.finite(coefficient)) as.numeric(coefficient) else mu1 - mu0
+  coefficient <- parametric_term_estimate(fits$normal_alt, "R")
+  muDelta <- if(is.finite(coefficient)) coefficient else mu1 - mu0
 
   if(sse1 <= tol || !all(is.finite(muDeltaCI))) {
     muDeltaCI <- c(NA_real_, NA_real_)
@@ -245,7 +337,92 @@ parametric_normal_summary <- function(y0, y1, fits, conf.level, tol = 1e-12) {
   )
 }
 
-parametric_lrt_fit <- function(data, conf.level = 0.95, tol = 1e-12) {
+parametric_adjusted_lrt_fit <- function(data, adjust, conf.level = 0.95,
+                                        tol = 1e-12, regularity_tol = 1e-8) {
+  fits <- parametric_fit_models(data, adjust = adjust)
+
+  glm_regular <- parametric_glm_is_regular(fits$bernoulli_null, tol = regularity_tol) &&
+    parametric_glm_is_regular(fits$bernoulli_alt, term = "R", tol = regularity_tol)
+  lm_regular <- parametric_lm_is_regular(fits$normal_null, tol = regularity_tol) &&
+    parametric_lm_is_regular(fits$normal_alt, term = "R", tol = regularity_tol)
+
+  if(!(glm_regular && lm_regular)) {
+    return(list(
+      success = FALSE,
+      error = "Adjusted parametric LRT is not estimable under the supplied covariates."
+    ))
+  }
+
+  ll_glm_null <- parametric_loglik_value(fits$bernoulli_null)
+  ll_glm_alt <- parametric_loglik_value(fits$bernoulli_alt)
+  ll_lm_null <- parametric_loglik_value(fits$normal_null, reml = FALSE)
+  ll_lm_alt <- parametric_loglik_value(fits$normal_alt, reml = FALSE)
+
+  if(!all(is.finite(c(ll_glm_null, ll_glm_alt, ll_lm_null, ll_lm_alt)))) {
+    return(list(
+      success = FALSE,
+      error = "Adjusted parametric LRT is not estimable under the supplied covariates."
+    ))
+  }
+
+  W_A <- parametric_clamp_statistic(2 * (ll_glm_alt - ll_glm_null), tol = tol)
+  W_Y <- parametric_clamp_statistic(2 * (ll_lm_alt - ll_lm_null), tol = tol)
+  W <- parametric_clamp_statistic(W_A + W_Y, tol = tol)
+
+  log_alpha_delta <- parametric_term_estimate(fits$bernoulli_alt, "R")
+  mu_delta <- parametric_term_estimate(fits$normal_alt, "R")
+  alpha_delta_ci <- parametric_term_interval(fits$bernoulli_alt, "R", conf.level, transform = exp)
+  mu_delta_ci <- parametric_term_interval(fits$normal_alt, "R", conf.level)
+
+  if(!is.finite(log_alpha_delta) ||
+     !is.finite(mu_delta) ||
+     !all(is.finite(alpha_delta_ci)) ||
+     !all(is.finite(mu_delta_ci))) {
+    return(list(
+      success = FALSE,
+      error = "Adjusted parametric LRT is not estimable under the supplied covariates."
+    ))
+  }
+
+  list(
+    success = TRUE,
+    muDelta = mu_delta,
+    muDeltaCI = mu_delta_ci,
+    alphaDelta = exp(log_alpha_delta),
+    alphaDeltaCI = alpha_delta_ci,
+    Delta = NA_real_,
+    DeltaCI = c(NA_real_, NA_real_),
+    W_A = W_A,
+    W_Y = W_Y,
+    W = W,
+    p = stats::pchisq(W, df = 2, lower.tail = FALSE),
+    bernoulli = list(
+      fit_null = fits$bernoulli_null,
+      fit_alt = fits$bernoulli_alt,
+      ell_h0 = ll_glm_null,
+      ell_ha = ll_glm_alt
+    ),
+    normal = list(
+      fit_null = fits$normal_null,
+      fit_alt = fits$normal_alt,
+      ell_h0 = ll_lm_null,
+      ell_ha = ll_lm_alt
+    )
+  )
+}
+
+parametric_lrt_fit <- function(data, conf.level = 0.95, adjust = NULL,
+                               tol = 1e-12, regularity_tol = 1e-8) {
+  if(!is.null(adjust)) {
+    return(parametric_adjusted_lrt_fit(
+      data,
+      adjust = adjust,
+      conf.level = conf.level,
+      tol = tol,
+      regularity_tol = regularity_tol
+    ))
+  }
+
   y0 <- data$Y[data$R == 0 & data$A == 1]
   y1 <- data$Y[data$R == 1 & data$A == 1]
   fits <- parametric_fit_models(data)
@@ -256,6 +433,7 @@ parametric_lrt_fit <- function(data, conf.level = 0.95, tol = 1e-12) {
   W <- parametric_clamp_statistic(bernoulli$W + normal$W, tol = tol)
 
   list(
+    success = TRUE,
     muDelta = normal$muDelta,
     muDeltaCI = normal$muDeltaCI,
     alphaDelta = bernoulli$alphaDelta,
@@ -271,19 +449,33 @@ parametric_lrt_fit <- function(data, conf.level = 0.95, tol = 1e-12) {
   )
 }
 
-LRT <- function(data, init = NULL, conf.level = 0.95) {
-  fit <- parametric_lrt_fit(data, conf.level = conf.level)
+LRT <- function(data, init = NULL, conf.level = 0.95, adjust = NULL, adjust_spec = NULL) {
+  if(is.null(adjust_spec)) {
+    adjust_spec <- adjustmentSpecification(adjust)
+  }
+
+  fit <- parametric_lrt_fit(data, conf.level = conf.level, adjust = adjust)
+
+  if(!isTRUE(fit$success)) {
+    return(returnErrorData(fit$error,
+                           method = "LRT",
+                           conf.level = conf.level,
+                           init = init,
+                           data = data,
+                           adjust = adjust_spec))
+  }
 
   newTruncComp2(muDelta = fit$muDelta,
-               muDeltaCI = fit$muDeltaCI,
-               alphaDelta = fit$alphaDelta,
-               alphaDeltaCI = fit$alphaDeltaCI,
-               Delta = fit$Delta,
-               DeltaCI = fit$DeltaCI,
-               W = fit$W,
-               p = fit$p,
-               method = "LRT",
-               conf.level = conf.level,
-               success = TRUE,
-               init = init)
+                muDeltaCI = fit$muDeltaCI,
+                alphaDelta = fit$alphaDelta,
+                alphaDeltaCI = fit$alphaDeltaCI,
+                Delta = fit$Delta,
+                DeltaCI = fit$DeltaCI,
+                W = fit$W,
+                p = fit$p,
+                method = "LRT",
+                conf.level = conf.level,
+                success = TRUE,
+                init = init,
+                adjust = adjust_spec)
 }

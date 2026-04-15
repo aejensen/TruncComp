@@ -1,8 +1,8 @@
 test_that("SPLRT reproduces the TruncComp2 example outputs without loading EL", {
   expect_false("EL" %in% loadedNamespaces())
 
-  data("TruncComp2Example", package = "TruncComp2")
-  model <- truncComp(Y ~ R, atom = 0, data = TruncComp2Example, method = "SPLRT")
+  example_data <- loadTruncComp2Example()
+  model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
 
   expect_false("EL" %in% loadedNamespaces())
   expect_true(model$success)
@@ -15,8 +15,8 @@ test_that("SPLRT reproduces the TruncComp2 example outputs without loading EL", 
 })
 
 test_that("marginal and simultaneous confidence helpers still work", {
-  data("TruncComp2Example", package = "TruncComp2")
-  model <- truncComp(Y ~ R, atom = 0, data = TruncComp2Example, method = "SPLRT")
+  example_data <- loadTruncComp2Example()
+  model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
 
   capture.output(ci <- confint(model, type = "marginal"))
   expect_equal(rownames(ci),
@@ -36,8 +36,8 @@ test_that("marginal and simultaneous confidence helpers still work", {
 })
 
 test_that("joint contrast surface matches the null test and vanishes at the fitted point", {
-  data("TruncComp2Example", package = "TruncComp2")
-  model <- truncComp(Y ~ R, atom = 0, data = TruncComp2Example, method = "SPLRT")
+  example_data <- loadTruncComp2Example()
+  model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
 
   expect_equal(TruncComp2:::jointContrastLRT(model$data, 0, 0), model$W, tolerance = 1e-6)
   expect_equal(TruncComp2:::jointContrastLRT(model$data, model$muDelta, log(model$alphaDelta)),
@@ -66,9 +66,9 @@ test_that("existing TruncComp2 data validation still stops before EL helper use"
 })
 
 test_that("jointContrastCI rejects unsupported fits", {
-  data("TruncComp2Example", package = "TruncComp2")
+  example_data <- loadTruncComp2Example()
 
-  splrt_model <- truncComp(Y ~ R, atom = 0, data = TruncComp2Example, method = "SPLRT")
+  splrt_model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
   expect_silent(jointContrastCI(splrt_model, plot = FALSE, offset = 1, resolution = 5))
 
   param_model <- splrt_model
@@ -88,8 +88,8 @@ test_that("jointContrastCI rejects unsupported fits", {
 })
 
 test_that("jointContrastCI falls back to finite default grids", {
-  data("TruncComp2Example", package = "TruncComp2")
-  model <- truncComp(Y ~ R, atom = 0, data = TruncComp2Example, method = "SPLRT")
+  example_data <- loadTruncComp2Example()
+  model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
 
   alpha_fallback <- model
   alpha_fallback$alphaDeltaCI <- c(0, Inf)
@@ -144,8 +144,8 @@ test_that("simulateTruncatedData validates inputs and returns the canonical shap
 })
 
 test_that("cached logistic profile matches the uncached helper", {
-  data("TruncComp2Example", package = "TruncComp2")
-  model <- truncComp(Y ~ R, atom = 0, data = TruncComp2Example, method = "SPLRT")
+  example_data <- loadTruncComp2Example()
+  model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
   logit_reference <- TruncComp2:::logit.prepare(model$data)
 
   expect_equal(TruncComp2:::logit.LRT.prepared(logit_reference, 0),
@@ -154,4 +154,12 @@ test_that("cached logistic profile matches the uncached helper", {
   expect_equal(TruncComp2:::logit.LRT.prepared(logit_reference, log(as.numeric(model$alphaDelta))),
                TruncComp2:::logit.LRT(model$data, log(as.numeric(model$alphaDelta))),
                tolerance = 1e-10)
+})
+
+test_that("loadTruncComp2Example returns the packaged example data", {
+  example_data <- loadTruncComp2Example()
+
+  expect_s3_class(example_data, "data.frame")
+  expect_equal(names(example_data), c("R", "Y"))
+  expect_equal(nrow(example_data), 50)
 })

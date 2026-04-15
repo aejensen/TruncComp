@@ -9,6 +9,7 @@ The package implements:
 The current implementation keeps the same public API for both methods, but now computes both paths internally:
 
 - the parametric method uses `glm` and observed-outcome `lm` fits with ML log-likelihood comparison, plus explicit fallbacks for singular boundary cases
+- the parametric method can also adjust for baseline covariates through a shared `adjust = ~ ...` specification, returning conditional treatment effects
 - the semi-parametric method uses an internal pure-R empirical-likelihood implementation for the observed-outcome mean difference
 
 As a result, the package no longer depends on `EL` or `bbmle` at runtime.
@@ -17,7 +18,8 @@ The currently supported scope is:
 
 - one binary treatment indicator coded `0/1`
 - one atom value representing the unobserved or undefined outcome
-- no additional covariates in the public interface
+- optional baseline-covariate adjustment for `method = "LRT"` through `adjust = ~ ...`
+- no covariate-adjusted `SPLRT` implementation yet
 
 To install the development version of TruncComp2 run the following commands from within R
 
@@ -31,6 +33,8 @@ install_github("aejensen/TruncComp", subdir = "packages/TruncComp2")
 - Statistical model specification: [MODEL.md](MODEL.md)
 - Implementation walkthrough: [IMPLEMENTATION.md](IMPLEMENTATION.md)
 - Package-local development guide: [DEVELOPMENT.md](DEVELOPMENT.md)
+- Packaged example data loader: `loadTruncComp2Example()`
+- Packaged adjusted example data loader: `loadTruncComp2AdjustedExample()`
 
 # Main Interface
 
@@ -38,6 +42,7 @@ The primary entry point is:
 
 ```r
 truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+truncComp(Y ~ R, atom = 0, data = d, method = "LRT", adjust = ~ age + sex)
 truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 ```
 
@@ -47,6 +52,10 @@ The fitted object reports:
 - `alphaDelta`: odds ratio of being observed
 - `W`: joint likelihood-ratio test statistic
 - `p`: joint p-value
+
+When `adjust` is supplied with `method = "LRT"`, `muDelta` and `alphaDelta`
+are conditional treatment effects from the adjusted linear and logistic
+submodels. In that adjusted setting, `Delta` is not reported and remains `NA`.
 
 For `method = "SPLRT"`, simultaneous confidence-region surfaces are available through `confint(..., type = "simultaneous")`.
 
@@ -69,6 +78,13 @@ d <- TruncComp2::simulateTruncatedData(25, f0, f1, pi0, pi1)
 fit_lrt <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
 summary(fit_lrt)
 confint(fit_lrt, type = "marginal")
+
+#Load the fixed adjusted example and compare unadjusted vs adjusted LRT
+d_adjusted <- loadTruncComp2AdjustedExample()
+fit_lrt_unadjusted_example <- truncComp(Y ~ R, atom = 0, data = d_adjusted[, c("Y", "R")], method = "LRT")
+fit_lrt_adjusted <- truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
+summary(fit_lrt_unadjusted_example)
+summary(fit_lrt_adjusted)
 
 #Estimate parameters using the semi-parametric method
 fit_splrt <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")

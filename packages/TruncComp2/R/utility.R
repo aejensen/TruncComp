@@ -11,6 +11,19 @@ isDataOkay <- function(d) {
   TRUE
 }
 
+adjustmentSpecification <- function(adjust) {
+  if(is.null(adjust)) {
+    return(NULL)
+  }
+
+  labels <- attr(stats::terms(adjust), "term.labels")
+  if(length(labels) == 0) {
+    return(NULL)
+  }
+
+  paste(labels, collapse = " + ")
+}
+
 isValid <- function(truncCompObj) {
   isTRUE(truncCompObj$success)
 }
@@ -32,7 +45,8 @@ newTruncComp2 <- function(muDelta = NULL, muDeltaCI = NULL,
                          Delta = NULL, DeltaCI = NULL,
                          W = NULL, p = NULL,
                          method, conf.level, success,
-                         error = "", init = NULL, data = NULL) {
+                         error = "", init = NULL, data = NULL,
+                         adjust = NULL) {
   out <- list(muDelta = muDelta,
               muDeltaCI = muDeltaCI,
               alphaDelta = alphaDelta,
@@ -46,16 +60,19 @@ newTruncComp2 <- function(muDelta = NULL, muDeltaCI = NULL,
               success = success,
               error = error,
               init = init,
-              data = data)
+              data = data,
+              adjust = adjust)
   class(out) <- c("TruncComp2", "list")
   out
 }
 
-returnErrorData <- function(error, method, conf.level, init = NULL, data = NULL) {
+returnErrorData <- function(error, method, conf.level, init = NULL, data = NULL,
+                            adjust = NULL) {
   newTruncComp2(method = method,
                conf.level = conf.level,
                success = FALSE,
                error = error,
                init = init,
-               data = data)
+               data = data,
+               adjust = adjust)
 }

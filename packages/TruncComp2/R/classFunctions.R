@@ -1,6 +1,9 @@
 summary.TruncComp2 <- function(object, ...) {
   cat("Estimation method:", object$method, "\n")
   cat("Confidence level = ", object$conf.level * 100, "%\n\n", sep="")
+  if(!is.null(object$adjust)) {
+    cat("Adjusted for:", object$adjust, "\n\n")
+  }
 
   if (isTRUE(object$success)) {
     cMat <- matrix(NA, 2, 3)
@@ -31,4 +34,3 @@ summary.TruncComp2 <- function(object, ...) {
 print.TruncComp2 <- function(x, ...) {
   summary(x, ...)
 }
-

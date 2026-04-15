@@ -1,0 +1,16 @@
+build/
+application-data/*
+!application-data/README.md
+.DS_Store
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+Rplots.pdf

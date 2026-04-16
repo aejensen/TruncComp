@@ -225,10 +225,11 @@ NULL
 #' Calls a group-specific outcome generator and standardizes its output.
 #' `generator` is the user-provided function, `n` is the requested sample size,
 #' and `label` names the generator in error messages. The helper returns a
-#' numeric vector of length `n`. If the generator returns a single scalar, the
-#' helper retries with repeated calls to `generator(1)`. It errors when the
-#' result is not finite numeric data of the correct length. Its role is to make
-#' the simulation interface flexible while keeping downstream code simple.
+#' numeric vector of length `n`. If the generator returns a single scalar, that
+#' first scalar is kept and the helper obtains the remaining draws by repeated
+#' calls to `generator(1)`. It errors when the result is not finite numeric data
+#' of the correct length. Its role is to make the simulation interface flexible
+#' while keeping downstream code simple.
 #'
 #' ### `.simulateTruncatedGroup(n, r, generator, probability, label, atom = 0)`
 #'
@@ -236,9 +237,11 @@ NULL
 #' label to store in the `R` column, `generator` produces observed outcomes,
 #' `probability` is the Bernoulli observation probability, `label` is passed to
 #' `.drawObservedOutcome()`, and `atom` fills the missing outcomes. The helper
-#' returns a standardized data frame with `R`, `A`, and `Y`. It inherits input
-#' validation failures from the upstream helpers. Its role is to keep the public
-#' simulator symmetric across the two treatment groups.
+#' errors if an observed draw equals `atom`, because the package treats `atom`
+#' as the unique code for an unobserved outcome. It returns a standardized data
+#' frame with `R`, `A`, and `Y`. It inherits input validation failures from the
+#' upstream helpers. Its role is to keep the public simulator symmetric across
+#' the two treatment groups.
 #'
 #' ### `simTruncData(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df = 4,
 #' atom = 0)`
@@ -247,10 +250,12 @@ NULL
 #' define the group means, `sigma` controls the Normal scale, `dist` chooses
 #' either `"norm"` or the shifted `"t-sq"` generator, `df` supplies the degrees
 #' of freedom for the `t` case, and the remaining arguments are passed through
-#' to the public simulator. The helper returns the same standardized data frame
-#' as [simulateTruncatedData()]. It errors only when `dist` is unsupported or
-#' when the delegated public simulator rejects the resulting inputs. Its role is
-#' to preserve a compact simulation shortcut used in older scripts and notes.
+#' to the public simulator. The wrapper validates that `mu0` and `mu1` are
+#' scalar finite numeric values, that the Normal case uses a positive finite
+#' `sigma`, and that the `t` case uses a finite `df > 1` so the documented group
+#' means are well-defined. The helper returns the same standardized data frame
+#' as [simulateTruncatedData()]. Its role is to preserve a compact simulation
+#' shortcut used in older scripts and notes.
 #'
 #' @seealso [simulateTruncatedData()], [loadTruncComp2Example()],
 #'   [loadTruncComp2AdjustedExample()]

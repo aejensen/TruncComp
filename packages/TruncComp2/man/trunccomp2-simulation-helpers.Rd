@@ -51,10 +51,11 @@ validation logic.
 Calls a group-specific outcome generator and standardizes its output.
 \code{generator} is the user-provided function, \code{n} is the requested sample size,
 and \code{label} names the generator in error messages. The helper returns a
-numeric vector of length \code{n}. If the generator returns a single scalar, the
-helper retries with repeated calls to \code{generator(1)}. It errors when the
-result is not finite numeric data of the correct length. Its role is to make
-the simulation interface flexible while keeping downstream code simple.
+numeric vector of length \code{n}. If the generator returns a single scalar, that
+first scalar is kept and the helper obtains the remaining draws by repeated
+calls to \code{generator(1)}. It errors when the result is not finite numeric data
+of the correct length. Its role is to make the simulation interface flexible
+while keeping downstream code simple.
 }
 
 \subsection{\code{.simulateTruncatedGroup(n, r, generator, probability, label, atom = 0)}}{
@@ -63,9 +64,11 @@ Simulates one treatment arm. \code{n} is the group size, \code{r} is the treatme
 label to store in the \code{R} column, \code{generator} produces observed outcomes,
 \code{probability} is the Bernoulli observation probability, \code{label} is passed to
 \code{.drawObservedOutcome()}, and \code{atom} fills the missing outcomes. The helper
-returns a standardized data frame with \code{R}, \code{A}, and \code{Y}. It inherits input
-validation failures from the upstream helpers. Its role is to keep the public
-simulator symmetric across the two treatment groups.
+errors if an observed draw equals \code{atom}, because the package treats \code{atom}
+as the unique code for an unobserved outcome. It returns a standardized data
+frame with \code{R}, \code{A}, and \code{Y}. It inherits input validation failures from the
+upstream helpers. Its role is to keep the public simulator symmetric across
+the two treatment groups.
 }
 
 \subsection{`simTruncData(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df = 4,}{
@@ -76,10 +79,12 @@ Legacy convenience wrapper around \code{\link[=simulateTruncatedData]{simulateTr
 define the group means, \code{sigma} controls the Normal scale, \code{dist} chooses
 either \code{"norm"} or the shifted \code{"t-sq"} generator, \code{df} supplies the degrees
 of freedom for the \code{t} case, and the remaining arguments are passed through
-to the public simulator. The helper returns the same standardized data frame
-as \code{\link[=simulateTruncatedData]{simulateTruncatedData()}}. It errors only when \code{dist} is unsupported or
-when the delegated public simulator rejects the resulting inputs. Its role is
-to preserve a compact simulation shortcut used in older scripts and notes.
+to the public simulator. The wrapper validates that \code{mu0} and \code{mu1} are
+scalar finite numeric values, that the Normal case uses a positive finite
+\code{sigma}, and that the \code{t} case uses a finite \code{df > 1} so the documented group
+means are well-defined. The helper returns the same standardized data frame
+as \code{\link[=simulateTruncatedData]{simulateTruncatedData()}}. Its role is to preserve a compact simulation
+shortcut used in older scripts and notes.
 }
 }
 \seealso{

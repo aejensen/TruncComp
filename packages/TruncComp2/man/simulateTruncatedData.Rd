@@ -11,11 +11,13 @@ simulateTruncatedData(n, f0, f1, pi0, pi1, atom = 0)
 
 \item{f0}{Function that generates observed outcomes for group \code{R = 0}. It may
 return a finite numeric vector of length \code{n} when called with \code{n}, or a
-single finite numeric value when called repeatedly with \code{1}.}
+single finite numeric value when called repeatedly with \code{1}. Any observed
+values used in the returned dataset must differ from \code{atom}.}
 
 \item{f1}{Function that generates observed outcomes for group \code{R = 1}. It may
 return a finite numeric vector of length \code{n} when called with \code{n}, or a
-single finite numeric value when called repeatedly with \code{1}.}
+single finite numeric value when called repeatedly with \code{1}. Any observed
+values used in the returned dataset must differ from \code{atom}.}
 
 \item{pi0}{Probability that the outcome is observed in group \code{R = 0}.}
 
@@ -31,7 +33,8 @@ values replaced by \code{atom}).
 \description{
 Simulates two treatment groups with a binary observation indicator and a
 continuous outcome among observed subjects. Unobserved outcomes are encoded as
-the supplied \code{atom} value in the returned \code{Y} column.
+the supplied \code{atom} value in the returned \code{Y} column, so observed outcomes
+must differ from \code{atom}.
 }
 \examples{
 f0 <- function(n) stats::rnorm(n, 3, 1)

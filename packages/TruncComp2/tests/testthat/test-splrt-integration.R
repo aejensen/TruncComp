@@ -179,9 +179,11 @@ test_that("simulateTruncatedData validates inputs and returns the canonical shap
   expect_equal(nrow(simulated), 10)
   expect_true(all(simulated$A %in% c(0, 1)))
   expect_true(all(simulated$Y[simulated$A == 0] == 0))
+  expect_true(all(simulated$Y[simulated$A == 1] != 0))
 
   atom_simulated <- simulateTruncatedData(5, f0 = f0, f1 = f1, pi0 = 0.4, pi1 = 0.7, atom = -3)
   expect_true(all(atom_simulated$Y[atom_simulated$A == 0] == -3))
+  expect_true(all(atom_simulated$Y[atom_simulated$A == 1] != -3))
 
   scalar_simulated <- simulateTruncatedData(4,
                                             f0 = function(n) 1,
@@ -190,11 +192,35 @@ test_that("simulateTruncatedData validates inputs and returns the canonical shap
                                             pi1 = 1)
   expect_equal(scalar_simulated$Y, c(rep(1, 4), rep(2, 4)))
 
+  set.seed(123)
+  random_scalar_simulated <- simulateTruncatedData(
+    5,
+    f0 = function(n) stats::rnorm(1),
+    f1 = function(n) stats::rnorm(1),
+    pi0 = 1,
+    pi1 = 1
+  )
+  set.seed(123)
+  expected_scalar_draws <- c(replicate(5, stats::rnorm(1)),
+                             replicate(5, stats::rnorm(1)))
+  expect_equal(random_scalar_simulated$Y, expected_scalar_draws)
+
+  expect_error(
+    simulateTruncatedData(5,
+                          f0 = function(n) rep(0, n),
+                          f1 = f1,
+                          pi0 = 1,
+                          pi1 = 1),
+    "must not return the atom value"
+  )
+
   expect_error(simulateTruncatedData(0, f0 = f0, f1 = f1, pi0 = 0.4, pi1 = 0.7),
                "positive integer")
   expect_error(simulateTruncatedData(5, f0 = 1, f1 = f1, pi0 = 0.4, pi1 = 0.7),
                "must be functions")
   expect_error(simulateTruncatedData(5, f0 = f0, f1 = f1, pi0 = 1.4, pi1 = 0.7),
+               "between 0 and 1")
+  expect_error(simulateTruncatedData(5, f0 = f0, f1 = f1, pi0 = c(0.4, 0.5), pi1 = 0.7),
                "between 0 and 1")
   expect_error(simulateTruncatedData(5,
                                      f0 = function(n) c(1, 2),
@@ -202,6 +228,13 @@ test_that("simulateTruncatedData validates inputs and returns the canonical shap
                                      pi0 = 0.4,
                                      pi1 = 0.7),
                "length n")
+
+  expect_error(simTruncData(5, mu0 = c(0, 1), mu1 = 2, pi0 = 0.4, pi1 = 0.7),
+               "mu0 must be a single finite numeric value")
+  expect_error(simTruncData(5, mu0 = 0, mu1 = 2, pi0 = 0.4, pi1 = 0.7, sigma = -1),
+               "sigma must be a single positive finite numeric value")
+  expect_error(simTruncData(5, mu0 = 0, mu1 = 2, pi0 = 0.4, pi1 = 0.7, dist = "t-sq", df = 1),
+               "df must be a single finite numeric value greater than 1")
 })
 
 test_that("cached logistic profile matches the uncached helper", {

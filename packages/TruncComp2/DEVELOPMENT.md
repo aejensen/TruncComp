@@ -14,6 +14,21 @@ Ordinary package work should only require changes under:
 No edits outside `packages/TruncComp2/` should be required for routine
 development, testing, or release preparation.
 
+## Documentation Workflow
+
+`TruncComp2` now treats roxygen comments in `R/` as the source of truth for
+both `NAMESPACE` and `man/`.
+
+When you change exported signatures, documentation, or imports, regenerate the
+derived files from the package root with:
+
+```sh
+Rscript -e 'if(!requireNamespace("roxygen2", quietly = TRUE)) install.packages("roxygen2", repos = "https://cloud.r-project.org"); roxygen2::roxygenise(".")'
+```
+
+Run that before package checks so the generated `man/*.Rd` files and
+`NAMESPACE` stay in sync with the source comments.
+
 ## Package-Local Verification
 
 From the package root, run:
@@ -26,6 +41,7 @@ That script:
 
 - installs helper packages needed for local verification if they are missing
 - installs package dependencies for `TruncComp2`
+- assumes `NAMESPACE` and `man/` have already been regenerated from roxygen
 - installs `TruncComp2` into a temporary library
 - runs the package-local `testthat` suite
 - runs `R CMD build`

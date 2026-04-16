@@ -1,3 +1,25 @@
+#' Summarize a TruncComp2 fit
+#'
+#' Prints the estimated treatment contrasts, their confidence intervals, and the
+#' joint likelihood-ratio result for a fitted `"TruncComp2"` object.
+#'
+#' @param object A `"TruncComp2"` object returned by [truncComp()].
+#' @param ... Unused additional arguments.
+#' @return The input object, returned invisibly.
+#' @details
+#' For successful unadjusted fits the summary includes the stored
+#' `DeltaMarginalCI` and `DeltaProfileCI`. The projected interval
+#' `DeltaProjectedCI` remains available on demand through
+#' [confint.TruncComp2()].
+#' @examples
+#' library(TruncComp2)
+#' f0 <- function(n) stats::rnorm(n, 3, 1)
+#' f1 <- function(n) stats::rnorm(n, 3.5, 1)
+#' d <- simulateTruncatedData(n = 40, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
+#' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+#' summary(fit)
+#' @rdname summary
+#' @export
 summary.TruncComp2 <- function(object, ...) {
   cat("Estimation method:", object$method, "\n")
   cat("Confidence level = ", object$conf.level * 100, "%\n\n", sep="")
@@ -49,6 +71,23 @@ summary.TruncComp2 <- function(object, ...) {
   invisible(object)
 }
 
+#' Print a TruncComp2 fit
+#'
+#' Delegates to [summary.TruncComp2()] so printing and summarizing use the same
+#' package-specific display format.
+#'
+#' @param x A `"TruncComp2"` object returned by [truncComp()].
+#' @param ... Unused additional arguments.
+#' @return The input object, returned invisibly.
+#' @examples
+#' library(TruncComp2)
+#' f0 <- function(n) stats::rnorm(n, 3, 1)
+#' f1 <- function(n) stats::rnorm(n, 3.5, 1)
+#' d <- simulateTruncatedData(n = 40, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
+#' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+#' print(fit)
+#' @rdname print
+#' @export
 print.TruncComp2 <- function(x, ...) {
   summary(x, ...)
 }

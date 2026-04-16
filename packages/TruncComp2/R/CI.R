@@ -215,6 +215,46 @@ buildMarginalCIMatrix <- function(object) {
   cMat
 }
 
+#' Confidence intervals for a TruncComp2 fit
+#'
+#' Computes marginal confidence intervals, simultaneous confidence-region
+#' surfaces, and on-demand `Delta` intervals for a fitted `"TruncComp2"` object.
+#'
+#' @param object A `"TruncComp2"` object returned by [truncComp()].
+#' @param type One of `"marginal"`, `"simultaneous"`, `"delta_projected"`, or
+#'   `"delta_profile"`.
+#' @param muDelta Optional grid values for the mean-difference axis when
+#'   `type = "simultaneous"`.
+#' @param logORdelta Optional grid values for the log-odds-ratio axis when
+#'   `type = "simultaneous"`.
+#' @param conf.level Confidence level for the interval or contour threshold.
+#' @param plot Logical; if `TRUE`, plot the simultaneous confidence surface.
+#' @param offset Optional simultaneous-grid expansion. If omitted, a
+#'   data-adaptive default is derived from the fitted marginal intervals or from
+#'   fallback data scales. A single number is applied to both axes; a length-2
+#'   vector supplies separate expansions for `muDelta` and `logORdelta`.
+#' @param resolution Number of grid points per axis for the simultaneous
+#'   surface-based calculations.
+#' @param algorithm For `type = "delta_projected"` and `type = "delta_profile"`,
+#'   whether to use the default grid-based approximation (`"grid"`) or the
+#'   slower direct optimization alternative (`"optimize"`).
+#' @param ... Unused additional arguments.
+#' @return Invisibly returns a printed matrix for the marginal, projected, and
+#'   profile intervals, or a list with the evaluated joint surface for
+#'   `type = "simultaneous"`.
+#' @details
+#' Adjusted fits support only marginal confidence intervals. Simultaneous
+#' regions and `Delta` intervals are available only for successful unadjusted
+#' `LRT` and `SPLRT` fits.
+#' @examples
+#' library(TruncComp2)
+#' d <- loadTruncComp2Example()
+#' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+#' confint(fit, type = "marginal")
+#' confint(fit, type = "simultaneous", plot = FALSE, resolution = 10)
+#' confint(fit, type = "delta_profile")
+#' @rdname confint.TruncComp
+#' @export
 confint.TruncComp2 <- function(object, type = "marginal", muDelta = NULL, logORdelta = NULL,
                               conf.level = object$conf.level, plot = TRUE,
                               offset = NULL, resolution = 35, algorithm = c("grid", "optimize"),
@@ -413,6 +453,37 @@ jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
   out
 }
 
+#' Joint confidence-region surface for an unadjusted fit
+#'
+#' Evaluates the simultaneous confidence-region surface for a fitted
+#' `"TruncComp2"` object from the unadjusted parametric or semi-parametric
+#' likelihood-ratio method.
+#'
+#' @param m A successful unadjusted `"TruncComp2"` object fitted with
+#'   `method = "LRT"` or `method = "SPLRT"`.
+#' @param muDelta Optional grid values for the mean-difference axis.
+#' @param logORdelta Optional grid values for the log-odds-ratio axis.
+#' @param conf.level Confidence level used for the plotted contour. Defaults to
+#'   `m$conf.level`.
+#' @param plot Logical; if `TRUE`, plot the surface and contour.
+#' @param offset Optional grid expansion. If omitted, a data-adaptive default is
+#'   derived from the fitted marginal intervals or fallback data scales. A
+#'   single number is applied to both axes; a length-2 vector supplies separate
+#'   expansions for `muDelta` and `logORdelta`.
+#' @param resolution Number of grid points per axis.
+#' @return A list with components `muDelta`, `logORdelta`, and `surface`,
+#'   containing the evaluated grid and the corresponding joint likelihood-ratio
+#'   statistics.
+#' @details
+#' This helper is exported for convenience and compatibility. Internally it is a
+#' thin wrapper around [jointContrastSurfaceData()] with `include_delta = FALSE`.
+#' @examples
+#' library(TruncComp2)
+#' d <- loadTruncComp2Example()
+#' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+#' surface <- jointContrastCI(fit, plot = FALSE, resolution = 10)
+#' str(surface)
+#' @export
 jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL,
                             conf.level = m$conf.level, plot = TRUE,
                             offset = NULL, resolution = 35) {

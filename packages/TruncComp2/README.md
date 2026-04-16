@@ -30,6 +30,13 @@ install_github("aejensen/TruncComp", subdir = "packages/TruncComp2")
 
 # Documentation
 
+- Source-level roxygen comments under `R/` are the source of truth for
+  `NAMESPACE` and `man/`. Regenerate them from the package root with:
+
+```sh
+Rscript -e 'if(!requireNamespace("roxygen2", quietly = TRUE)) install.packages("roxygen2", repos = "https://cloud.r-project.org"); roxygen2::roxygenise(".")'
+```
+
 - Statistical model specification: [MODEL.md](MODEL.md)
 - Implementation walkthrough: [IMPLEMENTATION.md](IMPLEMENTATION.md)
 - Adjusted semi-parametric methodology note: [ADJUSTED_SPLRT.md](ADJUSTED_SPLRT.md)

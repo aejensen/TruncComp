@@ -43,6 +43,30 @@
              Y = ifelse(alive == 1, observed, atom))
 }
 
+#' Simulate two-group truncated outcome data
+#'
+#' Simulates two treatment groups with a binary observation indicator and a
+#' continuous outcome among observed subjects. Unobserved outcomes are encoded as
+#' the supplied `atom` value in the returned `Y` column.
+#'
+#' @param n Number of observations per group.
+#' @param f0 Function that generates observed outcomes for group `R = 0`. It may
+#'   return a finite numeric vector of length `n` when called with `n`, or a
+#'   single finite numeric value when called repeatedly with `1`.
+#' @param f1 Function that generates observed outcomes for group `R = 1`. It may
+#'   return a finite numeric vector of length `n` when called with `n`, or a
+#'   single finite numeric value when called repeatedly with `1`.
+#' @param pi0 Probability that the outcome is observed in group `R = 0`.
+#' @param pi1 Probability that the outcome is observed in group `R = 1`.
+#' @param atom Numeric atom value inserted into `Y` when `A = 0`.
+#' @return A data frame with columns `R` (binary treatment indicator), `A`
+#'   (binary observation indicator), and `Y` (combined outcome with unobserved
+#'   values replaced by `atom`).
+#' @examples
+#' f0 <- function(n) stats::rnorm(n, 3, 1)
+#' f1 <- function(n) stats::rnorm(n, 3.5, 1)
+#' simulateTruncatedData(n = 25, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
+#' @export
 simulateTruncatedData <- function(n, f0, f1, pi0, pi1, atom = 0) {
   .validateSimulationInputs(n, f0, f1, pi0, pi1, atom = atom)
   n <- as.integer(n)

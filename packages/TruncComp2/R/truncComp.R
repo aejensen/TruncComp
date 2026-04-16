@@ -154,6 +154,74 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
   out
 }
 
+#' Fit the TruncComp2 two-sample comparison model
+#'
+#' Compares two groups when a continuous outcome has a distinguished atom value
+#' representing an unobserved or undefined outcome.
+#'
+#' @param formula A formula with a continuous outcome on the left-hand side and a
+#'   single binary treatment indicator on the right-hand side.
+#' @param atom A single numeric value used for the special atom outcome. The
+#'   observation indicator is reconstructed internally as `Y != atom`. For the
+#'   default interface, `atom` may be omitted only when `y[a == 0]` has exactly
+#'   one unique finite value, in which case it is inferred and stored on the
+#'   fitted object.
+#' @param data A data frame containing the variables referenced by `formula`.
+#' @param method Either `"LRT"` for the parametric likelihood-ratio method or
+#'   `"SPLRT"` for the semi-parametric likelihood-ratio method.
+#' @param conf.level Confidence level used for the reported intervals.
+#' @param init Optional compatibility argument retained from older parametric
+#'   implementations. The current model-backed `LRT` path stores it on the
+#'   returned object but does not use it for estimation.
+#' @param adjust Optional covariate adjustment. For the formula interface this
+#'   must be `NULL` or a one-sided additive formula such as `~ age + sex`. For
+#'   the default interface this must be `NULL`, a data frame, or a matrix of
+#'   baseline covariates. The same additive adjustment is used in both the
+#'   observed-outcome and observation components. Adjusted fits support only
+#'   marginal confidence intervals.
+#' @return An S3 object of class `"TruncComp2"` with component estimates,
+#'   confidence intervals, the joint likelihood-ratio statistic, metadata about
+#'   the fitting method, the standardized analysis data, and the fitted atom
+#'   value. Failed fits return the same class with `success = FALSE` and an
+#'   error message.
+#' @details
+#' For successful unadjusted fits, the package also computes a derived
+#' combined-outcome contrast
+#'
+#' `Delta = [p1 * mu1 + (1 - p1) * atom] - [p0 * mu0 + (1 - p0) * atom]`.
+#'
+#' The fitted object distinguishes between:
+#'
+#' - `DeltaMarginalCI`, a descriptive Welch interval on the raw combined-outcome
+#'   scale.
+#' - `DeltaProjectedCI`, the projection of the simultaneous two-parameter region
+#'   onto `Delta`.
+#' - `DeltaProfileCI`, a one-dimensional profile interval for `Delta`.
+#'
+#' Adjusted fits deliberately return `NA` for `Delta` and all `Delta` intervals
+#' because the implemented adjusted treatment effects are conditional regression
+#' coefficients rather than standardized marginal contrasts.
+#'
+#' @seealso [summary.TruncComp2()], [print.TruncComp2()], [confint.TruncComp2()],
+#'   [jointContrastCI()]
+#' @examples
+#' library(TruncComp2)
+#' f0 <- function(n) stats::rnorm(n, 3, 1)
+#' f1 <- function(n) stats::rnorm(n, 3.5, 1)
+#' d <- simulateTruncatedData(n = 100, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
+#'
+#' # Formula interface
+#' truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+#' truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+#'
+#' d_adjusted <- loadTruncComp2AdjustedExample()
+#' truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
+#' truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "SPLRT", adjust = ~ L)
+#'
+#' # Default interface
+#' truncComp.default(d$Y, d$A, d$R, method = "LRT", atom = 0)
+#' @rdname truncComp
+#' @export
 truncComp <- function(formula, atom, data, method, conf.level = 0.95, init = NULL,
                       adjust = NULL) {
   if(!inherits(formula, "formula")) {
@@ -213,7 +281,13 @@ truncComp <- function(formula, atom, data, method, conf.level = 0.95, init = NUL
                  atom = atom)
 }
 
-
+#' Default interface for [truncComp()]
+#'
+#' @param y Outcome vector for the default interface.
+#' @param a Binary indicator for whether the continuous outcome is observed.
+#' @param r Binary treatment indicator for the default interface.
+#' @rdname truncComp
+#' @export
 truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL,
                               adjust = NULL, atom = NULL) {
   adjustment <- prepareDefaultAdjustment(adjust, length(y))

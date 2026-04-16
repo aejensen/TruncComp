@@ -12,4 +12,6 @@
 *.gz
 *.toc
 .Rhistory
+Rplot.pdf
+Rplots.pdf
 !packages/*/tests/testthat/fixtures/*.rds

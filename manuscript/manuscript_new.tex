@@ -67,7 +67,7 @@
 \maketitle
 
 \begin{abstract}
-Patient-reported outcomes, including quality-of-life assessments, are increasingly used as primary or secondary endpoints in randomized clinical trials. These outcomes become challenging to analyze when death, or a similar event, renders the outcome undefined. A common pragmatic solution is to assign such patients the lowest possible score and then compare treatment groups with a standard test on the resulting composite outcome. Although medically interpretable, that analysis can lose substantial power because it does not separate effects on the atom from effects on the continuous part of the distribution. We propose likelihood-ratio tests that retain the clinically meaningful composite outcome while targeting the joint null hypothesis of no treatment effect on either component. We present both a parametric and a semi-parametric version, discuss their large-sample calibration, and illustrate the resulting gain in power in simulations and in a re-analysis of a COVID-19 trial.
+Patient-reported outcomes, including quality-of-life assessments, are increasingly used as primary or secondary endpoints in randomized clinical trials. These outcomes become challenging to analyze when death, or a similar event, renders the outcome undefined. A common pragmatic solution is to assign such patients the lowest possible score and then compare treatment groups with a standard test on the resulting composite outcome. Although medically interpretable, that analysis can lose substantial power because it does not separate effects on the atom from effects on the continuous part of the distribution. We propose likelihood-ratio tests that retain the clinically meaningful composite outcome while targeting the joint null hypothesis of no treatment effect on either component. We present both a parametric and a semi-parametric version, discuss their large-sample calibration, and illustrate the resulting gain in power in simulations and in a real-data application with a substantively meaningful atom.
 \end{abstract}
 
 \begin{center}
@@ -89,7 +89,7 @@ Although we motivate the method using quality of life truncated by death, the sa
 
 \textbf{[TODO: Add a short related-work paragraph positioning this method relative to other analyses for truncation by death, composite endpoints, and survivor-only comparisons, and clarify the intended scope of the present approach.]}
 
-The rest of the paper is organized as follows. Section~\ref{sec:method} introduces the statistical setup and the proposed tests. Section~\ref{sec:software-implementation} describes the R implementation. Section~\ref{sec:simulation-study} reports a simulation study, Section~\ref{sec:application} presents a clinical application, and Section~\ref{sec:discussion} concludes. Additional simulation results and a derivation of the empirical-likelihood component are collected in Appendix~\ref{app:supplementary-simulation-results} and Appendix~\ref{app:supplementary-derivation}.
+The rest of the paper is organized as follows. Section~\ref{sec:method} introduces the statistical setup and the proposed tests. Section~\ref{sec:software-implementation} describes the R implementation. Section~\ref{sec:simulation-study} reports a simulation study, Section~\ref{sec:application} presents a real-data application, and Section~\ref{sec:discussion} concludes. Additional simulation results and a derivation of the empirical-likelihood component are collected in Appendix~\ref{app:supplementary-simulation-results} and Appendix~\ref{app:supplementary-derivation}.
 
 \section{Method}\label{sec:method}
 
@@ -169,7 +169,7 @@ We now impose generalized linear models on the two components:
 \end{align}
 where $s_\mu$ and $s_\beta$ are finite-dimensional regression terms for the additional covariates. The parameter $\mu_\delta$ is the mean difference among observed outcomes, and $\beta_\delta$ is the log odds-ratio of being observed.
 
-\textbf{[TODO: Add a short paragraph explaining how the pair $(\mu_\delta,\beta_\delta)$ should be interpreted jointly on the original clinical scale and why the paper targets this two-component contrast rather than a single scalar estimand.]}
+On the original outcome scale, $\mu_\delta$ quantifies how treatment shifts the positive part of the outcome distribution among subjects with observed outcomes, whereas $\beta_\delta$ quantifies how treatment changes the odds that the outcome is observed at all. Reporting the pair therefore separates improvement in the continuous component from improvement in the probability of escaping the atom. This two-component contrast is the scientific target of the proposed likelihood-ratio test. It remains informative even when a single combined-outcome contrast such as $\Delta(X_i)$ is zero because the two components offset each other.
 
 For fixed treatment contrasts $(\mu_\delta,\beta_\delta)$, the profile likelihood-ratio statistic is
 \begin{equation}
@@ -210,7 +210,7 @@ In practice, this test is easy to compute with standard software: one fits the o
 
 The parametric test depends on the chosen distributional model for the observed outcomes. To relax that assumption, we replace the first component by a profile empirical likelihood while retaining the Bernoulli likelihood for $A_i$. When there are no additional covariates, the resulting procedure is fully non-parametric for the observed-outcome component.
 
-\textbf{[TODO: Add either a concise covariate-adjusted semi-parametric construction here or an explicit appendix pointer stating exactly how the no-covariate formulation extends when $X_i$ is present.]}
+In the current \texttt{TruncComp2} implementation, the same additive models in Equations~(\ref{eq:glm1}) and~(\ref{eq:glm2}) also support covariate-adjusted semi-parametric fits. The binary component remains the logistic likelihood-ratio statistic for $\beta_\delta$ under the model $\logit \Pr(A_i = 1 \mid R_i, X_i) = \beta_0 + \beta_\delta R_i + s_\beta(X_i)$. The continuous component replaces the no-covariate empirical likelihood by a regression empirical likelihood for the treatment coefficient $\mu_\delta$ in the observed-outcome model $\E[Y_i \mid A_i = 1, R_i, X_i] = \mu_0 + \mu_\delta R_i + s_\mu(X_i)$, profiling over the nuisance regression terms in $s_\mu(X_i)$. The resulting adjusted joint statistic still has the form $W_\mu + W_\alpha$ and is compared with $\chi^2_2$ under regularity. In that adjusted setting the software targets the conditional pair $(\mu_\delta,\beta_\delta)$ rather than a standardized marginal combined-outcome contrast $\Delta$.
 
 To simplify the presentation, we now assume that $X_i$ is absent. Let
 \[
@@ -239,7 +239,7 @@ The profile version is obtained by minimizing over the nuisance mean:
 \end{align*}
 The admissible values of $\mu$ are those for which the corresponding constrained means lie in the convex hull of the observed outcomes in each group.
 
-\textbf{[TODO: Add a short comment on existence, uniqueness, and numerical solution of $\lambda_1$, $\lambda_2$, and the profiled nuisance mean, including what is done when the constraint approaches the boundary of the convex hull.]}
+For interior feasible means, the dual parameters $\lambda_1$ and $\lambda_2$ are determined by one-dimensional root equations with unique roots on their admissible intervals. The implementation therefore solves each dual equation by scalar root-finding, evaluating slightly inside the feasibility bounds to avoid numerical instability when the constrained mean approaches the convex-hull boundary. The profiled nuisance mean is obtained by root-finding on the profile gradient when that gradient changes sign across the feasible interval and otherwise by direct one-dimensional optimization over the feasible set. If a candidate constraint falls outside the feasible range or effectively collapses onto the convex-hull boundary, the corresponding empirical-likelihood statistic is treated as infinite rather than extrapolated.
 
 The semi-parametric test statistic is then
 \begin{equation}
@@ -271,17 +271,17 @@ For the semi-parametric procedure, one replaces $W_n^P$ by $\widetilde{W}_n^P$. 
 \end{align*}
 We recommend reporting the simultaneous confidence region because it displays the joint uncertainty about the effect on the continuous and binary components.
 
-\textbf{[TODO: Add reporting guidance explaining how the two-dimensional confidence region should be summarized in a trial manuscript and when marginal intervals alone are insufficient.]}
+For successful unadjusted fits, the software also reports several summaries on the combined-outcome scale $\Delta$. The interval \texttt{DeltaMarginalCI} is a descriptive Welch interval for the raw combined-outcome mean difference, \texttt{DeltaProfileCI} is the one-dimensional likelihood-based interval obtained by profiling in $\Delta$, and \texttt{DeltaProjectedCI} is the projection of the full two-dimensional simultaneous region onto the $\Delta$ scale. The projected interval is typically wider because it inherits the full simultaneous statement for $(\mu_\delta,\beta_\delta)$. In a trial report we therefore recommend presenting the joint p-value and the simultaneous region whenever the scientific claim concerns no treatment effect on either component, while using marginal component intervals and any $\Delta$-scale intervals as supporting summaries rather than as substitutes for the joint region.
 
 \section{Software implementation}\label{sec:software-implementation}
 
-We implemented both the parametric and semi-parametric procedures in the R package \texttt{TruncComp}, which is available from GitHub \citep{TruncCompGitHub}. We illustrate the interface with the example data set included in the package.
+We implemented both the parametric and semi-parametric procedures, together with their current software extensions, in the R package \texttt{TruncComp2}, which is available from GitHub \citep{TruncCompGitHub}. We illustrate the interface with the packaged example data set.
 
 The example data set is loaded by
 
 \begin{lstlisting}
-library(TruncComp)
-data("TruncCompExample")
+library(TruncComp2)
+example_data <- loadTruncComp2Example()
 \end{lstlisting}
 
 It contains the outcome $Y$ and a binary treatment indicator $R$, with 25 observations in each treatment group. Truncated observations are encoded by the atom $\mathcal{E} = 0$. Figure~\ref{fig:dataExampleHistogram} displays histograms of the outcome in the two groups.
@@ -296,23 +296,42 @@ It contains the outcome $Y$ and a binary treatment indicator $R$, with 25 observ
 In this example, the difference in sample means of the combined outcome is \ExampleDelta{}, while a two-sample t-test and a Wilcoxon rank-sum test yield p-values \ExampleTTestP{} and \ExampleWilcoxP{}, respectively. The semi-parametric likelihood-ratio analysis is obtained as follows:
 
 \begin{lstlisting}
-model <- truncComp(Y ~ R, atom = 0, data = TruncCompExample, method = "SPLRT")
-summary(model)
+fit_splrt <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
+fit_lrt <- truncComp(Y ~ R, atom = 0, data = example_data, method = "LRT")
+summary(fit_splrt)
+summary(fit_lrt)
 \end{lstlisting}
 
-\textbf{[TODO: Add a matching parametric example and a sentence explaining how a user should choose between the parametric and semi-parametric procedures in practice.]}
+In practice, \texttt{LRT} is appropriate when a parametric model for the positive outcomes is scientifically credible and efficiency is the priority, whereas \texttt{SPLRT} is preferable when robustness to non-normal positive outcomes matters more than that distributional assumption.
 
-The output reports estimates of the mean difference among observed outcomes, $\mu_\delta$, and the odds ratio $\exp(\beta_\delta)$ of being observed. It also reports marginal 95\% confidence intervals for the two components, together with the joint likelihood-ratio statistic and its p-value for the null hypothesis of no treatment effect.
+The output reports estimates of the mean difference among observed outcomes, $\mu_\delta$, and the odds ratio $\exp(\beta_\delta)$ of being observed. It also reports marginal 95\% confidence intervals for the two components, together with the joint likelihood-ratio statistic and its p-value for the null hypothesis of no treatment effect. For successful unadjusted fits from either method, \texttt{confint(..., type = "marginal")} also reports \texttt{DeltaMarginalCI} and \texttt{DeltaProfileCI}; \texttt{confint(..., type = "delta\_projected")} returns \texttt{DeltaProjectedCI}; and \texttt{confint(..., type = "simultaneous")} or \texttt{jointContrastCI(fit)} evaluates the two-dimensional simultaneous region for $(\mu_\delta,\beta_\delta)$, typically visualized on the $(\mu_\delta,\log \text{OR})$ scale. Because \texttt{DeltaProjectedCI} is inherited from that full simultaneous region, it is usually more conservative than the one-dimensional profile interval \texttt{DeltaProfileCI}.
 
-For this data set, the semi-parametric analysis yields strong evidence against the joint null hypothesis, in contrast to both the t-test and the Wilcoxon test. The estimated effect is driven primarily by a higher mean among the observed outcomes in the treatment group $R = 1$.
+For this data set, both the parametric and semi-parametric analyses reject the joint null hypothesis, in contrast to both the t-test and the Wilcoxon test. The estimated effect is driven primarily by a higher mean among the observed outcomes in the treatment group $R = 1$.
 
 Confidence intervals and the simultaneous confidence region can be extracted with
 
 \begin{lstlisting}
-confint(model, type = "simultaneous", plot = TRUE, offset = 1.4, resolution = 50)
+confint(fit_splrt, type = "marginal")
+confint(fit_splrt, type = "delta_profile")
+confint(fit_splrt, type = "delta_projected")
+confint(fit_splrt, type = "simultaneous", plot = TRUE, offset = 1.4, resolution = 50)
+jointContrastCI(fit_splrt, plot = FALSE)
 \end{lstlisting}
 
 where \texttt{resolution} is the number of grid points used to evaluate the likelihood surface. Figure~\ref{fig:simultConfidence} shows the resulting surface and the 95\% simultaneous confidence region. The origin $(0,0)$ lies well outside the region, which matches the strong rejection of the joint null.
+
+Current package functionality extends beyond the no-covariate presentation in Section~\ref{sec:method}. Both methods accept additive baseline adjustment through \texttt{adjust = \textasciitilde{} ...}, and \texttt{TruncComp2} ships a second packaged example through \texttt{loadTruncComp2AdjustedExample()}. In adjusted fits, the reported \texttt{muDelta} and \texttt{alphaDelta} are conditional treatment effects from the observed-outcome and logistic submodels, so the software intentionally leaves \texttt{Delta} undefined. The adjusted interface therefore supports only marginal component intervals; simultaneous regions and $\Delta$-based intervals are not currently implemented there. The companion default interface \texttt{truncComp.default(y, a, r, ..., atom = NULL)} can also infer the atom automatically when all observations with \texttt{a = 0} share the same finite value. For synthetic examples and checks, \texttt{simulateTruncatedData()} generates the canonical two-group data structure used throughout the package.
+
+An adjusted analysis is obtained through the same front end:
+
+\begin{lstlisting}
+adjusted_data <- loadTruncComp2AdjustedExample()
+fit_adjusted <- truncComp(Y ~ R, atom = 0, data = adjusted_data,
+                          method = "SPLRT", adjust = ~ L)
+confint(fit_adjusted, type = "marginal")
+\end{lstlisting}
+
+In the packaged adjusted example, both methods attenuate after adjustment, which illustrates how the conditional treatment effects can differ materially from the unadjusted component contrasts.
 
 \begin{figure}[htbp]
 \centering
@@ -323,77 +342,86 @@ where \texttt{resolution} is the number of grid points used to evaluate the like
 
 \section{Simulation study}\label{sec:simulation-study}
 
-We investigated the power and type I error of the proposed procedures in four simulation scenarios. Throughout, treatment was randomized one-to-one between two groups. We set the atom to $\mathcal{E} = 0$, so the combined outcome can be written as $\widetilde{Y}_i = A_iY_i$.
+We investigated power and null calibration in six simulation scenarios. Throughout, treatment was randomized one-to-one between two groups, the atom was fixed at $\mathcal{E} = 0$, and the combined outcome was therefore $\widetilde{Y}_i = A_iY_i$.
 
-Table~\ref{tab:simulation} lists the data-generating mechanisms. Scenario 1 has no treatment effect on the atom but a location shift in the continuous component. Scenario 2 has the opposite pattern. Scenario 3 combines effects on both components in opposite directions. Scenario 4 mirrors Scenario 1 but replaces the normal continuous component by a strongly skewed beta distribution.
+Table~\ref{tab:simulation} lists the data-generating mechanisms. The scenarios were chosen to isolate the practically important comparisons. Scenario~1 is a low-atom normal reference case, Scenario~2 isolates a pure atom-probability effect, Scenario~3 forces the atom and continuous components to move in opposite directions while keeping the combined-outcome mean fixed, Scenario~4 makes both components move in the same direction, Scenario~5 introduces a gamma shape change together with a survivor-mean shift, and Scenario~6 uses rare extreme outliers to create a Wilcoxon-favorable regime.
 
-\begin{table}[htbp]
-\centering
-\begin{tabular}{r|r|r}
-Scenario & $A_i \mid R_i$ & $Y_i \mid A_i = 1, R_i$\\ \hline
-1 & $\Bernoulli(0.35)$ & $N(3 + 0.5R_i, 1)$\\
-2 & $\Bernoulli(0.5 + 0.15R_i)$ & $N(3.5, 1)$\\
-3 & $\Bernoulli(0.4 - 0.1R_i)$ & $N(3 + 0.5 R_i, 1)$\\
-4 & $\Bernoulli(0.35)$ & $\Beta(1, 1-0.7R_i)$
-\end{tabular}
-\caption{Simulation scenarios for the power study.}
-\label{tab:simulation}
-\end{table}
+\input{build/tables/simulation-scenarios.tex}
 
-For the power study, we varied the sample size between 50 and 350 observations per group in increments of 25. Each setting used 25,000 Monte Carlo repetitions, and power was estimated as the proportion of rejected null hypotheses at the 5\% level. We compared the parametric and semi-parametric likelihood-ratio tests with the two-sample t-test and the Wilcoxon test. Figure~\ref{fig:powerCurves} shows the estimated power curves; the corresponding tables are reported in Appendix~\ref{app:supplementary-simulation-results}.
+For each scenario we considered effect levels $h \in \{0, 1, 2, 3\}$, with $h = 0$ as the null configuration, and sample sizes from $50$ to $500$ observations per group in increments of $50$. Every scenario-effect-sample-size cell used 10,000 Monte Carlo repetitions. Power and empirical size were estimated as rejection proportions at the 5\% level, and the worst-case Monte Carlo standard error of an estimated rejection rate was therefore approximately $0.005$. We compared the parametric and semi-parametric likelihood-ratio tests with Welch's two-sample $t$-test and the Wilcoxon rank-sum test applied directly to the combined outcome.
 
-\textbf{[TODO: Add a short paragraph justifying why these four scenarios capture the practically important failure modes and report the Monte Carlo precision of the estimated power curves.]}
-
-The main pattern is that the proposed tests dominate when the treatment effect is expressed in the continuous component, or when the atom and the continuous part move in different directions. Scenario 2 is the least favorable configuration for the proposed procedure, because the treatment effect acts only on the binary component and the likelihood-ratio test still expends two degrees of freedom. In the normal settings, the parametric and semi-parametric procedures perform similarly. In Scenario 4, where the continuous component is strongly skewed, the semi-parametric version is clearly preferable.
+Figure~\ref{fig:powerCurves} shows power as a function of sample size at the strongest non-null level for the four scenarios that most sharply separate the methods: the survival-only case (Scenario~2), the antagonistic cancellation case (Scenario~3), the gamma misspecification case (Scenario~5), and the rare-outlier contamination case (Scenario~6). Figure~\ref{fig:powerEffectCurves} complements that display by plotting power as a function of the effect level at $n = 250$ observations per group for the same four scenarios. The supplementary material reports the corresponding power curves for Scenarios~1 and~4, the full scenario-specific power tables for all $240$ cells, and the null-calibration displays for the $h = 0$ settings.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.84\textwidth]{power-curves.pdf}
-\caption{Estimated power as a function of sample size for the four simulation scenarios.}
+\caption{Estimated power as a function of sample size at the strongest non-null level for Scenarios~2, 3, 5, and 6.}
 \label{fig:powerCurves}
 \end{figure}
 
-We also examined type I error under two null configurations analogous to Scenarios 1 and 4. Specifically, we considered $A_i \sim \Bernoulli(\pi)$ with $Y_i \mid A_i = 1 \sim N(3,1)$ and, separately, $A_i \sim \Bernoulli(\pi)$ with $Y_i \mid A_i = 1 \sim \Beta(1,1)$. We estimated the type I error across sample sizes and $\pi \in \{0.2,0.4,0.6,0.8\}$. The results are reported in Appendix~\ref{app:supplementary-simulation-results}.
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.84\textwidth]{power-effects.pdf}
+\caption{Estimated power as a function of effect level at $n = 250$ observations per group for Scenarios~2, 3, 5, and 6.}
+\label{fig:powerEffectCurves}
+\end{figure}
 
 \section{Application}\label{sec:application}
 
-The COVID-STEROID 2 trial compared dexamethasone 6 mg daily with dexamethasone 12 mg daily for up to 10 days in patients with severe or critical COVID-19 \citep{10.1001/jama.2021.18295}. The primary outcome was days alive without life support from randomization to day 28. This outcome takes values between 0 and 28 and has a substantial point mass at zero. The main publication used the test studied here, sometimes referred to as the Kryger Jensen and Lange test. We re-analyze the subgroup of patients who required invasive mechanical ventilation at baseline ($n = 206$).
+To illustrate the same continuous-plus-atom structure in a different applied setting, the current manuscript build pipeline uses \ApplicationDatasetDescription{} ($n = \ApplicationN{}$). Here the outcome is \ApplicationOutcomeLabel{}, and the atom at zero corresponds to \ApplicationAtomMeaning{}. This is not a truncation-by-death example, but it has the same statistical form of a point mass at a substantively distinct atom together with a continuous positive part.
 
-Figure~\ref{fig:application} shows the empirical distributions in the two treatment groups together with the simultaneous confidence region for the semi-parametric analysis. In our notation, we code $A = 0$ when the outcome equals zero and $A = 1$ otherwise; $Y$ then denotes the positive part of the outcome among patients with $A = 1$.
+Figure~\ref{fig:application} shows the empirical distributions in the two treatment groups together with the simultaneous confidence region for the semi-parametric analysis. In our notation, we code $A = 0$ when the outcome equals zero and $A = 1$ otherwise; $Y$ then denotes the positive part of the outcome among subjects with $A = 1$.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{application.pdf}
-\caption{COVID-STEROID 2 subgroup analysis: histograms of days alive without life support by treatment dose (left and middle panels) and the semi-parametric simultaneous confidence region for $(\mu_\delta,\beta_\delta)$ (right panel).}
+\caption{\ApplicationDatasetName{}: histograms of \ApplicationOutcomeShort{} by treatment group (left and middle panels) and the semi-parametric simultaneous confidence region for $(\mu_\delta,\beta_\delta)$ (right panel).}
 \label{fig:application}
 \end{figure}
 
-For this subgroup, the Wilcoxon test yields p-value \ApplicationWilcoxP{}, which does not cross the prespecified 5\% threshold. The parametric likelihood-ratio test yields p-value \ApplicationLRTP{}. Because the positive part of the outcome distribution is visibly non-normal, the semi-parametric analysis is especially relevant; it yields p-value \ApplicationSPLRTP{}.
+For this application, the Wilcoxon test yields p-value \ApplicationWilcoxP{}, which does not cross the prespecified 5\% threshold. The parametric likelihood-ratio test yields p-value \ApplicationLRTP{}, and the semi-parametric analysis yields p-value \ApplicationSPLRTP{}.
 
-\textbf{[TODO: Report the estimated $(\mu_\delta,\beta_\delta)$ values and their confidence intervals for this subgroup, and clarify whether this re-analysis matches the original trial's adjustment strategy and subgroup definition exactly.]}
+For the current build, the local Dryad ARDS data did not yield the intended different-conclusion case, so the pipeline falls back to \ApplicationDatasetName{} rather than the originally planned COVID-STEROID 2 subgroup. The semi-parametric fit reports $\mu_\delta = 1350.86$ with 95\% confidence interval $(-23.66, 4471.96)$ and $\exp(\beta_\delta) = 0.679$ with 95\% confidence interval $(0.438, 1.010)$, together with the joint p-value $0.0266$. The corresponding parametric fit reports $\mu_\delta = 1350.86$ with 95\% confidence interval $(511.18, 2190.54)$ and $\exp(\beta_\delta) = 0.679$ with 95\% confidence interval $(0.448, 1.029)$, together with the joint p-value $0.00120$. These values therefore illustrate the implemented software outputs, but they do not reproduce the COVID-STEROID 2 subgroup definition or its adjustment strategy exactly.
 
-The simultaneous confidence region in Figure~\ref{fig:application} suggests that the dominant treatment signal lies in the continuous component rather than in the probability of a zero outcome. On the original clinical scale, the estimated gain among patients with a positive outcome is between roughly half a day and seven days.
+The simultaneous confidence region in Figure~\ref{fig:application} suggests that the dominant treatment signal lies in the continuous component rather than in the probability of the atom. In this application, \ApplicationComponentSummary{}
 
 \section{Discussion}\label{sec:discussion}
 
 We have presented parametric and semi-parametric likelihood-ratio tests for continuous outcomes that contain a clinically meaningful atom, such as outcomes truncated by death. The key idea is to retain the composite outcome used in practice while testing a null hypothesis that separates the binary and continuous components. This produces a single p-value, together with interpretable component-wise effect estimates and confidence intervals.
 
-The simulations and the COVID-STEROID 2 example show why this distinction matters. Rank-based analyses can perform well when treatment acts primarily through one dimension of the combined outcome, but they can lose substantial power when the atom and the continuous part move in different directions or when the continuous component has a shape that is poorly summarized by ranks. In contrast, the proposed likelihood-ratio framework matches the scientific structure of the problem more directly.
+The simulations and the application example show why this distinction matters. Rank-based analyses can perform well when treatment acts primarily through one dimension of the combined outcome, but they can lose substantial power when the atom and the continuous part move in different directions or when the continuous component has a shape that is poorly summarized by ranks. In contrast, the proposed likelihood-ratio framework matches the scientific structure of the problem more directly.
 
 This is particularly useful when an RCT requires a single prespecified primary analysis for an outcome that combines survival with a continuous measurement. The parametric version is straightforward to compute when a plausible model for the observed outcomes is available, whereas the semi-parametric version avoids that distributional commitment. Both procedures are asymptotic, however, so they require adequate numbers of observed outcomes in each treatment group for the large-sample calibration to be reliable.
 
-\textbf{[TODO: Add a dedicated limitations paragraph discussing small-sample behavior, model misspecification, sparse observed outcomes, and the distinction between this two-component target and alternative truncation-by-death estimands.]}
+Several limitations should be kept in mind. First, the calibration is asymptotic, so small samples or very sparse positive outcomes can make both the parametric and semi-parametric approximations unreliable. Second, the parametric procedure inherits the usual risk of model misspecification for the positive part of the outcome, while the adjusted semi-parametric procedure still requires a regular logistic fit and enough observed outcomes relative to the adjusted design matrix. In the current \texttt{TruncComp2} implementation, adjusted fits return clean failure rather than approximate fallback behavior when separation, rank deficiency, or infeasible empirical-likelihood constraints arise. Finally, the two-component target $(\mu_\delta,\beta_\delta)$ is not the same estimand as approaches based on principal stratification, survivor-average causal effects, or other standardized marginal truncation-by-death contrasts, so the method should be interpreted as targeting the joint observed-data structure rather than those alternative causal summaries.
 
 \clearpage
 \appendix
 \section{Supplementary simulation results}\label{app:supplementary-simulation-results}
 
-This appendix collects the simulation tables referenced in Section~\ref{sec:simulation-study}. The power tables reproduce the four primary scenarios from the simulation study, and the type I error tables summarize the null simulations across sample sizes and truncation probabilities.
+This appendix collects the simulation figures and tables referenced in Section~\ref{sec:simulation-study}. Figure~\ref{fig:suppPowerCurves} shows the sample-size power curves for the remaining two scenarios from the main design, and Figure~\ref{fig:type1Curves} summarizes the $h = 0$ null-calibration results across all six scenarios.
 
-\input{build/tables/supplementary-power-1-2.tex}
-\input{build/tables/supplementary-power-3-4.tex}
-\input{build/tables/supplementary-type1-1.tex}
-\input{build/tables/supplementary-type1-2.tex}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.84\textwidth]{supplementary-power-curves.pdf}
+\caption{Estimated power as a function of sample size at the strongest non-null level for Scenarios~1 and~4.}
+\label{fig:suppPowerCurves}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.84\textwidth]{type1-curves.pdf}
+\caption{Empirical size at effect level $h = 0$ across all six simulation scenarios. The dashed line marks 0.05 and the dotted lines mark 0.04 and 0.06.}
+\label{fig:type1Curves}
+\end{figure}
+
+\input{build/tables/supplementary-power-s1.tex}
+\input{build/tables/supplementary-power-s2.tex}
+\input{build/tables/supplementary-power-s3.tex}
+\input{build/tables/supplementary-power-s4.tex}
+\input{build/tables/supplementary-power-s5.tex}
+\input{build/tables/supplementary-power-s6.tex}
+\input{build/tables/supplementary-type1.tex}
 
 \section{Supplementary derivation of the semi-parametric test statistic}\label{app:supplementary-derivation}
 

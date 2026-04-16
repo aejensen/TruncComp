@@ -251,37 +251,29 @@ where \texttt{resolution} is the number of discrete grid points on which the lik
 
 \section{Simulation study}\label{sec:simulation-study}
 
-To illustrate the power benefit and small sample properties of our proposed procedure we consider four different scenario through a simulation study. In all scenarios it is assumed that treatment (denoted $R_i$) is randomized one to one between two groups, and we let the observed combined outcome be given by the product $\widetilde{Y}_i = A_i Y_i$, where $A_i$ is binary and $Y_i$ is continuously distributed. This is equivalent to observing the atom $\mathcal{E} = 0$ when $A_i = 0$ and otherwise $Y_i$ is observed.
+To illustrate the power benefit and null-calibration properties of our proposed procedure we consider six simulation scenarios. In all scenarios treatment (denoted $R_i$) is randomized one to one between two groups, and we let the observed combined outcome be given by the product $\widetilde{Y}_i = A_i Y_i$, where $A_i$ is binary and $Y_i$ is continuously distributed. This is equivalent to observing the atom $\mathcal{E} = 0$ when $A_i = 0$ and otherwise observing $Y_i$.
 
-Table~\ref{tab:simulation} shows the distributions of $A_i \mid R_i$ and $Y_i \mid A_i = 1, R_i$ for each of the four simulation scenarios. Scenario 1 represents the case where the point mass at zero is independent of the treatment but with a continuous component that is shifted between the groups. Scenario 2 is the opposite of scenario 1 where the continuous component is independent of the treatment but the probability of the point mass at zero differs between treatment groups. In scenario 3 we model a treatment effect on both components but in opposite directions of each other, and scenario 4 is similar to scenario 1 but where the continuous component is non-normal distributed.
+Table~\ref{tab:simulation} shows the data-generating mechanisms. Scenario 1 is a low-atom normal reference case, Scenario 2 isolates a pure atom-probability effect, Scenario 3 forces the atom and continuous components to move in opposite directions while keeping the combined-outcome mean fixed, Scenario 4 makes both components move in the same direction, Scenario 5 introduces a gamma shape change together with a survivor-mean shift, and Scenario 6 uses rare extreme outliers to create a Wilcoxon-favorable regime.
 
-\begin{table}[htbp]
-\centering
-\begin{tabular}{r|r|r}
-Scenario & $A_i \mid R_i$ & $Y_i \mid A_i = 1, R_i$\\ \hline
-1 & $\Bernoulli(0.35)$ & $N(3 + 0.5R_i, 1)$\\
-2 & $\Bernoulli(0.5 + 0.15R_i)$ & $N(3.5, 1)$\\
-3 & $\Bernoulli(0.4 - 0.1R_i)$ & $N(3 + 0.5 R_i, 1)$\\
-4 & $\Bernoulli(0.35)$ & $\Beta(1, 1-0.7R_i)$
-\end{tabular}
-\caption{Power simulation scenarios}
-\label{tab:simulation}
-\end{table}
+\input{build/tables/simulation-scenarios.tex}
 
-To assess the power we vary the sample size between 50 and 350 observations in each group with increments of 25, and for each scenario we perform 25,000 Monte Carlo simulations and estimate the power as the proportion of rejected null hypotheses at the 5\% level. We compare the estimated power for both our parametric and semi-parametric likelihood ratio tests to the two-sample t-test and the Wilcoxon test. Figure~\ref{fig:powerCurves} shows the estimated power functions. The results are also presented in table form in Appendix~\ref{app:supplementary-simulation-results}.
+For each scenario we consider effect levels $h \in \{0, 1, 2, 3\}$, with $h = 0$ representing the null configuration, and sample sizes from $50$ to $500$ observations per group in increments of $50$. Each scenario-effect-sample-size cell uses 10,000 Monte Carlo simulations, so the worst-case Monte Carlo standard error of an estimated rejection rate is approximately $0.005$. We compare the estimated rejection profiles for both our parametric and semi-parametric likelihood-ratio tests to Welch's two-sample $t$-test and the Wilcoxon test applied directly to the combined outcome.
 
-In all scenarios except number two it is clear that we observe a large power gain compared to both the t-test and the Wilcoxon test.
-
-In setup 1 we observe a large power gain compared to the Wilcoxon test. Here the Wilcoxon tests gets ``confused'' by the large number of ties in the atom. In setup 2 Wilcoxon test has slightly better power profile. This is to be expected as our novel test is here disadvantaged by being a two-degrees-of-freedom test where the Wilcoxon is only one. It is further observed that Wilcoxon as expected as very little power when the effects on mortality and among survivors are of opposite sign despite the two distributions being markedly different indicating clear treatment effect (setups 3 and 4). In contrast our novel methods has excellent power. In all settings with a normally distributed outcome among survivors the parametric and semi-parametric approaches are similar, but for the heavy tail setup (no.~4) the semi-parametric approach is clearly superior.
+Figure~\ref{fig:powerCurves} shows power as a function of sample size at the strongest non-null effect level for the four scenarios that most sharply separate the methods: the survival-only case (Scenario~2), the antagonistic cancellation case (Scenario~3), the gamma misspecification case (Scenario~5), and the rare-outlier contamination case (Scenario~6). Figure~\ref{fig:powerEffectCurves} complements that display by plotting power as a function of the effect level at $n = 250$ observations per group for the same four scenarios. The supplementary material reports the corresponding power curves for Scenarios~1 and~4, the full scenario-specific power tables for all 240 cells, and the null-calibration displays for the $h = 0$ settings.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.84\textwidth]{power-curves.pdf}
-\caption{Simulated power as a function of sample size for each of the four scenarios.}
+\caption{Estimated power as a function of sample size at the strongest non-null effect level for Scenarios~2, 3, 5, and 6.}
 \label{fig:powerCurves}
 \end{figure}
 
-In addition to the power simulations we also performed a simulation study for the type I error. We considered two scenarios similar to scenarios 1 and 4 in Table~\ref{tab:simulation} under a null hypothesis of no treatment effect. Specifically, we considered $A_i \sim \Bernoulli(\pi)$, $Y_i \mid A_i = 1 \sim N(3,1)$ and $A_i \sim \Bernoulli(\pi)$, $Y_i \mid A_i = 1 \sim \Beta(1, 1)$. We estimated the type I error through Monte Carlo simulation for different sample sizes and $\pi \in \left\{0.2, 0.4, 0.6, 0.8\right\}$. The results are presented in Appendix~\ref{app:supplementary-simulation-results}.
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.84\textwidth]{power-effects.pdf}
+\caption{Estimated power as a function of effect level at $n = 250$ observations per group for Scenarios~2, 3, 5, and 6.}
+\label{fig:powerEffectCurves}
+\end{figure}
 
 \section{Application}\label{sec:application}
 
@@ -313,12 +305,29 @@ The simulation study and in particular the real data example demonstrate the eff
 \appendix
 \section{Supplementary simulation results}\label{app:supplementary-simulation-results}
 
-This appendix collects the simulation tables referenced in Section~\ref{sec:simulation-study}. The power tables reproduce the four primary scenarios from the simulation study, and the type I error tables summarize the null simulations across sample sizes and truncation probabilities.
+This appendix collects the simulation figures and tables referenced in Section~\ref{sec:simulation-study}. Figure~\ref{fig:suppPowerCurves} shows the sample-size power curves for the remaining two scenarios from the main design, and Figure~\ref{fig:type1Curves} summarizes the $h = 0$ null-calibration results across all six scenarios.
 
-\input{build/tables/supplementary-power-1-2.tex}
-\input{build/tables/supplementary-power-3-4.tex}
-\input{build/tables/supplementary-type1-1.tex}
-\input{build/tables/supplementary-type1-2.tex}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.84\textwidth]{supplementary-power-curves.pdf}
+\caption{Estimated power as a function of sample size at the strongest non-null effect level for Scenarios~1 and~4.}
+\label{fig:suppPowerCurves}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.84\textwidth]{type1-curves.pdf}
+\caption{Empirical size at effect level $h = 0$ across all six simulation scenarios. The dashed line marks 0.05 and the dotted lines mark 0.04 and 0.06.}
+\label{fig:type1Curves}
+\end{figure}
+
+\input{build/tables/supplementary-power-s1.tex}
+\input{build/tables/supplementary-power-s2.tex}
+\input{build/tables/supplementary-power-s3.tex}
+\input{build/tables/supplementary-power-s4.tex}
+\input{build/tables/supplementary-power-s5.tex}
+\input{build/tables/supplementary-power-s6.tex}
+\input{build/tables/supplementary-type1.tex}
 
 \section{Supplementary derivation of the semi-parametric test statistic}\label{app:supplementary-derivation}
 

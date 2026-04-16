@@ -18,8 +18,9 @@ script_path <- normalizePath(sub("^--file=", "", script_arg[[1]]), mustWork = TR
 manuscript_dir <- normalizePath(file.path(dirname(script_path), ".."), mustWork = TRUE)
 repo_root <- normalizePath(file.path(manuscript_dir, ".."), mustWork = TRUE)
 
-r_files <- c("utils.R", "data.R", "analysis.R", "figures.R", "tables.R", "build.R")
-for (file_name in r_files) {
+source(file.path(manuscript_dir, "R", "utils.R"), local = globalenv())
+source(file.path(repo_root, "simulation-study", "R", "simulation-study.R"), local = globalenv())
+for (file_name in c("data.R", "analysis.R", "figures.R", "tables.R", "build.R")) {
   source(file.path(manuscript_dir, "R", file_name), local = globalenv())
 }
 

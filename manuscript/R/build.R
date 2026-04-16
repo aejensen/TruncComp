@@ -8,12 +8,26 @@ build_manuscript_assets <- function(output_dir, repo_root) {
 
   example_results <- compute_example_results(repo_root)
   application_results <- compute_application_results(manuscript_dir)
-  simulation_results <- load_simulation_results(manuscript_dir)
+  simulation_results <- load_simulation_results(repo_root)
+  if (!isTRUE(simulation_results$complete)) {
+    warning(
+      sprintf(
+        "Simulation study is incomplete: %d of %d cells available. Figures and tables will reflect the completed subset.",
+        simulation_results$completed_cells,
+        simulation_results$expected_cells
+      ),
+      call. = FALSE
+    )
+  }
 
   build_example_histogram(example_results, file.path(figures_dir, "example-histogram.pdf"))
   build_example_surface_figure(example_results, file.path(figures_dir, "example-simultaneous-confidence.pdf"))
   build_power_curves_figure(simulation_results, file.path(figures_dir, "power-curves.pdf"))
+  build_power_effect_figure(simulation_results, file.path(figures_dir, "power-effects.pdf"))
+  build_supplementary_power_figure(simulation_results, file.path(figures_dir, "supplementary-power-curves.pdf"))
+  build_type1_curves_figure(simulation_results, file.path(figures_dir, "type1-curves.pdf"))
   build_application_figure(application_results, file.path(figures_dir, "application.pdf"))
+  build_simulation_scenario_table(simulation_results, tables_dir)
   build_supplementary_tables(simulation_results, tables_dir)
 
   values <- list(

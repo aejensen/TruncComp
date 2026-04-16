@@ -289,8 +289,25 @@ load_application_data <- function(manuscript_dir) {
   .load_randhealth_application_data()
 }
 
-load_simulation_results <- function(manuscript_dir) {
-  data_env <- new.env(parent = emptyenv())
-  load(file.path(manuscript_dir, "simulations", "simulationResults.RData"), envir = data_env)
-  as.list(data_env)
+load_simulation_results <- function(repo_root) {
+  results_path <- simulation_study_results_path(repo_root)
+
+  if (!file.exists(results_path)) {
+    output_dir <- simulation_study_output_dir(repo_root)
+    cells_dir <- file.path(output_dir, "cells")
+
+    if (dir.exists(cells_dir) && length(list.files(cells_dir, pattern = "\\.rds$", full.names = TRUE))) {
+      return(aggregate_simulation_study_results(output_dir))
+    }
+
+    stop(
+      paste(
+        "No TruncComp2 simulation-study results were found.",
+        "Run `Rscript simulation-study/scripts/run-simulation-study.R` first."
+      ),
+      call. = FALSE
+    )
+  }
+
+  readRDS(results_path)
 }

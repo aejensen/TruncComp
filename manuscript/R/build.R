@@ -1,34 +1,48 @@
-build_manuscript_assets <- function(output_dir, repo_root) {
-  manuscript_dir <- file.path(repo_root, "manuscript")
-  output_dir <- ensure_dir(output_dir)
-  figures_dir <- ensure_dir(file.path(output_dir, "figures"))
-  tables_dir <- ensure_dir(file.path(output_dir, "tables"))
+assert_simulation_assets_exist <- function(output_dir) {
+  required_paths <- c(
+    file.path(output_dir, "figures", "power-curves.pdf"),
+    file.path(output_dir, "figures", "power-effects.pdf"),
+    file.path(output_dir, "figures", "supplementary-power-curves.pdf"),
+    file.path(output_dir, "figures", "type1-curves.pdf"),
+    file.path(output_dir, "tables", "simulation-scenarios.tex"),
+    file.path(output_dir, "tables", "supplementary-power-s1.tex"),
+    file.path(output_dir, "tables", "supplementary-power-s2.tex"),
+    file.path(output_dir, "tables", "supplementary-power-s3.tex"),
+    file.path(output_dir, "tables", "supplementary-power-s4.tex"),
+    file.path(output_dir, "tables", "supplementary-power-s5.tex"),
+    file.path(output_dir, "tables", "supplementary-power-s6.tex"),
+    file.path(output_dir, "tables", "supplementary-type1.tex")
+  )
 
-  load_local_trunccomp(repo_root)
-
-  example_results <- compute_example_results(repo_root)
-  application_results <- compute_application_results(manuscript_dir)
-  simulation_results <- load_simulation_results(repo_root)
-  if (!isTRUE(simulation_results$complete)) {
-    warning(
-      sprintf(
-        "Simulation study is incomplete: %d of %d cells available. Figures and tables will reflect the completed subset.",
-        simulation_results$completed_cells,
-        simulation_results$expected_cells
+  missing <- required_paths[!file.exists(required_paths)]
+  if (length(missing)) {
+    stop(
+      paste(
+        "Missing prebuilt simulation-study manuscript assets under manuscript/build.",
+        "Run `Rscript simulation-study/scripts/run-simulation-study.R` to generate them."
       ),
       call. = FALSE
     )
   }
 
+  invisible(required_paths)
+}
+
+build_manuscript_assets <- function(output_dir, repo_root) {
+  manuscript_dir <- file.path(repo_root, "manuscript")
+  output_dir <- ensure_dir(output_dir)
+  figures_dir <- ensure_dir(file.path(output_dir, "figures"))
+  ensure_dir(file.path(output_dir, "tables"))
+
+  load_local_trunccomp(repo_root)
+
+  example_results <- compute_example_results(repo_root)
+  application_results <- compute_application_results(manuscript_dir)
+  assert_simulation_assets_exist(output_dir)
+
   build_example_histogram(example_results, file.path(figures_dir, "example-histogram.pdf"))
   build_example_surface_figure(example_results, file.path(figures_dir, "example-simultaneous-confidence.pdf"))
-  build_power_curves_figure(simulation_results, file.path(figures_dir, "power-curves.pdf"))
-  build_power_effect_figure(simulation_results, file.path(figures_dir, "power-effects.pdf"))
-  build_supplementary_power_figure(simulation_results, file.path(figures_dir, "supplementary-power-curves.pdf"))
-  build_type1_curves_figure(simulation_results, file.path(figures_dir, "type1-curves.pdf"))
   build_application_figure(application_results, file.path(figures_dir, "application.pdf"))
-  build_simulation_scenario_table(simulation_results, tables_dir)
-  build_supplementary_tables(simulation_results, tables_dir)
 
   values <- list(
     ExampleDelta = format_fixed(example_results$delta, digits = 3),
@@ -58,7 +72,6 @@ build_manuscript_assets <- function(output_dir, repo_root) {
 
   invisible(list(
     example_results = example_results,
-    application_results = application_results,
-    simulation_results = simulation_results
+    application_results = application_results
   ))
 }

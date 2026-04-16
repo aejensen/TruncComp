@@ -36,6 +36,7 @@ repo_root <- normalizePath(file.path(study_dir, ".."), mustWork = TRUE)
 
 source(file.path(repo_root, "manuscript", "R", "utils.R"), local = globalenv())
 source(file.path(study_dir, "R", "simulation-study.R"), local = globalenv())
+source(file.path(study_dir, "R", "manuscript-assets.R"), local = globalenv())
 
 output_dir <- .parse_flag(args, "--output-dir", simulation_study_output_dir(repo_root))
 reps <- as.integer(.parse_flag(args, "--reps", "10000"))
@@ -55,6 +56,19 @@ results <- run_simulation_study(
   effect_levels = effect_levels,
   overwrite = overwrite
 )
+
+if (isTRUE(results$complete)) {
+  simulation_study_build_manuscript_assets(repo_root, results)
+  message("Simulation-study manuscript assets written to manuscript/build.")
+} else {
+  message(
+    sprintf(
+      "Simulation study is incomplete (%d/%d cells), so manuscript assets were not refreshed.",
+      results$completed_cells,
+      results$expected_cells
+    )
+  )
+}
 
 message(
   sprintf(

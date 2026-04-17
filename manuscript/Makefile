@@ -1,6 +1,6 @@
 LATEXMK = latexmk
 LATEXMKFLAGS = -pdf -interaction=nonstopmode -halt-on-error
-MANUSCRIPT = manuscript_new.tex
+MANUSCRIPT = manuscript.tex
 
 .PHONY: assets simulate simulate-slurm pdf all clean
 

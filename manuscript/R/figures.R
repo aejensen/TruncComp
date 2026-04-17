@@ -36,12 +36,18 @@ build_example_histogram <- function(example_results, path) {
 
 build_example_surface_figure <- function(example_results, path) {
   save_pdf_plot(path, width = 5, height = 4.5, expr = {
-    suppressMessages(TruncComp2::jointContrastCI(
+    op <- graphics::par(mgp = c(1.6, 0.6, 0), cex.axis = 0.8, cex.lab = 0.8, bty = "n")
+    on.exit(graphics::par(op), add = TRUE)
+
+    suppressMessages(stats::confint(
       example_results$model,
+      type = "simultaneous",
       plot = TRUE,
       offset = 1.4,
       resolution = 50
     ))
+    graphics::abline(v = 0, lty = 2)
+    graphics::abline(h = 0, lty = 2)
   })
 }
 
@@ -93,7 +99,7 @@ build_application_figure <- function(application_results, path) {
       s_ci$muDelta,
       s_ci$logORdelta,
       s_ci$surface,
-      col = rev(grDevices::hcl.colors(256, palette = "YlOrRd", rev = FALSE)),
+      col = rev(fields::tim.colors(256)),
       useRaster = FALSE,
       xlab = "Difference in means",
       ylab = "log OR",

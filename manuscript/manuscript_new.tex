@@ -304,17 +304,17 @@ summary(fit_lrt)
 
 In practice, \texttt{LRT} is appropriate when a parametric model for the positive outcomes is scientifically credible and efficiency is the priority, whereas \texttt{SPLRT} is preferable when robustness to non-normal positive outcomes matters more than that distributional assumption.
 
-The output reports estimates of the mean difference among observed outcomes, $\mu_\delta$, and the odds ratio $\exp(\beta_\delta)$ of being observed. It also reports marginal 95\% confidence intervals for the two components, together with the joint likelihood-ratio statistic and its p-value for the null hypothesis of no treatment effect. For successful unadjusted fits from either method, \texttt{confint(..., parameter = c("muDelta", "alphaDelta"))} returns the stored component intervals, \texttt{confint(..., parameter = "Delta", method = "profile")} returns the one-dimensional profile interval for $\Delta$, \texttt{confint(..., parameter = "Delta", method = "projected")} returns the projected interval from the full joint region, and \texttt{confint(..., parameter = "joint")} or \texttt{jointContrastCI(fit)} evaluates the two-dimensional simultaneous region for $(\mu_\delta,\beta_\delta)$, typically visualized on the $(\mu_\delta,\log \text{OR})$ scale. Because the projected \texttt{Delta} interval inherits the full simultaneous statement, it is usually more conservative than the one-dimensional profile interval.
+The output reports estimates of the mean difference among observed outcomes, $\mu_\delta$, and the odds ratio $\exp(\beta_\delta)$ of being observed. It also reports marginal 95\% confidence intervals for the two components, together with the joint likelihood-ratio statistic and its p-value for the null hypothesis of no treatment effect. For successful unadjusted fits from either method, \texttt{confint(..., type = "marginal")} also reports \texttt{DeltaMarginalCI} and \texttt{DeltaProfileCI}; \texttt{confint(..., type = "delta\_projected")} returns \texttt{DeltaProjectedCI}; and \texttt{confint(..., type = "simultaneous")} or \texttt{jointContrastCI(fit)} evaluates the two-dimensional simultaneous region for $(\mu_\delta,\beta_\delta)$, typically visualized on the $(\mu_\delta,\log \text{OR})$ scale. Because \texttt{DeltaProjectedCI} is inherited from that full simultaneous region, it is usually more conservative than the one-dimensional profile interval \texttt{DeltaProfileCI}.
 
 For this data set, both the parametric and semi-parametric analyses reject the joint null hypothesis, in contrast to both the t-test and the Wilcoxon test. The estimated effect is driven primarily by a higher mean among the observed outcomes in the treatment group $R = 1$.
 
 Confidence intervals and the simultaneous confidence region can be extracted with
 
 \begin{lstlisting}
-confint(fit_splrt, parameter = c("muDelta", "alphaDelta"))
-confint(fit_splrt, parameter = "Delta", method = "profile")
-confint(fit_splrt, parameter = "Delta", method = "projected")
-confint(fit_splrt, parameter = "joint", plot = TRUE, offset = 1.4, resolution = 50)
+confint(fit_splrt, type = "marginal")
+confint(fit_splrt, type = "delta_profile")
+confint(fit_splrt, type = "delta_projected")
+confint(fit_splrt, type = "simultaneous", plot = TRUE, offset = 1.4, resolution = 50)
 jointContrastCI(fit_splrt, plot = FALSE)
 \end{lstlisting}
 
@@ -328,7 +328,7 @@ An adjusted analysis is obtained through the same front end:
 adjusted_data <- loadTruncComp2AdjustedExample()
 fit_adjusted <- truncComp(Y ~ R, atom = 0, data = adjusted_data,
                           method = "SPLRT", adjust = ~ L)
-confint(fit_adjusted, parameter = c("muDelta", "alphaDelta"))
+confint(fit_adjusted, type = "marginal")
 \end{lstlisting}
 
 In the packaged adjusted example, both methods attenuate after adjustment, which illustrates how the conditional treatment effects can differ materially from the unadjusted component contrasts.
@@ -381,7 +381,7 @@ Figure~\ref{fig:application} shows the empirical distributions in the two treatm
 
 For this application, the Wilcoxon test yields p-value \ApplicationWilcoxP{}, which does not cross the prespecified 5\% threshold. The parametric likelihood-ratio test yields p-value \ApplicationLRTP{}, and the semi-parametric analysis yields p-value \ApplicationSPLRTP{}.
 
-At the 5\% level, \ApplicationConclusionSummary{}
+For the current build, the local Dryad ARDS data did not yield the intended different-conclusion case, so the pipeline falls back to \ApplicationDatasetName{} rather than the originally planned COVID-STEROID 2 subgroup. The semi-parametric fit reports $\mu_\delta = 1350.86$ with 95\% confidence interval $(-23.66, 4471.96)$ and $\exp(\beta_\delta) = 0.679$ with 95\% confidence interval $(0.438, 1.010)$, together with the joint p-value $0.0266$. The corresponding parametric fit reports $\mu_\delta = 1350.86$ with 95\% confidence interval $(511.18, 2190.54)$ and $\exp(\beta_\delta) = 0.679$ with 95\% confidence interval $(0.448, 1.029)$, together with the joint p-value $0.00120$. These values therefore illustrate the implemented software outputs, but they do not reproduce the COVID-STEROID 2 subgroup definition or its adjustment strategy exactly.
 
 The simultaneous confidence region in Figure~\ref{fig:application} suggests that the dominant treatment signal lies in the continuous component rather than in the probability of the atom. In this application, \ApplicationComponentSummary{}
 

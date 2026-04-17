@@ -34,7 +34,7 @@ build_manuscript_assets <- function(output_dir, repo_root) {
   figures_dir <- ensure_dir(file.path(output_dir, "figures"))
   ensure_dir(file.path(output_dir, "tables"))
 
-  load_local_trunccomp2(repo_root)
+  load_local_trunccomp(repo_root)
 
   example_results <- compute_example_results(repo_root)
   application_results <- compute_application_results(manuscript_dir)

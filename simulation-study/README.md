@@ -45,7 +45,7 @@ Rscript simulation-study/scripts/submit-simulation-study-slurm.R \
   --partition=standard \
   --time=04:00:00 \
   --mem=4G \
-  --array-parallelism=4
+  --array-parallelism=80
 ```
 
 Dry run without submitting:

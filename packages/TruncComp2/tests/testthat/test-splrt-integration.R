@@ -1,61 +1,61 @@
 test_that("SPLRT reproduces the TruncComp2 example outputs without loading EL", {
   expect_false("EL" %in% loadedNamespaces())
 
-  example_data <- loadTruncComp2Example()
+  example_data <- load_trunc_comp2_example()
   model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
 
   expect_false("EL" %in% loadedNamespaces())
   expect_true(model$success)
-  expect_equal(model$muDelta, 1.85643, tolerance = 1e-4)
-  expect_equal(model$muDeltaCI, c(1.163886, 2.480132), tolerance = 1e-4)
-  expect_equal(as.numeric(model$alphaDelta), 0.5238095, tolerance = 1e-7)
-  expect_equal(model$alphaDeltaCI, c(0.1660407, 1.59682), tolerance = 1e-6)
+  expect_equal(model$mu_delta, 1.85643, tolerance = 1e-4)
+  expect_equal(model$mu_delta_ci, c(1.163886, 2.480132), tolerance = 1e-4)
+  expect_equal(as.numeric(model$alpha_delta), 0.5238095, tolerance = 1e-7)
+  expect_equal(model$alpha_delta_ci, c(0.1660407, 1.59682), tolerance = 1e-6)
   expect_equal(model$atom, 0)
   expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(model)))
-  expect_equal(model$W, 31.09545, tolerance = 1e-4)
+  expect_equal(model$statistic, 31.09545, tolerance = 1e-4)
   expect_lt(abs(model$p - 1.768924e-07), 1e-10)
 })
 
 test_that("marginal and simultaneous confidence helpers still work", {
-  example_data <- loadTruncComp2Example()
+  example_data <- load_trunc_comp2_example()
   model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
 
   capture.output(ci <- confint(model))
   expect_equal(rownames(ci),
-               c("Difference in means among the observed:",
-                 "Odds ratio of being observed:"))
-  expect_equal(unname(ci["Difference in means among the observed:", ]), model$muDeltaCI)
-  expect_equal(unname(ci["Odds ratio of being observed:", ]), model$alphaDeltaCI)
+               c("mu_delta",
+                 "alpha_delta"))
+  expect_equal(unname(ci["mu_delta", ]), model$mu_delta_ci)
+  expect_equal(unname(ci["alpha_delta", ]), model$alpha_delta_ci)
 
-  capture.output(delta_welch <- confint(model, parameter = "Delta", method = "welch"))
-  expect_equal(rownames(delta_welch), "Delta (welch)")
-  expect_lte(unname(delta_welch[1, 1]), model$Delta)
-  expect_gte(unname(delta_welch[1, 2]), model$Delta)
+  capture.output(delta_welch <- confint(model, parameter = "delta", method = "welch"))
+  expect_equal(rownames(delta_welch), "delta (welch)")
+  expect_lte(unname(delta_welch[1, 1]), model$delta)
+  expect_gte(unname(delta_welch[1, 2]), model$delta)
 
-  capture.output(delta_projected <- confint(model, parameter = "Delta", method = "projected", plot = FALSE))
-  expect_equal(rownames(delta_projected), "Delta (projected)")
-  expect_lte(unname(delta_projected[1, 1]), model$Delta)
-  expect_gte(unname(delta_projected[1, 2]), model$Delta)
+  capture.output(delta_projected <- confint(model, parameter = "delta", method = "projected", plot = FALSE))
+  expect_equal(rownames(delta_projected), "delta (projected)")
+  expect_lte(unname(delta_projected[1, 1]), model$delta)
+  expect_gte(unname(delta_projected[1, 2]), model$delta)
 
-  capture.output(delta_profile <- confint(model, parameter = "Delta", method = "profile", plot = FALSE))
-  expect_equal(rownames(delta_profile), "Delta (profile)")
-  expect_lte(unname(delta_profile[1, 1]), model$Delta)
-  expect_gte(unname(delta_profile[1, 2]), model$Delta)
+  capture.output(delta_profile <- confint(model, parameter = "delta", method = "profile", plot = FALSE))
+  expect_equal(rownames(delta_profile), "delta (profile)")
+  expect_lte(unname(delta_profile[1, 1]), model$delta)
+  expect_gte(unname(delta_profile[1, 2]), model$delta)
 
-  expect_error(confint(model, conf.level = 0.9),
+  expect_error(confint(model, conf_level = 0.9),
                "stored at the fitted confidence level")
 
-  joint <- jointContrastCI(model, plot = FALSE)
+  joint <- joint_contrast_ci(model, plot = FALSE)
   expect_equal(dim(joint$surface), c(35, 35))
   expect_true(all(is.finite(joint$surface)))
 })
 
 test_that("joint contrast surface matches the null test and vanishes at the fitted point", {
-  example_data <- loadTruncComp2Example()
+  example_data <- load_trunc_comp2_example()
   model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
 
-  expect_equal(TruncComp2:::jointContrastLRT(model$data, 0, 0), model$W, tolerance = 1e-6)
-  expect_equal(TruncComp2:::jointContrastLRT(model$data, model$muDelta, log(model$alphaDelta)),
+  expect_equal(TruncComp2:::jointContrastLRT(model$data, 0, 0), model$statistic, tolerance = 1e-6)
+  expect_equal(TruncComp2:::jointContrastLRT(model$data, model$mu_delta, log(model$alpha_delta)),
                0, tolerance = 1e-6)
 })
 
@@ -69,22 +69,22 @@ test_that("existing TruncComp2 data validation still stops before EL helper use"
     fit <- truncComp(Y ~ R, atom = 0, data = bad_data, method = "SPLRT"),
     "data error"
   )
-  expect_s3_class(fit, "TruncComp2")
+  expect_s3_class(fit, "trunc_comp_fit")
   expect_false(fit$success)
   expect_equal(fit$method, "Semi-empirical Likelihood Ratio Test")
 
   expect_match(paste(capture.output(summary(fit)), collapse = "\n"),
                "The estimation procedure failed")
   expect_match(paste(capture.output(print(fit)), collapse = "\n"),
-               "The estimation procedure failed")
+               "Error: Estimation failed due to data error")
   expect_error(confint(fit), "Estimation failed")
 })
 
-test_that("jointContrastCI rejects unsupported fits", {
-  example_data <- loadTruncComp2Example()
+test_that("joint_contrast_ci rejects unsupported fits", {
+  example_data <- load_trunc_comp2_example()
 
   splrt_model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
-  expect_silent(jointContrastCI(splrt_model, plot = FALSE, offset = 1, resolution = 5))
+  expect_silent(joint_contrast_ci(splrt_model, plot = FALSE, offset = 1, resolution = 5))
 
   expect_warning(
     failed_model <- truncComp(Y ~ R, atom = 0,
@@ -93,96 +93,96 @@ test_that("jointContrastCI rejects unsupported fits", {
                               method = "SPLRT"),
     "data error"
   )
-  expect_error(jointContrastCI(failed_model, plot = FALSE, offset = 1, resolution = 5),
+  expect_error(joint_contrast_ci(failed_model, plot = FALSE, offset = 1, resolution = 5),
                "Estimation failed")
-  expect_error(confint(failed_model, parameter = "Delta", method = "projected"), "Estimation failed")
-  expect_error(confint(failed_model, parameter = "Delta", method = "profile"), "Estimation failed")
+  expect_error(confint(failed_model, parameter = "delta", method = "projected"), "Estimation failed")
+  expect_error(confint(failed_model, parameter = "delta", method = "profile"), "Estimation failed")
 })
 
-test_that("jointContrastCI falls back to finite default grids", {
-  example_data <- loadTruncComp2Example()
+test_that("joint_contrast_ci falls back to finite default grids", {
+  example_data <- load_trunc_comp2_example()
   model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
 
   alpha_fallback <- model
-  alpha_fallback$alphaDeltaCI <- c(0, Inf)
-  joint_alpha <- jointContrastCI(alpha_fallback, plot = FALSE, offset = 2, resolution = 5)
-  expect_equal(joint_alpha$logORdelta,
-               seq(log(as.numeric(model$alphaDelta)) - 2,
-                   log(as.numeric(model$alphaDelta)) + 2,
+  alpha_fallback$alpha_delta_ci <- c(0, Inf)
+  joint_alpha <- joint_contrast_ci(alpha_fallback, plot = FALSE, offset = 2, resolution = 5)
+  expect_equal(joint_alpha$log_or_delta,
+               seq(log(as.numeric(model$alpha_delta)) - 2,
+                   log(as.numeric(model$alpha_delta)) + 2,
                    length.out = 5))
 
   alpha_symmetric <- model
-  alpha_symmetric$alphaDeltaCI <- c(0, Inf)
-  alpha_symmetric$alphaDelta <- Inf
-  joint_alpha_sym <- jointContrastCI(alpha_symmetric, plot = FALSE, offset = 1.5, resolution = 5)
-  expect_equal(joint_alpha_sym$logORdelta, seq(-1.5, 1.5, length.out = 5))
+  alpha_symmetric$alpha_delta_ci <- c(0, Inf)
+  alpha_symmetric$alpha_delta <- Inf
+  joint_alpha_sym <- joint_contrast_ci(alpha_symmetric, plot = FALSE, offset = 1.5, resolution = 5)
+  expect_equal(joint_alpha_sym$log_or_delta, seq(-1.5, 1.5, length.out = 5))
 
   mu_fallback <- model
-  mu_fallback$muDeltaCI <- c(NA_real_, Inf)
-  joint_mu <- jointContrastCI(mu_fallback, plot = FALSE, offset = 1.25, resolution = 5)
-  expect_equal(joint_mu$muDelta,
-               seq(model$muDelta - 1.25, model$muDelta + 1.25, length.out = 5))
+  mu_fallback$mu_delta_ci <- c(NA_real_, Inf)
+  joint_mu <- joint_contrast_ci(mu_fallback, plot = FALSE, offset = 1.25, resolution = 5)
+  expect_equal(joint_mu$mu_delta,
+               seq(model$mu_delta - 1.25, model$mu_delta + 1.25, length.out = 5))
 })
 
-test_that("jointContrastCI derives default offsets from fitted SPLRT data", {
-  example_data <- loadTruncComp2Example()
+test_that("joint_contrast_ci derives default offsets from fitted SPLRT data", {
+  example_data <- load_trunc_comp2_example()
   model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
 
   offsets <- TruncComp2:::jointContrastDefaultOffsets(model)
-  joint <- jointContrastCI(model, plot = FALSE, resolution = 5)
+  joint <- joint_contrast_ci(model, plot = FALSE, resolution = 5)
 
-  expect_equal(joint$muDelta,
-               seq(model$muDeltaCI[1] - offsets[1],
-                   model$muDeltaCI[2] + offsets[1],
+  expect_equal(joint$mu_delta,
+               seq(model$mu_delta_ci[1] - offsets[1],
+                   model$mu_delta_ci[2] + offsets[1],
                    length.out = 5))
-  expect_equal(joint$logORdelta,
-               seq(log(model$alphaDeltaCI[1]) - offsets[2],
-                   log(model$alphaDeltaCI[2]) + offsets[2],
+  expect_equal(joint$log_or_delta,
+               seq(log(model$alpha_delta_ci[1]) - offsets[2],
+                   log(model$alpha_delta_ci[2]) + offsets[2],
                    length.out = 5))
 
-  vector_joint <- jointContrastCI(model, plot = FALSE, offset = c(0.5, 0.25), resolution = 5)
-  expect_equal(vector_joint$muDelta,
-               seq(model$muDeltaCI[1] - 0.5,
-                   model$muDeltaCI[2] + 0.5,
+  vector_joint <- joint_contrast_ci(model, plot = FALSE, offset = c(0.5, 0.25), resolution = 5)
+  expect_equal(vector_joint$mu_delta,
+               seq(model$mu_delta_ci[1] - 0.5,
+                   model$mu_delta_ci[2] + 0.5,
                    length.out = 5))
-  expect_equal(vector_joint$logORdelta,
-               seq(log(model$alphaDeltaCI[1]) - 0.25,
-                   log(model$alphaDeltaCI[2]) + 0.25,
+  expect_equal(vector_joint$log_or_delta,
+               seq(log(model$alpha_delta_ci[1]) - 0.25,
+                   log(model$alpha_delta_ci[2]) + 0.25,
                    length.out = 5))
 })
 
 test_that("joint contrast plotting helper returns a ggplot object", {
-  example_data <- loadTruncComp2Example()
+  example_data <- load_trunc_comp2_example()
   model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
   joint <- TruncComp2:::jointContrastSurfaceData(model, plot = FALSE, resolution = 5)
 
   plot_obj <- TruncComp2:::jointContrastPlot(
-    joint$muDelta,
-    joint$logORdelta,
+    joint$mu_delta,
+    joint$log_or_delta,
     joint$surface,
     model,
-    model$conf.level
+    model$conf_level
   )
 
   expect_s3_class(plot_obj, "ggplot")
 })
 
-test_that("simulateTruncatedData validates inputs and returns the canonical shape", {
+test_that("simulate_truncated_data validates inputs and returns the canonical shape", {
   f0 <- function(n) rep(1, n)
   f1 <- function(n) rep(2, n)
 
-  simulated <- simulateTruncatedData(5, f0 = f0, f1 = f1, pi0 = 0.4, pi1 = 0.7)
+  simulated <- simulate_truncated_data(5, f0 = f0, f1 = f1, pi0 = 0.4, pi1 = 0.7)
   expect_equal(names(simulated), c("R", "A", "Y"))
   expect_equal(nrow(simulated), 10)
   expect_true(all(simulated$A %in% c(0, 1)))
   expect_true(all(simulated$Y[simulated$A == 0] == 0))
   expect_true(all(simulated$Y[simulated$A == 1] != 0))
 
-  atom_simulated <- simulateTruncatedData(5, f0 = f0, f1 = f1, pi0 = 0.4, pi1 = 0.7, atom = -3)
+  atom_simulated <- simulate_truncated_data(5, f0 = f0, f1 = f1, pi0 = 0.4, pi1 = 0.7, atom = -3)
   expect_true(all(atom_simulated$Y[atom_simulated$A == 0] == -3))
   expect_true(all(atom_simulated$Y[atom_simulated$A == 1] != -3))
 
-  scalar_simulated <- simulateTruncatedData(4,
+  scalar_simulated <- simulate_truncated_data(4,
                                             f0 = function(n) 1,
                                             f1 = function(n) 2,
                                             pi0 = 1,
@@ -190,7 +190,7 @@ test_that("simulateTruncatedData validates inputs and returns the canonical shap
   expect_equal(scalar_simulated$Y, c(rep(1, 4), rep(2, 4)))
 
   set.seed(123)
-  random_scalar_simulated <- simulateTruncatedData(
+  random_scalar_simulated <- simulate_truncated_data(
     5,
     f0 = function(n) stats::rnorm(1),
     f1 = function(n) stats::rnorm(1),
@@ -203,7 +203,7 @@ test_that("simulateTruncatedData validates inputs and returns the canonical shap
   expect_equal(random_scalar_simulated$Y, expected_scalar_draws)
 
   expect_error(
-    simulateTruncatedData(5,
+    simulate_truncated_data(5,
                           f0 = function(n) rep(0, n),
                           f1 = f1,
                           pi0 = 1,
@@ -211,15 +211,15 @@ test_that("simulateTruncatedData validates inputs and returns the canonical shap
     "must not return the atom value"
   )
 
-  expect_error(simulateTruncatedData(0, f0 = f0, f1 = f1, pi0 = 0.4, pi1 = 0.7),
+  expect_error(simulate_truncated_data(0, f0 = f0, f1 = f1, pi0 = 0.4, pi1 = 0.7),
                "positive integer")
-  expect_error(simulateTruncatedData(5, f0 = 1, f1 = f1, pi0 = 0.4, pi1 = 0.7),
+  expect_error(simulate_truncated_data(5, f0 = 1, f1 = f1, pi0 = 0.4, pi1 = 0.7),
                "must be functions")
-  expect_error(simulateTruncatedData(5, f0 = f0, f1 = f1, pi0 = 1.4, pi1 = 0.7),
+  expect_error(simulate_truncated_data(5, f0 = f0, f1 = f1, pi0 = 1.4, pi1 = 0.7),
                "between 0 and 1")
-  expect_error(simulateTruncatedData(5, f0 = f0, f1 = f1, pi0 = c(0.4, 0.5), pi1 = 0.7),
+  expect_error(simulate_truncated_data(5, f0 = f0, f1 = f1, pi0 = c(0.4, 0.5), pi1 = 0.7),
                "between 0 and 1")
-  expect_error(simulateTruncatedData(5,
+  expect_error(simulate_truncated_data(5,
                                      f0 = function(n) c(1, 2),
                                      f1 = f1,
                                      pi0 = 0.4,
@@ -235,15 +235,15 @@ test_that("simulateTruncatedData validates inputs and returns the canonical shap
 })
 
 test_that("cached logistic profile matches the uncached helper", {
-  example_data <- loadTruncComp2Example()
+  example_data <- load_trunc_comp2_example()
   model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
   logit_reference <- TruncComp2:::logit.prepare(model$data)
 
   expect_equal(TruncComp2:::logit.LRT.prepared(logit_reference, 0),
                TruncComp2:::logit.LRT(model$data, 0),
                tolerance = 1e-10)
-  expect_equal(TruncComp2:::logit.LRT.prepared(logit_reference, log(as.numeric(model$alphaDelta))),
-               TruncComp2:::logit.LRT(model$data, log(as.numeric(model$alphaDelta))),
+  expect_equal(TruncComp2:::logit.LRT.prepared(logit_reference, log(as.numeric(model$alpha_delta))),
+               TruncComp2:::logit.LRT(model$data, log(as.numeric(model$alpha_delta))),
                tolerance = 1e-10)
 })
 
@@ -255,7 +255,7 @@ test_that("cached logistic profile adapts to extreme observation rates", {
   y[c(1, 2, n + 1, n + 2)] <- c(1.0, 1.2, 1.0, 1.2)
   r <- c(rep(0, n), rep(1, n))
 
-  fit <- truncComp.default(y, a, r, method = "SPLRT")
+  fit <- truncComp(y, a, r, method = "SPLRT")
   expect_true(fit$success)
 
   logit_reference <- TruncComp2:::logit.prepare(fit$data)
@@ -269,13 +269,13 @@ test_that("cached logistic profile adapts to extreme observation rates", {
                wide_profile$objective,
                tolerance = 1e-10)
   expect_equal(TruncComp2:::logit.LRT.prepared(logit_reference, 0), 0, tolerance = 1e-10)
-  expect_equal(TruncComp2:::jointContrastLRT(fit$data, fit$muDelta, log(as.numeric(fit$alphaDelta))),
+  expect_equal(TruncComp2:::jointContrastLRT(fit$data, fit$mu_delta, log(as.numeric(fit$alpha_delta))),
                0,
                tolerance = 1e-10)
 })
 
-test_that("loadTruncComp2Example returns the packaged example data", {
-  example_data <- loadTruncComp2Example()
+test_that("load_trunc_comp2_example returns the packaged example data", {
+  example_data <- load_trunc_comp2_example()
 
   expect_s3_class(example_data, "data.frame")
   expect_equal(names(example_data), c("R", "Y"))

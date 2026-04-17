@@ -19,7 +19,7 @@ The currently supported scope is:
 - one binary treatment indicator coded `0/1`
 - one atom value representing the unobserved or undefined outcome
 - optional additive baseline-covariate adjustment for both `method = "LRT"` and `method = "SPLRT"` through `adjust = ~ ...`
-- adjusted `SPLRT` provides fitted tests and component confidence intervals, but not joint confidence regions or `Delta` intervals
+- adjusted `SPLRT` provides fitted tests and component confidence intervals, but not joint confidence regions or `delta` intervals
 
 To install the development version of TruncComp2 run the following commands from within R
 
@@ -41,8 +41,8 @@ Rscript -e 'if(!requireNamespace("roxygen2", quietly = TRUE)) install.packages("
 - Implementation walkthrough: [IMPLEMENTATION.md](IMPLEMENTATION.md)
 - Adjusted semi-parametric methodology note: [ADJUSTED_SPLRT.md](ADJUSTED_SPLRT.md)
 - Package-local development guide: [DEVELOPMENT.md](DEVELOPMENT.md)
-- Packaged example data loader: `loadTruncComp2Example()`
-- Packaged adjusted example data loader: `loadTruncComp2AdjustedExample()`
+- Packaged example data loader: `load_trunc_comp2_example()`
+- Packaged adjusted example data loader: `load_trunc_comp2_adjusted_example()`
 
 # Main Interface
 
@@ -57,20 +57,20 @@ truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT", adjust = ~ age + sex)
 
 The fitted object reports:
 
-- `muDelta`: difference in means among the observed
-- `alphaDelta`: odds ratio of being observed
-- `Delta`: combined-outcome mean difference at the fitted atom value
+- `mu_delta`: difference in means among the observed
+- `alpha_delta`: odds ratio of being observed
+- `delta`: combined-outcome mean difference at the fitted atom value
 - `W`: joint likelihood-ratio test statistic
 - `p`: joint p-value
 
-The fitted object stores the component intervals `muDeltaCI` and
-`alphaDeltaCI`, but it does not store `Delta` confidence intervals. Any
-interval for `Delta` is computed on demand through `confint()`.
+The fitted object stores the component intervals `mu_delta_ci` and
+`alpha_delta_ci`, but it does not store `delta` confidence intervals. Any
+interval for `delta` is computed on demand through `confint()`.
 
-When `adjust` is supplied with either method, `muDelta` and `alphaDelta` are
+When `adjust` is supplied with either method, `mu_delta` and `alpha_delta` are
 conditional treatment effects from the adjusted observed-outcome and logistic
-submodels. In that adjusted setting, `Delta` is not reported and remains `NA`,
-and `confint()` rejects `parameter = "Delta"` and `parameter = "joint"`.
+submodels. In that adjusted setting, `delta` is not reported and remains `NA`,
+and `confint()` rejects `parameter = "delta"` and `parameter = "joint"`.
 
 For both `method = "LRT"` and `method = "SPLRT"`, joint confidence-region
 surfaces are available for unadjusted fits through
@@ -86,9 +86,9 @@ answer the same question.
 
 For the two primary treatment-effect components, use:
 
-- `confint(fit, parameter = "muDelta")`
-- `confint(fit, parameter = "alphaDelta")`
-- `confint(fit)` or `confint(fit, parameter = c("muDelta", "alphaDelta"))`
+- `confint(fit, parameter = "mu_delta")`
+- `confint(fit, parameter = "alpha_delta")`
+- `confint(fit)` or `confint(fit, parameter = c("mu_delta", "alpha_delta"))`
 
 These are componentwise intervals. They describe uncertainty about one
 parameter at a time, not about the pair jointly.
@@ -97,16 +97,16 @@ For successful unadjusted fits, the package also supports a two-dimensional
 simultaneous region in
 
 ```text
-(muDelta, logORdelta)
+(mu_delta, log_or_delta)
 ```
 
 defined by
 
 ```text
-C_joint = { (mu, psi) : W(mu, psi) <= qchisq(conf.level, 2) }.
+C_joint = { (mu, psi) : W(mu, psi) <= qchisq(conf_level, 2) }.
 ```
 
-This is what `confint(fit, parameter = "joint")` and `jointContrastCI(fit)`
+This is what `confint(fit, parameter = "joint")` and `joint_contrast_ci(fit)`
 compute.
 
 For the derived combined-outcome contrast
@@ -118,13 +118,13 @@ Delta = [p1 * mu1 + (1 - p1) * atom] - [p0 * mu0 + (1 - p0) * atom],
 the package supports three interval constructions for successful unadjusted
 fits:
 
-1. `confint(fit, parameter = "Delta", method = "welch")`
+1. `confint(fit, parameter = "delta", method = "welch")`
    This is the Welch interval for the raw combined-outcome mean difference. It
    is fast, model-light, and descriptive.
 
-2. `confint(fit, parameter = "Delta", method = "projected")`
+2. `confint(fit, parameter = "delta", method = "projected")`
    This is the projection of the two-dimensional simultaneous region onto the
-   `Delta` scale:
+   `delta` scale:
 
    ```text
    [ min Delta(mu, psi), max Delta(mu, psi) ] over (mu, psi) in C_joint.
@@ -134,11 +134,11 @@ fits:
    optimization alternative remains available through
    `algorithm = "optimize"`.
 
-3. `confint(fit, parameter = "Delta", method = "profile")`
-   This is the one-dimensional profile interval for `Delta`:
+3. `confint(fit, parameter = "delta", method = "profile")`
+   This is the one-dimensional profile interval for `delta`:
 
    ```text
-   C_profile = { d : W_Delta(d) <= qchisq(conf.level, 1) }
+   C_profile = { d : W_Delta(d) <= qchisq(conf_level, 1) }
    ```
 
    The default implementation is grid-based. The slower direct
@@ -150,12 +150,12 @@ Practical guidance:
 - Use `confint(fit)` when the scientific question is about the two component
   effects separately.
 - Use `confint(fit, parameter = "joint")` when you want joint inference on the
-  pair `(muDelta, logORdelta)`.
+  pair `(mu_delta, log_or_delta)`.
 - Use `method = "welch"` when you want a fast descriptive interval for the
   combined outcome scale.
-- Use `method = "profile"` when `Delta` itself is the primary inferential
+- Use `method = "profile"` when `delta` itself is the primary inferential
   target.
-- Use `method = "projected"` when you want the range of `Delta` values
+- Use `method = "projected"` when you want the range of `delta` values
   compatible with the full joint simultaneous region.
 
 # Example
@@ -171,19 +171,19 @@ pi0 <- 0.35
 pi1 <- 0.6
 
 #Simulate data
-d <- TruncComp2::simulateTruncatedData(25, f0, f1, pi0, pi1, atom = 0)
+d <- TruncComp2::simulate_truncated_data(25, f0, f1, pi0, pi1, atom = 0)
 
 #Estimate parameters using the parametric method
 fit_lrt <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
 summary(fit_lrt)
 confint(fit_lrt)
-confint(fit_lrt, parameter = "Delta", method = "welch")
-confint(fit_lrt, parameter = "Delta", method = "projected")
-confint(fit_lrt, parameter = "Delta", method = "profile")
-confint(fit_lrt, parameter = "Delta", method = "profile", algorithm = "optimize")
+confint(fit_lrt, parameter = "delta", method = "welch")
+confint(fit_lrt, parameter = "delta", method = "projected")
+confint(fit_lrt, parameter = "delta", method = "profile")
+confint(fit_lrt, parameter = "delta", method = "profile", algorithm = "optimize")
 
 #Load the fixed adjusted example and compare unadjusted vs adjusted LRT
-d_adjusted <- loadTruncComp2AdjustedExample()
+d_adjusted <- load_trunc_comp2_adjusted_example()
 fit_lrt_unadjusted_example <- truncComp(Y ~ R, atom = 0, data = d_adjusted[, c("Y", "R")], method = "LRT")
 fit_lrt_adjusted <- truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
 summary(fit_lrt_unadjusted_example)
@@ -200,7 +200,7 @@ fit_splrt <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 summary(fit_splrt)
 
 #The default interface also accepts atom explicitly and can infer it when y[a == 0]
-truncComp.default(d$Y, d$A, d$R, method = "LRT", atom = 0)
+truncComp(d$Y, d$A, d$R, method = "LRT", atom = 0)
 
 #Get simultaneous confidence region for an unadjusted fit
 confint(fit_lrt, parameter = "joint", plot = TRUE, resolution = 10)

@@ -107,10 +107,17 @@ runtime_model_reference <- function(data, conf.level = 0.95, adjust = NULL) {
     W_A = 2 * (as.numeric(stats::logLik(glm_alt)) - as.numeric(stats::logLik(glm_null))),
     W_Y = 2 * (as.numeric(stats::logLik(lm_alt, REML = FALSE)) -
       as.numeric(stats::logLik(lm_null, REML = FALSE))),
+    statistic_A = 2 * (as.numeric(stats::logLik(glm_alt)) - as.numeric(stats::logLik(glm_null))),
+    statistic_Y = 2 * (as.numeric(stats::logLik(lm_alt, REML = FALSE)) -
+      as.numeric(stats::logLik(lm_null, REML = FALSE))),
     alphaDelta = exp(as.numeric(log_or)),
     muDelta = as.numeric(mu_delta),
     alphaDeltaCI = exp(as.numeric(log_or) + c(-1, 1) * z * sqrt(stats::vcov(glm_alt)["R", "R"])),
-    muDeltaCI = as.numeric(mu_delta) + c(-1, 1) * z * sqrt(stats::vcov(lm_alt)["R", "R"])
+    muDeltaCI = as.numeric(mu_delta) + c(-1, 1) * z * sqrt(stats::vcov(lm_alt)["R", "R"]),
+    alpha_delta = exp(as.numeric(log_or)),
+    mu_delta = as.numeric(mu_delta),
+    alpha_delta_ci = exp(as.numeric(log_or) + c(-1, 1) * z * sqrt(stats::vcov(glm_alt)["R", "R"])),
+    mu_delta_ci = as.numeric(mu_delta) + c(-1, 1) * z * sqrt(stats::vcov(lm_alt)["R", "R"])
   )
 }
 
@@ -138,7 +145,10 @@ runtime_parametric_joint_reference <- function(data, muDelta, logORdelta) {
   list(
     W_A = W_A,
     W_Y = W_Y,
-    W = W_A + W_Y
+    W = W_A + W_Y,
+    statistic_A = W_A,
+    statistic_Y = W_Y,
+    statistic = W_A + W_Y
   )
 }
 
@@ -227,15 +237,15 @@ test_that("model-backed parametric engine matches direct glm/lm references on re
     ref <- runtime_model_reference(case)
 
     expect_true(fit$success)
-    expect_equal(fit$W_A, ref$W_A, tolerance = 1e-10)
-    expect_equal(fit$W_Y, ref$W_Y, tolerance = 1e-10)
-    expect_equal(fit$W, ref$W_A + ref$W_Y, tolerance = 1e-10)
-    expect_equal(fit$alphaDelta, ref$alphaDelta, tolerance = 1e-10)
-    expect_equal(fit$muDelta, ref$muDelta, tolerance = 1e-10)
-    expect_equal(fit$alphaDeltaCI, ref$alphaDeltaCI, tolerance = 1e-10)
-    expect_equal(fit$muDeltaCI, ref$muDeltaCI, tolerance = 1e-10)
-    expect_equal(fit$p, stats::pchisq(fit$W, df = 2, lower.tail = FALSE), tolerance = 1e-12)
-    expect_gte(fit$W, 0)
+    expect_equal(fit$statistic_A, ref$statistic_A, tolerance = 1e-10)
+    expect_equal(fit$statistic_Y, ref$statistic_Y, tolerance = 1e-10)
+    expect_equal(fit$statistic, ref$statistic_A + ref$statistic_Y, tolerance = 1e-10)
+    expect_equal(fit$alpha_delta, ref$alpha_delta, tolerance = 1e-10)
+    expect_equal(fit$mu_delta, ref$mu_delta, tolerance = 1e-10)
+    expect_equal(fit$alpha_delta_ci, ref$alpha_delta_ci, tolerance = 1e-10)
+    expect_equal(fit$mu_delta_ci, ref$mu_delta_ci, tolerance = 1e-10)
+    expect_equal(fit$p, stats::pchisq(fit$statistic, df = 2, lower.tail = FALSE), tolerance = 1e-12)
+    expect_gte(fit$statistic, 0)
   }
 })
 
@@ -251,9 +261,9 @@ test_that("model-backed parametric engine matches direct numerical optimization"
     numeric_lrt <- optim_parametric_lrt(case)
 
     expect_true(fit$success)
-    expect_equal(fit$W, numeric_lrt, tolerance = 1e-6)
-    expect_equal(fit$W, fit$W_A + fit$W_Y, tolerance = 1e-12)
-    expect_equal(fit$p, stats::pchisq(fit$W, df = 2, lower.tail = FALSE), tolerance = 1e-12)
+    expect_equal(fit$statistic, numeric_lrt, tolerance = 1e-6)
+    expect_equal(fit$statistic, fit$statistic_A + fit$statistic_Y, tolerance = 1e-12)
+    expect_equal(fit$p, stats::pchisq(fit$statistic, df = 2, lower.tail = FALSE), tolerance = 1e-12)
   }
 })
 
@@ -269,14 +279,14 @@ test_that("adjusted parametric engine matches direct glm/lm references", {
     ref <- runtime_model_reference(case$data, adjust = case$adjust)
 
     expect_true(fit$success)
-    expect_equal(fit$W_A, ref$W_A, tolerance = 1e-10)
-    expect_equal(fit$W_Y, ref$W_Y, tolerance = 1e-10)
-    expect_equal(fit$W, ref$W_A + ref$W_Y, tolerance = 1e-10)
-    expect_equal(fit$alphaDelta, ref$alphaDelta, tolerance = 1e-10)
-    expect_equal(fit$muDelta, ref$muDelta, tolerance = 1e-10)
-    expect_equal(fit$alphaDeltaCI, ref$alphaDeltaCI, tolerance = 1e-10)
-    expect_equal(fit$muDeltaCI, ref$muDeltaCI, tolerance = 1e-10)
-    expect_true(is.na(fit$Delta))
+    expect_equal(fit$statistic_A, ref$statistic_A, tolerance = 1e-10)
+    expect_equal(fit$statistic_Y, ref$statistic_Y, tolerance = 1e-10)
+    expect_equal(fit$statistic, ref$statistic_A + ref$statistic_Y, tolerance = 1e-10)
+    expect_equal(fit$alpha_delta, ref$alpha_delta, tolerance = 1e-10)
+    expect_equal(fit$mu_delta, ref$mu_delta, tolerance = 1e-10)
+    expect_equal(fit$alpha_delta_ci, ref$alpha_delta_ci, tolerance = 1e-10)
+    expect_equal(fit$mu_delta_ci, ref$mu_delta_ci, tolerance = 1e-10)
+    expect_true(is.na(fit$delta))
     expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
   }
 })
@@ -292,8 +302,8 @@ test_that("adjusted parametric engine matches direct numerical optimization", {
     numeric_lrt <- optim_parametric_lrt(case$data, adjust = case$adjust)
 
     expect_true(fit$success)
-    expect_equal(fit$W, numeric_lrt, tolerance = 1e-6)
-    expect_equal(fit$W, fit$W_A + fit$W_Y, tolerance = 1e-12)
+    expect_equal(fit$statistic, numeric_lrt, tolerance = 1e-6)
+    expect_equal(fit$statistic, fit$statistic_A + fit$statistic_Y, tolerance = 1e-12)
   }
 })
 
@@ -304,34 +314,34 @@ test_that("public LRT path returns the expected object and keeps init compatible
 
   fit <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT", init = custom_init)
 
-  expect_s3_class(fit, "TruncComp2")
+  expect_s3_class(fit, "trunc_comp_fit")
   expect_true(fit$success)
   expect_equal(fit$method, "Parametric Likelihood Ratio Test")
   expect_equal(fit$atom, 0)
   expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
   expect_equal(fit$init, custom_init)
-  expect_equal(fit$muDelta, reference$muDelta, tolerance = 1e-10)
-  expect_equal(fit$alphaDelta, reference$alphaDelta, tolerance = 1e-10)
-  expect_equal(fit$W, reference$W_A + reference$W_Y, tolerance = 1e-10)
-  expect_equal(fit$muDeltaCI, reference$muDeltaCI, tolerance = 1e-10)
-  expect_equal(fit$alphaDeltaCI, reference$alphaDeltaCI, tolerance = 1e-10)
+  expect_equal(fit$mu_delta, reference$mu_delta, tolerance = 1e-10)
+  expect_equal(fit$alpha_delta, reference$alpha_delta, tolerance = 1e-10)
+  expect_equal(fit$statistic, reference$statistic_A + reference$statistic_Y, tolerance = 1e-10)
+  expect_equal(fit$mu_delta_ci, reference$mu_delta_ci, tolerance = 1e-10)
+  expect_equal(fit$alpha_delta_ci, reference$alpha_delta_ci, tolerance = 1e-10)
 
   expect_match(paste(capture.output(summary(fit)), collapse = "\n"), "Joint test statistic")
   expect_match(paste(capture.output(print(fit)), collapse = "\n"), "Parametric Likelihood Ratio Test")
 
   capture.output(ci <- confint(fit))
-  expect_equal(unname(ci["Difference in means among the observed:", ]), fit$muDeltaCI)
-  expect_equal(unname(ci["Odds ratio of being observed:", ]), fit$alphaDeltaCI)
+  expect_equal(unname(ci["mu_delta", ]), fit$mu_delta_ci)
+  expect_equal(unname(ci["alpha_delta", ]), fit$alpha_delta_ci)
 
-  capture.output(delta_projected <- confint(fit, parameter = "Delta", method = "projected", plot = FALSE))
-  expect_equal(rownames(delta_projected), "Delta (projected)")
-  expect_lte(unname(delta_projected[1, 1]), fit$Delta)
-  expect_gte(unname(delta_projected[1, 2]), fit$Delta)
+  capture.output(delta_projected <- confint(fit, parameter = "delta", method = "projected", plot = FALSE))
+  expect_equal(rownames(delta_projected), "delta (projected)")
+  expect_lte(unname(delta_projected[1, 1]), fit$delta)
+  expect_gte(unname(delta_projected[1, 2]), fit$delta)
 
-  capture.output(delta_profile <- confint(fit, parameter = "Delta", method = "profile", plot = FALSE))
-  expect_equal(rownames(delta_profile), "Delta (profile)")
-  expect_lte(unname(delta_profile[1, 1]), fit$Delta)
-  expect_gte(unname(delta_profile[1, 2]), fit$Delta)
+  capture.output(delta_profile <- confint(fit, parameter = "delta", method = "profile", plot = FALSE))
+  expect_equal(rownames(delta_profile), "delta (profile)")
+  expect_lte(unname(delta_profile[1, 1]), fit$delta)
+  expect_gte(unname(delta_profile[1, 2]), fit$delta)
 })
 
 test_that("parametric simultaneous confidence helpers work for unadjusted fits", {
@@ -342,22 +352,22 @@ test_that("parametric simultaneous confidence helpers work for unadjusted fits",
 
   capture.output(joint <- confint(fit, parameter = "joint", plot = FALSE, offset = 1, resolution = 5))
   expect_equal(dim(joint$surface), c(5, 5))
-  expect_equal(length(joint$muDelta), 5)
-  expect_equal(length(joint$logORdelta), 5)
+  expect_equal(length(joint$mu_delta), 5)
+  expect_equal(length(joint$log_or_delta), 5)
 
-  direct_joint <- jointContrastCI(fit, plot = FALSE, offset = 1, resolution = 5)
+  direct_joint <- joint_contrast_ci(fit, plot = FALSE, offset = 1, resolution = 5)
   expect_equal(direct_joint$surface, joint$surface, tolerance = 1e-10)
 
   parametric_reference <- TruncComp2:::parametricJointReference(fit$data)
-  fitted_log_or <- log(as.numeric(fit$alphaDelta))
+  fitted_log_or <- log(as.numeric(fit$alpha_delta))
 
   expect_equal(
     TruncComp2:::jointContrastLRT.parametric.cached(parametric_reference, 0, 0),
-    fit$W,
+    fit$statistic,
     tolerance = 1e-10
   )
   expect_equal(
-    TruncComp2:::jointContrastLRT.parametric.cached(parametric_reference, fit$muDelta, fitted_log_or),
+    TruncComp2:::jointContrastLRT.parametric.cached(parametric_reference, fit$mu_delta, fitted_log_or),
     0,
     tolerance = 1e-10
   )
@@ -369,15 +379,15 @@ test_that("parametric simultaneous helpers derive default offsets from fitted da
   expect_true(fit$success)
 
   offsets <- TruncComp2:::jointContrastDefaultOffsets(fit)
-  joint <- jointContrastCI(fit, plot = FALSE, resolution = 5)
+  joint <- joint_contrast_ci(fit, plot = FALSE, resolution = 5)
 
-  expect_equal(joint$muDelta,
-               seq(fit$muDeltaCI[1] - offsets[1],
-                   fit$muDeltaCI[2] + offsets[1],
+  expect_equal(joint$mu_delta,
+               seq(fit$mu_delta_ci[1] - offsets[1],
+                   fit$mu_delta_ci[2] + offsets[1],
                    length.out = 5))
-  expect_equal(joint$logORdelta,
-               seq(log(fit$alphaDeltaCI[1]) - offsets[2],
-                   log(fit$alphaDeltaCI[2]) + offsets[2],
+  expect_equal(joint$log_or_delta,
+               seq(log(fit$alpha_delta_ci[1]) - offsets[2],
+                   log(fit$alpha_delta_ci[2]) + offsets[2],
                    length.out = 5))
 })
 
@@ -392,7 +402,7 @@ test_that("parametric simultaneous surface matches direct constrained model fits
   )
 
   for(case in cases) {
-    fit <- truncComp.default(case$data$Y, case$data$A, case$data$R, method = "LRT")
+    fit <- truncComp(case$data$Y, case$data$A, case$data$R, method = "LRT")
     expect_true(fit$success)
 
     parametric_reference <- TruncComp2:::parametricJointReference(case$data)
@@ -400,12 +410,12 @@ test_that("parametric simultaneous surface matches direct constrained model fits
 
     expect_equal(
       TruncComp2:::jointContrastLRT.parametric.cached(parametric_reference, case$mu, case$log_or),
-      runtime_reference$W,
+      runtime_reference$statistic,
       tolerance = 1e-10
     )
     expect_equal(
       TruncComp2:::jointContrastLRT.parametric(case$data, case$mu, case$log_or),
-      runtime_reference$W,
+      runtime_reference$statistic,
       tolerance = 1e-10
     )
   }
@@ -419,27 +429,27 @@ test_that("adjusted formula interface stores adjustment metadata and conditional
                    method = "LRT",
                    adjust = ~ L1 + L2)
 
-  expect_s3_class(fit, "TruncComp2")
+  expect_s3_class(fit, "trunc_comp_fit")
   expect_true(fit$success)
   expect_equal(fit$adjust, "L1 + L2")
   expect_true(all(c("L1", "L2") %in% names(fit$data)))
-  expect_true(is.na(fit$Delta))
+  expect_true(is.na(fit$delta))
   expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
 
   summary_text <- paste(capture.output(summary(fit)), collapse = "\n")
   expect_match(summary_text, "Adjusted for: L1 \\+ L2")
 
   capture.output(ci <- confint(fit))
-  expect_equal(unname(ci["Difference in means among the observed:", ]), fit$muDeltaCI)
-  expect_equal(unname(ci["Odds ratio of being observed:", ]), fit$alphaDeltaCI)
+  expect_equal(unname(ci["mu_delta", ]), fit$mu_delta_ci)
+  expect_equal(unname(ci["alpha_delta", ]), fit$alpha_delta_ci)
   expect_error(confint(fit, parameter = "joint"), "adjusted fits")
-  expect_error(confint(fit, parameter = "Delta", method = "projected"), "adjusted fits")
-  expect_error(confint(fit, parameter = "Delta", method = "profile"), "adjusted fits")
-  expect_error(jointContrastCI(fit, plot = FALSE), "adjusted fits")
+  expect_error(confint(fit, parameter = "delta", method = "projected"), "adjusted fits")
+  expect_error(confint(fit, parameter = "delta", method = "profile"), "adjusted fits")
+  expect_error(joint_contrast_ci(fit, plot = FALSE), "adjusted fits")
 })
 
 test_that("packaged adjusted example illustrates attenuation after covariate adjustment", {
-  example_data <- loadTruncComp2AdjustedExample()
+  example_data <- load_trunc_comp2_adjusted_example()
 
   expect_s3_class(example_data, "data.frame")
   expect_equal(names(example_data), c("R", "L", "Y"))
@@ -472,19 +482,19 @@ test_that("packaged adjusted example illustrates attenuation after covariate adj
 
   expect_lt(fit_unadjusted$p, 0.05)
   expect_gt(fit_adjusted$p, 0.05)
-  expect_lt(fit_adjusted$W, fit_unadjusted$W)
-  expect_lt(abs(fit_adjusted$muDelta), abs(fit_unadjusted$muDelta))
-  expect_lt(abs(log(as.numeric(fit_adjusted$alphaDelta))),
-            abs(log(as.numeric(fit_unadjusted$alphaDelta))))
+  expect_lt(fit_adjusted$statistic, fit_unadjusted$statistic)
+  expect_lt(abs(fit_adjusted$mu_delta), abs(fit_unadjusted$mu_delta))
+  expect_lt(abs(log(as.numeric(fit_adjusted$alpha_delta))),
+            abs(log(as.numeric(fit_unadjusted$alpha_delta))))
 
   expect_equal(fit_unadjusted$p, 0.04787936, tolerance = 1e-4)
   expect_equal(fit_adjusted$p, 0.14451384, tolerance = 1e-4)
-  expect_equal(fit_unadjusted$W, 6.078142, tolerance = 1e-4)
-  expect_equal(fit_adjusted$W, 3.86876, tolerance = 1e-4)
-  expect_equal(fit_unadjusted$muDelta, 0.6720578, tolerance = 1e-4)
-  expect_equal(fit_adjusted$muDelta, 0.5511571, tolerance = 1e-4)
-  expect_equal(as.numeric(fit_unadjusted$alphaDelta), 3.160494, tolerance = 1e-5)
-  expect_equal(as.numeric(fit_adjusted$alphaDelta), 1.836725, tolerance = 1e-5)
+  expect_equal(fit_unadjusted$statistic, 6.078142, tolerance = 1e-4)
+  expect_equal(fit_adjusted$statistic, 3.86876, tolerance = 1e-4)
+  expect_equal(fit_unadjusted$mu_delta, 0.6720578, tolerance = 1e-4)
+  expect_equal(fit_adjusted$mu_delta, 0.5511571, tolerance = 1e-4)
+  expect_equal(as.numeric(fit_unadjusted$alpha_delta), 3.160494, tolerance = 1e-5)
+  expect_equal(as.numeric(fit_adjusted$alpha_delta), 1.836725, tolerance = 1e-5)
 })
 
 test_that("adjust equals ~1 reproduces the unadjusted parametric fit", {
@@ -500,22 +510,22 @@ test_that("adjust equals ~1 reproduces the unadjusted parametric fit", {
   expect_true(unadjusted$success)
   expect_true(intercept_only$success)
   expect_equal(intercept_only$adjust, NULL)
-  expect_equal(intercept_only$muDelta, unadjusted$muDelta, tolerance = 1e-12)
-  expect_equal(intercept_only$alphaDelta, unadjusted$alphaDelta, tolerance = 1e-12)
-  expect_equal(intercept_only$W, unadjusted$W, tolerance = 1e-12)
-  expect_equal(intercept_only$muDeltaCI, unadjusted$muDeltaCI, tolerance = 1e-12)
-  expect_equal(intercept_only$alphaDeltaCI, unadjusted$alphaDeltaCI, tolerance = 1e-12)
+  expect_equal(intercept_only$mu_delta, unadjusted$mu_delta, tolerance = 1e-12)
+  expect_equal(intercept_only$alpha_delta, unadjusted$alpha_delta, tolerance = 1e-12)
+  expect_equal(intercept_only$statistic, unadjusted$statistic, tolerance = 1e-12)
+  expect_equal(intercept_only$mu_delta_ci, unadjusted$mu_delta_ci, tolerance = 1e-12)
+  expect_equal(intercept_only$alpha_delta_ci, unadjusted$alpha_delta_ci, tolerance = 1e-12)
 })
 
 test_that("adjusted default interface accepts data.frame and matrix covariates", {
   case <- adjusted_lrt_case(20260523, 18)
 
-  fit_df <- truncComp.default(case$Y,
+  fit_df <- truncComp(case$Y,
                               case$A,
                               case$R,
                               method = "LRT",
                               adjust = case["L1"])
-  fit_matrix <- truncComp.default(case$Y,
+  fit_matrix <- truncComp(case$Y,
                                   case$A,
                                   case$R,
                                   method = "LRT",
@@ -529,12 +539,12 @@ test_that("adjusted default interface accepts data.frame and matrix covariates",
   expect_true(fit_df$success)
   expect_true(fit_matrix$success)
   expect_true(fit_formula$success)
-  expect_equal(fit_df$muDelta, fit_formula$muDelta, tolerance = 1e-10)
-  expect_equal(fit_df$alphaDelta, fit_formula$alphaDelta, tolerance = 1e-10)
-  expect_equal(fit_df$W, fit_formula$W, tolerance = 1e-10)
-  expect_equal(fit_matrix$muDelta, fit_formula$muDelta, tolerance = 1e-10)
-  expect_equal(fit_matrix$alphaDelta, fit_formula$alphaDelta, tolerance = 1e-10)
-  expect_equal(fit_matrix$W, fit_formula$W, tolerance = 1e-10)
+  expect_equal(fit_df$mu_delta, fit_formula$mu_delta, tolerance = 1e-10)
+  expect_equal(fit_df$alpha_delta, fit_formula$alpha_delta, tolerance = 1e-10)
+  expect_equal(fit_df$statistic, fit_formula$statistic, tolerance = 1e-10)
+  expect_equal(fit_matrix$mu_delta, fit_formula$mu_delta, tolerance = 1e-10)
+  expect_equal(fit_matrix$alpha_delta, fit_formula$alpha_delta, tolerance = 1e-10)
+  expect_equal(fit_matrix$statistic, fit_formula$statistic, tolerance = 1e-10)
 })
 
 test_that("covariate adjustment changes the conditional fit under strong confounding", {
@@ -560,8 +570,8 @@ test_that("covariate adjustment changes the conditional fit under strong confoun
 
   expect_true(unadjusted$success)
   expect_true(adjusted$success)
-  expect_lt(abs(adjusted$muDelta), abs(unadjusted$muDelta))
-  expect_lt(adjusted$W, unadjusted$W)
+  expect_lt(abs(adjusted$mu_delta), abs(unadjusted$mu_delta))
+  expect_lt(adjusted$statistic, unadjusted$statistic)
 })
 
 test_that("adjusted interface validates formulas and default adjustment shapes", {
@@ -600,7 +610,7 @@ test_that("adjusted interface validates formulas and default adjustment shapes",
   )
 
   expect_error(
-    truncComp.default(case$Y, case$A, case$R, method = "LRT", adjust = case["L1"][1:5, , drop = FALSE]),
+    truncComp(case$Y, case$A, case$R, method = "LRT", adjust = case["L1"][1:5, , drop = FALSE]),
     "same number of rows"
   )
 })
@@ -628,21 +638,21 @@ test_that("observed-only factor levels are dropped before adjusted observed-outc
 test_that("adjusted fits fail cleanly when treatment is aliased or the logistic model separates", {
   case <- adjusted_lrt_case(20260526, 18)
 
-  aliased_fit <- truncComp.default(case$Y,
+  aliased_fit <- truncComp(case$Y,
                                    case$A,
                                    case$R,
                                    method = "LRT",
                                    adjust = data.frame(Rcopy = case$R))
-  expect_s3_class(aliased_fit, "TruncComp2")
+  expect_s3_class(aliased_fit, "trunc_comp_fit")
   expect_false(aliased_fit$success)
   expect_match(aliased_fit$error, "not estimable")
 
-  separation_fit <- truncComp.default(case$Y,
+  separation_fit <- truncComp(case$Y,
                                       case$A,
                                       case$R,
                                       method = "LRT",
                                       adjust = data.frame(Lsep = case$A))
-  expect_s3_class(separation_fit, "TruncComp2")
+  expect_s3_class(separation_fit, "trunc_comp_fit")
   expect_false(separation_fit$success)
   expect_match(separation_fit$error, "not estimable")
 })
@@ -653,53 +663,53 @@ test_that("LRT boundary cases keep the statistic even when Wald intervals are un
     A = c(1, 1, 0, 1, 1, 0),
     R = c(0, 0, 0, 1, 1, 1)
   )
-  same_fit <- truncComp.default(same_constants$Y, same_constants$A, same_constants$R, method = "LRT")
+  same_fit <- truncComp(same_constants$Y, same_constants$A, same_constants$R, method = "LRT")
   expect_true(same_fit$success)
-  expect_equal(same_fit$muDelta, 0)
-  expect_equal(same_fit$alphaDelta, 1)
-  expect_equal(same_fit$W, 0)
-  expect_true(all(is.na(same_fit$muDeltaCI)))
+  expect_equal(same_fit$mu_delta, 0)
+  expect_equal(same_fit$alpha_delta, 1)
+  expect_equal(same_fit$statistic, 0)
+  expect_true(all(is.na(same_fit$mu_delta_ci)))
 
   separated_constants <- data.frame(
     Y = c(1, 1, 0, 2, 2, 0),
     A = c(1, 1, 0, 1, 1, 0),
     R = c(0, 0, 0, 1, 1, 1)
   )
-  separated_fit <- truncComp.default(separated_constants$Y,
+  separated_fit <- truncComp(separated_constants$Y,
                                      separated_constants$A,
                                      separated_constants$R,
                                      method = "LRT")
   expect_true(separated_fit$success)
-  expect_equal(separated_fit$muDelta, 1)
-  expect_true(is.infinite(separated_fit$W))
+  expect_equal(separated_fit$mu_delta, 1)
+  expect_true(is.infinite(separated_fit$statistic))
   expect_equal(separated_fit$p, 0)
-  expect_true(all(is.na(separated_fit$muDeltaCI)))
+  expect_true(all(is.na(separated_fit$mu_delta_ci)))
 
   all_observed_arm <- data.frame(
     Y = c(1.0, 1.2, 1.4, 1.6, 0, 2.0, 2.3, 2.5),
     A = c(1, 1, 1, 1, 0, 1, 1, 1),
     R = c(0, 0, 0, 0, 1, 1, 1, 1)
   )
-  boundary_fit <- truncComp.default(all_observed_arm$Y,
+  boundary_fit <- truncComp(all_observed_arm$Y,
                                     all_observed_arm$A,
                                     all_observed_arm$R,
                                     method = "LRT")
   expect_true(boundary_fit$success)
-  expect_equal(boundary_fit$alphaDelta, 0)
-  expect_true(all(is.na(boundary_fit$alphaDeltaCI)))
-  expect_true(is.finite(boundary_fit$W) || is.infinite(boundary_fit$W))
+  expect_equal(boundary_fit$alpha_delta, 0)
+  expect_true(all(is.na(boundary_fit$alpha_delta_ci)))
+  expect_true(is.finite(boundary_fit$statistic) || is.infinite(boundary_fit$statistic))
 })
 
 test_that("LRT still returns a failed TruncComp2 object on invalid data", {
   expect_warning(
-    fit <- truncComp.default(c(0, 1, 0, 2),
+    fit <- truncComp(c(0, 1, 0, 2),
                              c(0, 1, 0, 1),
                              c(0, 0, 1, 1),
                              method = "LRT"),
     "data error"
   )
 
-  expect_s3_class(fit, "TruncComp2")
+  expect_s3_class(fit, "trunc_comp_fit")
   expect_false(fit$success)
   expect_error(confint(fit), "Estimation failed")
 })

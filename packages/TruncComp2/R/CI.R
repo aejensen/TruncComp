@@ -1,4 +1,4 @@
-utils::globalVariables(c("muDelta", "logORdelta", "statistic"))
+utils::globalVariables(c("mu_delta", "log_or_delta", "statistic"))
 
 validateJointContrastResolution <- function(resolution) {
   if(length(resolution) != 1 || !is.numeric(resolution) || !is.finite(resolution) || resolution < 1) {
@@ -90,20 +90,23 @@ jointContrastAxisOffset <- function(interval = NULL, center = NULL, fallback = N
 }
 
 jointContrastDefaultOffsets <- function(m) {
-  logAlphaCI <- suppressWarnings(log(m$alphaDeltaCI))
-  logAlpha <- suppressWarnings(log(as.numeric(m$alphaDelta)))
+  logAlphaCI <- suppressWarnings(log(m$alpha_delta_ci))
+  logAlpha <- suppressWarnings(log(as.numeric(m$alpha_delta)))
+
+  mu_offset <- jointContrastAxisOffset(
+    interval = m$mu_delta_ci,
+    center = m$mu_delta,
+    fallback = jointContrastMuFallbackOffset(m)
+  )
+  log_or_offset <- jointContrastAxisOffset(
+    interval = logAlphaCI,
+    center = logAlpha,
+    fallback = jointContrastLogORFallbackOffset(m)
+  )
 
   c(
-    muDelta = jointContrastAxisOffset(
-      interval = m$muDeltaCI,
-      center = m$muDelta,
-      fallback = jointContrastMuFallbackOffset(m)
-    ),
-    logORdelta = jointContrastAxisOffset(
-      interval = logAlphaCI,
-      center = logAlpha,
-      fallback = jointContrastLogORFallbackOffset(m)
-    )
+    mu_delta = mu_offset,
+    log_or_delta = log_or_offset
   )
 }
 
@@ -125,25 +128,27 @@ normalizeJointContrastOffsets <- function(m, offset = NULL) {
 
 jointContrastDefaultBounds <- function(m, offset = NULL) {
   offsets <- normalizeJointContrastOffsets(m, offset)
-  logAlphaCI <- suppressWarnings(log(m$alphaDeltaCI))
-  logAlpha <- suppressWarnings(log(as.numeric(m$alphaDelta)))
+  logAlphaCI <- suppressWarnings(log(m$alpha_delta_ci))
+  logAlpha <- suppressWarnings(log(as.numeric(m$alpha_delta)))
 
   list(
-    muDelta = jointContrastAxisBounds(m$muDeltaCI, m$muDelta, offsets[1]),
+    mu_delta = jointContrastAxisBounds(m$mu_delta_ci, m$mu_delta, offsets[1]),
+    log_or_delta = jointContrastAxisBounds(logAlphaCI, logAlpha, offsets[2]),
+    muDelta = jointContrastAxisBounds(m$mu_delta_ci, m$mu_delta, offsets[1]),
     logORdelta = jointContrastAxisBounds(logAlphaCI, logAlpha, offsets[2])
   )
 }
 
-jointContrastPlot <- function(muDelta, logORdelta, surface, m, conf.level) {
+jointContrastPlot <- function(mu_delta, log_or_delta, surface, m, conf.level) {
   plot_data <- expand.grid(
-    muDelta = muDelta,
-    logORdelta = logORdelta
+    mu_delta = mu_delta,
+    log_or_delta = log_or_delta
   )
   plot_data$statistic <- as.vector(surface)
 
   plot_obj <- ggplot2::ggplot(
     plot_data,
-    ggplot2::aes(x = muDelta, y = logORdelta, fill = statistic)
+    ggplot2::aes(x = mu_delta, y = log_or_delta, fill = statistic)
   ) +
     ggplot2::geom_raster() +
     ggplot2::geom_contour(
@@ -160,11 +165,11 @@ jointContrastPlot <- function(muDelta, logORdelta, surface, m, conf.level) {
     ) +
     ggplot2::theme_minimal()
 
-  logAlphaEstimate <- suppressWarnings(log(as.numeric(m$alphaDelta)))
-  if(is.finite(m$muDelta) && is.finite(logAlphaEstimate)) {
+  logAlphaEstimate <- suppressWarnings(log(as.numeric(m$alpha_delta)))
+  if(is.finite(m$mu_delta) && is.finite(logAlphaEstimate)) {
     plot_obj <- plot_obj + ggplot2::geom_point(
-      data = data.frame(muDelta = m$muDelta, logORdelta = logAlphaEstimate),
-      ggplot2::aes(x = muDelta, y = logORdelta),
+      data = data.frame(mu_delta = m$mu_delta, log_or_delta = logAlphaEstimate),
+      ggplot2::aes(x = mu_delta, y = log_or_delta),
       inherit.aes = FALSE,
       shape = 16,
       size = 2
@@ -187,7 +192,7 @@ validateConfidenceLevel <- function(conf.level) {
 }
 
 buildMarginalCIMatrix <- function(object) {
-  buildComponentCIMatrix(object, c("muDelta", "alphaDelta"))
+  buildComponentCIMatrix(object, c("mu_delta", "alpha_delta"))
 }
 
 ciColumnLabels <- function(conf.level) {
@@ -198,13 +203,13 @@ ciColumnLabels <- function(conf.level) {
 
 componentCIInfo <- function(object) {
   list(
-    muDelta = list(
-      label = "Difference in means among the observed:",
-      interval = object$muDeltaCI
+    mu_delta = list(
+      label = "mu_delta",
+      interval = object$mu_delta_ci
     ),
-    alphaDelta = list(
-      label = "Odds ratio of being observed:",
-      interval = object$alphaDeltaCI
+    alpha_delta = list(
+      label = "alpha_delta",
+      interval = object$alpha_delta_ci
     )
   )
 }
@@ -214,16 +219,16 @@ buildComponentCIMatrix <- function(object, parameter) {
   rows <- lapply(parameter, function(name) info[[name]]$interval)
   cMat <- do.call(rbind, rows)
   rownames(cMat) <- unname(vapply(parameter, function(name) info[[name]]$label, character(1)))
-  colnames(cMat) <- ciColumnLabels(object$conf.level)
+  colnames(cMat) <- ciColumnLabels(object$conf_level)
   cMat
 }
 
 deltaIntervalLabel <- function(method) {
   switch(
     method,
-    welch = "Delta (welch)",
-    profile = "Delta (profile)",
-    projected = "Delta (projected)"
+    welch = "delta (welch)",
+    profile = "delta (profile)",
+    projected = "delta (projected)"
   )
 }
 
@@ -235,68 +240,71 @@ buildSingleIntervalMatrix <- function(interval, label, conf.level) {
   )
 }
 
-#' Confidence intervals for a TruncComp2 fit
+#' Confidence intervals for a truncated-comparison fit
 #'
 #' Computes component confidence intervals, joint confidence-region surfaces,
-#' and on-demand `Delta` intervals for a fitted `"TruncComp2"` object.
+#' and on-demand `delta` intervals for a fitted `"trunc_comp_fit"` object.
 #'
-#' @param object A `"TruncComp2"` object returned by [truncComp()].
+#' @param object A `"trunc_comp_fit"` object returned by [truncComp()].
 #' @param parameter Parameter selection for the requested interval. Use
-#'   `"muDelta"` and/or `"alphaDelta"` for the stored component intervals,
-#'   `"Delta"` for the derived combined-outcome contrast, or `"joint"` for the
+#'   `"mu_delta"` and/or `"alpha_delta"` for the stored component intervals,
+#'   `"delta"` for the derived combined-outcome contrast, or `"joint"` for the
 #'   two-parameter likelihood-ratio surface.
-#' @param method Interval construction for `parameter = "Delta"`. One of
+#' @param method Interval construction for `parameter = "delta"`. One of
 #'   `"welch"`, `"profile"`, or `"projected"`.
-#' @param muDelta Optional grid values for the mean-difference axis when
+#' @param mu_delta Optional grid values for the mean-difference axis when
 #'   `parameter = "joint"`.
-#' @param logORdelta Optional grid values for the log-odds-ratio axis when
+#' @param log_or_delta Optional grid values for the log-odds-ratio axis when
 #'   `parameter = "joint"`.
-#' @param conf.level Confidence level for the interval or contour threshold.
+#' @param conf_level Confidence level for the interval or contour threshold.
 #' @param plot Logical; if `TRUE`, plot the joint confidence surface.
 #' @param offset Optional simultaneous-grid expansion. If omitted, a
 #'   data-adaptive default is derived from the fitted marginal intervals or from
 #'   fallback data scales. A single number is applied to both axes; a length-2
-#'   vector supplies separate expansions for `muDelta` and `logORdelta`.
+#'   vector supplies separate expansions for `mu_delta` and `log_or_delta`.
 #' @param resolution Number of grid points per axis for the surface-based
 #'   surface-based calculations.
-#' @param algorithm For `parameter = "Delta"` with `method = "projected"` or
+#' @param algorithm For `parameter = "delta"` with `method = "projected"` or
 #'   `method = "profile"`, whether to use the default grid-based approximation
 #'   (`"grid"`) or the slower direct optimization alternative (`"optimize"`).
 #' @param ... Unused additional arguments.
-#' @return Invisibly returns a printed matrix for the component and `Delta`
+#' @return Invisibly returns a printed matrix for the component and `delta`
 #'   intervals, or a list with the evaluated joint surface for
 #'   `parameter = "joint"`.
 #' @details
 #' Adjusted fits support only the stored component confidence intervals.
-#' Joint regions and `Delta` intervals are available only for successful
+#' Joint regions and `delta` intervals are available only for successful
 #' unadjusted `LRT` and `SPLRT` fits.
 #' @examples
 #' library(TruncComp2)
-#' d <- loadTruncComp2Example()
+#' d <- load_trunc_comp2_example()
 #' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
 #' confint(fit)
 #' confint(fit, parameter = "joint", plot = FALSE, resolution = 10)
-#' confint(fit, parameter = "Delta", method = "profile")
-#' @rdname confint.TruncComp
+#' confint(fit, parameter = "delta", method = "profile")
+#' @rdname confint
 #' @export
-confint.TruncComp2 <- function(object, parameter = c("muDelta", "alphaDelta"),
-                              method = "welch", muDelta = NULL, logORdelta = NULL,
-                              conf.level = object$conf.level, plot = TRUE,
-                              offset = NULL, resolution = 35, algorithm = c("grid", "optimize"),
-                              ...) {
+confint.trunc_comp_fit <- function(object, parameter = c("mu_delta", "alpha_delta"),
+                                   method = "welch", mu_delta = NULL, log_or_delta = NULL,
+                                   conf_level = object$conf_level, plot = TRUE,
+                                   offset = NULL, resolution = 35,
+                                   algorithm = c("grid", "optimize"), ...) {
+  parameter <- unique(gsub("^muDelta$", "mu_delta", parameter))
+  parameter <- unique(gsub("^alphaDelta$", "alpha_delta", parameter))
+  parameter <- unique(gsub("^Delta$", "delta", parameter))
   parameter <- unique(match.arg(
     parameter,
-    choices = c("muDelta", "alphaDelta", "Delta", "joint"),
+    choices = c("mu_delta", "alpha_delta", "delta", "joint"),
     several.ok = TRUE
   ))
-  conf.level <- validateConfidenceLevel(conf.level)
+  conf.level <- validateConfidenceLevel(conf_level)
 
   if(!isTRUE(object$success)) {
     stop("Estimation failed. Cannot display confidence intervals.")
   }
 
-  if(length(parameter) > 1 && !all(parameter %in% c("muDelta", "alphaDelta"))) {
-    stop("Multiple parameters are only supported for c(\"muDelta\", \"alphaDelta\").")
+  if(length(parameter) > 1 && !all(parameter %in% c("mu_delta", "alpha_delta"))) {
+    stop("Multiple parameters are only supported for c(\"mu_delta\", \"alpha_delta\").")
   }
 
   if(length(parameter) == 1 && identical(parameter, "joint")) {
@@ -305,13 +313,13 @@ confint.TruncComp2 <- function(object, parameter = c("muDelta", "alphaDelta"),
     }
 
     message("Calculating joint likelihood surface.\nThis may take some time depending on the resolution.")
-    joint <- jointContrastCI(object, muDelta, logORdelta, conf.level, plot, offset, resolution)
+    joint <- joint_contrast_ci(object, mu_delta, log_or_delta, conf.level, plot, offset, resolution)
     return(invisible(joint))
   }
 
-  if(length(parameter) == 1 && identical(parameter, "Delta")) {
+  if(length(parameter) == 1 && identical(parameter, "delta")) {
     if(!is.null(object$adjust)) {
-      stop("Delta intervals are not implemented for adjusted fits.")
+      stop("delta intervals are not implemented for adjusted fits.")
     }
 
     method <- match.arg(method, c("welch", "profile", "projected"))
@@ -340,10 +348,10 @@ confint.TruncComp2 <- function(object, parameter = c("muDelta", "alphaDelta"),
     return(invisible(interval_mat))
   }
 
-  if(!isTRUE(all.equal(conf.level, object$conf.level, tolerance = sqrt(.Machine$double.eps)))) {
+  if(!isTRUE(all.equal(conf.level, object$conf_level, tolerance = sqrt(.Machine$double.eps)))) {
     stop(paste0("Component confidence intervals are stored at the fitted confidence level (",
-                format(object$conf.level),
-                "). Refit the model with the desired conf.level to change them."))
+                format(object$conf_level),
+                "). Refit the model with the desired conf_level to change them."))
   }
 
   cMat <- buildComponentCIMatrix(object, parameter)
@@ -387,11 +395,11 @@ jointContrastLRT <- function(data, muDelta, logORdelta) {
 }
 
 jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
-                                     conf.level = m$conf.level,
+                                     conf.level = m$conf_level,
                                      plot = TRUE, offset = NULL, resolution = 35,
                                      include_delta = FALSE) {
-  if(!inherits(m, "TruncComp2")) {
-    stop("m must be an object of type TruncComp2")
+  if(!inherits(m, "trunc_comp_fit")) {
+    stop("m must be an object of type trunc_comp_fit")
   }
 
   conf.level <- validateConfidenceLevel(conf.level)
@@ -413,12 +421,12 @@ jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
   offsets <- normalizeJointContrastOffsets(m, offset)
 
   if(is.null(muDelta)) {
-    muDelta <- jointContrastGrid(m$muDeltaCI, m$muDelta, offset = offsets[1], resolution = resolution)
+    muDelta <- jointContrastGrid(m$mu_delta_ci, m$mu_delta, offset = offsets[1], resolution = resolution)
   }
 
   if(is.null(logORdelta)) {
-    logAlphaCI <- suppressWarnings(log(m$alphaDeltaCI))
-    logAlpha <- suppressWarnings(log(as.numeric(m$alphaDelta)))
+    logAlphaCI <- suppressWarnings(log(m$alpha_delta_ci))
+    logAlpha <- suppressWarnings(log(as.numeric(m$alpha_delta)))
     logORdelta <- jointContrastGrid(logAlphaCI, logAlpha, offset = offsets[2], resolution = resolution)
   }
 
@@ -457,8 +465,15 @@ jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
     print(jointContrastPlot(muDelta, logORdelta, matOut, m, conf.level))
   }
 
-  out <- list(muDelta = muDelta, logORdelta = logORdelta, surface = matOut)
+  out <- list(
+    mu_delta = muDelta,
+    log_or_delta = logORdelta,
+    muDelta = muDelta,
+    logORdelta = logORdelta,
+    surface = matOut
+  )
   if(isTRUE(include_delta)) {
+    out$delta_surface <- deltaOut
     out$deltaSurface <- deltaOut
   }
   out
@@ -470,44 +485,52 @@ jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
 #' `"TruncComp2"` object from the unadjusted parametric or semi-parametric
 #' likelihood-ratio method.
 #'
-#' @param m A successful unadjusted `"TruncComp2"` object fitted with
+#' @param m A successful unadjusted `"trunc_comp_fit"` object fitted with
 #'   `method = "LRT"` or `method = "SPLRT"`.
-#' @param muDelta Optional grid values for the mean-difference axis.
-#' @param logORdelta Optional grid values for the log-odds-ratio axis.
-#' @param conf.level Confidence level used for the plotted contour. Defaults to
-#'   `m$conf.level`.
+#' @param mu_delta Optional grid values for the mean-difference axis.
+#' @param log_or_delta Optional grid values for the log-odds-ratio axis.
+#' @param conf_level Confidence level used for the plotted contour. Defaults to
+#'   `m$conf_level`.
 #' @param plot Logical; if `TRUE`, plot the surface and contour.
 #' @param offset Optional grid expansion. If omitted, a data-adaptive default is
 #'   derived from the fitted marginal intervals or fallback data scales. A
 #'   single number is applied to both axes; a length-2 vector supplies separate
-#'   expansions for `muDelta` and `logORdelta`.
+#'   expansions for `mu_delta` and `log_or_delta`.
 #' @param resolution Number of grid points per axis.
-#' @return A list with components `muDelta`, `logORdelta`, and `surface`,
+#' @return A list with components `mu_delta`, `log_or_delta`, and `surface`,
 #'   containing the evaluated grid and the corresponding joint likelihood-ratio
 #'   statistics.
 #' @details
-#' This helper is exported for convenience and compatibility. Internally it is a
+#' This helper is exported for convenience. Internally it is a
 #' thin wrapper around [jointContrastSurfaceData()] with `include_delta = FALSE`.
 #' @examples
 #' library(TruncComp2)
-#' d <- loadTruncComp2Example()
+#' d <- load_trunc_comp2_example()
 #' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
-#' surface <- jointContrastCI(fit, plot = FALSE, resolution = 10)
+#' surface <- joint_contrast_ci(fit, plot = FALSE, resolution = 10)
 #' str(surface)
 #' @export
-jointContrastCI <- function(m, muDelta = NULL, logORdelta = NULL,
-                            conf.level = m$conf.level, plot = TRUE,
-                            offset = NULL, resolution = 35) {
+joint_contrast_ci <- function(m, mu_delta = NULL, log_or_delta = NULL,
+                              conf_level = m$conf_level, plot = TRUE,
+                              offset = NULL, resolution = 35) {
   surface <- jointContrastSurfaceData(
     m,
-    muDelta = muDelta,
-    logORdelta = logORdelta,
-    conf.level = conf.level,
+    muDelta = mu_delta,
+    logORdelta = log_or_delta,
+    conf.level = conf_level,
     plot = plot,
     offset = offset,
     resolution = resolution,
     include_delta = FALSE
   )
 
-  list(muDelta = surface$muDelta, logORdelta = surface$logORdelta, surface = surface$surface)
+  list(
+    mu_delta = surface$mu_delta,
+    log_or_delta = surface$log_or_delta,
+    muDelta = surface$mu_delta,
+    logORdelta = surface$log_or_delta,
+    surface = surface$surface
+  )
 }
+
+jointContrastCI <- joint_contrast_ci

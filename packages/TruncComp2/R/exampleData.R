@@ -26,10 +26,10 @@
 #' `inst/extdata/TruncComp2Example.rds`. This helper provides a stable public
 #' loading mechanism without relying on `data()`.
 #' @examples
-#' d <- loadTruncComp2Example()
+#' d <- load_trunc_comp2_example()
 #' head(d)
 #' @export
-loadTruncComp2Example <- function() {
+load_trunc_comp2_example <- function() {
   readRDS(.truncComp2ExtdataPath("TruncComp2Example.rds"))
 }
 
@@ -47,9 +47,12 @@ loadTruncComp2Example <- function() {
 #' `inst/extdata/TruncComp2AdjustedExample.rds`. This helper provides a stable
 #' public loading mechanism without relying on `data()`.
 #' @examples
-#' d <- loadTruncComp2AdjustedExample()
+#' d <- load_trunc_comp2_adjusted_example()
 #' head(d)
 #' @export
-loadTruncComp2AdjustedExample <- function() {
+load_trunc_comp2_adjusted_example <- function() {
   readRDS(.truncComp2ExtdataPath("TruncComp2AdjustedExample.rds"))
 }
+
+loadTruncComp2Example <- load_trunc_comp2_example
+loadTruncComp2AdjustedExample <- load_trunc_comp2_adjusted_example

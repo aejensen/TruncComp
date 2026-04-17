@@ -77,9 +77,9 @@
 #' @examples
 #' f0 <- function(n) stats::rnorm(n, 3, 1)
 #' f1 <- function(n) stats::rnorm(n, 3.5, 1)
-#' simulateTruncatedData(n = 25, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
+#' simulate_truncated_data(n = 25, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
 #' @export
-simulateTruncatedData <- function(n, f0, f1, pi0, pi1, atom = 0) {
+simulate_truncated_data <- function(n, f0, f1, pi0, pi1, atom = 0) {
   .validateSimulationInputs(n, f0, f1, pi0, pi1, atom = atom)
   n <- as.integer(n)
 
@@ -88,6 +88,8 @@ simulateTruncatedData <- function(n, f0, f1, pi0, pi1, atom = 0) {
 
   rbind(d0, d1)
 }
+
+simulateTruncatedData <- simulate_truncated_data
 
 simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df=4,
                          atom = 0) {
@@ -126,10 +128,10 @@ simTruncData <- function(n, mu0, mu1, pi0, pi1, sigma = 1, dist = "norm", df=4,
     }
   }
 
-  simulateTruncatedData(n = n,
-                        f0 = generator(mu0),
-                        f1 = generator(mu1),
-                        pi0 = pi0,
-                        pi1 = pi1,
-                        atom = atom)
+  simulate_truncated_data(n = n,
+                          f0 = generator(mu0),
+                          f1 = generator(mu1),
+                          pi0 = pi0,
+                          pi1 = pi1,
+                          atom = atom)
 }

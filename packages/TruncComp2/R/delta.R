@@ -558,7 +558,7 @@ delta_profile_target_tolerance <- function(target, scale = 1) {
 
 delta_profile_interval_width <- function(object) {
   offsets <- jointContrastDefaultOffsets(object)
-  max(as.numeric(offsets[["logORdelta"]]), 0.5)
+  max(as.numeric(offsets[["log_or_delta"]]), 0.5)
 }
 
 delta_profile_cache_key <- function(x) {
@@ -1083,10 +1083,10 @@ delta_profile_interval <- function(object, conf.level = object$conf.level,
 
 augmentDeltaInference <- function(object) {
   if(!isTRUE(object$success) || !is.null(object$adjust) || is.null(object$atom)) {
-    object$Delta <- if(is.null(object$Delta)) NA_real_ else object$Delta
-    return(object)
+    object$delta <- if(is.null(object$delta)) NA_real_ else object$delta
+    return(syncTruncComp2Aliases(object))
   }
 
-  object$Delta <- delta_unadjusted_point_estimate(object)
-  object
+  object$delta <- delta_unadjusted_point_estimate(object)
+  syncTruncComp2Aliases(object)
 }

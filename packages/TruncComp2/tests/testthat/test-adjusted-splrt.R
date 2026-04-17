@@ -35,7 +35,7 @@ adjusted_splrt_case <- function(seed, n, adjust = ~ L1 + L2,
     y[a == 1] <- stats::rnorm(sum(a), mu[a == 1], 0.75)
 
     data <- data.frame(Y = y, A = a, R = r, L1 = l1, L2 = l2)
-    fit <- truncComp.default(data$Y,
+    fit <- truncComp(data$Y,
                              data$A,
                              data$R,
                              method = "SPLRT",
@@ -142,7 +142,7 @@ combined_el_objective <- function(par, design, delta) {
 }
 
 test_that("adjust equals ~1 reproduces the unadjusted SPLRT fit", {
-  example_data <- loadTruncComp2AdjustedExample()
+  example_data <- load_trunc_comp2_adjusted_example()
 
   unadjusted <- truncComp(Y ~ R,
                           atom = 0,
@@ -157,11 +157,11 @@ test_that("adjust equals ~1 reproduces the unadjusted SPLRT fit", {
   expect_true(unadjusted$success)
   expect_true(intercept_only$success)
   expect_equal(intercept_only$adjust, NULL)
-  expect_equal(intercept_only$muDelta, unadjusted$muDelta, tolerance = 1e-12)
-  expect_equal(intercept_only$alphaDelta, unadjusted$alphaDelta, tolerance = 1e-12)
-  expect_equal(intercept_only$W, unadjusted$W, tolerance = 1e-12)
-  expect_equal(intercept_only$muDeltaCI, unadjusted$muDeltaCI, tolerance = 1e-12)
-  expect_equal(intercept_only$alphaDeltaCI, unadjusted$alphaDeltaCI, tolerance = 1e-12)
+  expect_equal(intercept_only$mu_delta, unadjusted$mu_delta, tolerance = 1e-12)
+  expect_equal(intercept_only$alpha_delta, unadjusted$alpha_delta, tolerance = 1e-12)
+  expect_equal(intercept_only$statistic, unadjusted$statistic, tolerance = 1e-12)
+  expect_equal(intercept_only$mu_delta_ci, unadjusted$mu_delta_ci, tolerance = 1e-12)
+  expect_equal(intercept_only$alpha_delta_ci, unadjusted$alpha_delta_ci, tolerance = 1e-12)
 })
 
 test_that("adjusted SPLRT matches direct logistic and regression-EL references", {
@@ -181,13 +181,13 @@ test_that("adjusted SPLRT matches direct logistic and regression-EL references",
 
     expect_true(fit$success)
     expect_true(ref$mu$success)
-    expect_equal(fit$muDelta, ref$mu$estimate, tolerance = 1e-8)
-    expect_equal(fit$muDeltaCI, as.numeric(ref$mu$conf.int), tolerance = 1e-6)
-    expect_equal(fit$alphaDelta, ref$alphaDelta, tolerance = 1e-10)
-    expect_equal(fit$alphaDeltaCI, ref$alphaDeltaCI, tolerance = 1e-8)
-    expect_equal(fit$W, ref$mu$statistic + ref$W_alpha, tolerance = 1e-8)
-    expect_equal(fit$p, stats::pchisq(fit$W, df = 2, lower.tail = FALSE), tolerance = 1e-12)
-    expect_true(is.na(fit$Delta))
+    expect_equal(fit$mu_delta, ref$mu$estimate, tolerance = 1e-8)
+    expect_equal(fit$mu_delta_ci, as.numeric(ref$mu$conf.int), tolerance = 1e-6)
+    expect_equal(fit$alpha_delta, ref$alphaDelta, tolerance = 1e-10)
+    expect_equal(fit$alpha_delta_ci, ref$alphaDeltaCI, tolerance = 1e-8)
+    expect_equal(fit$statistic, ref$mu$statistic + ref$W_alpha, tolerance = 1e-8)
+    expect_equal(fit$p, stats::pchisq(fit$statistic, df = 2, lower.tail = FALSE), tolerance = 1e-12)
+    expect_true(is.na(fit$delta))
     expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
   }
 })
@@ -208,7 +208,7 @@ test_that("regression EL profile matches a direct combined optimization on a sma
 })
 
 test_that("adjusted SPLRT handles the packaged adjusted example and attenuates after adjustment", {
-  example_data <- loadTruncComp2AdjustedExample()
+  example_data <- load_trunc_comp2_adjusted_example()
 
   fit_unadjusted <- truncComp(Y ~ R,
                               atom = 0,
@@ -225,54 +225,54 @@ test_that("adjusted SPLRT handles the packaged adjusted example and attenuates a
   expect_equal(fit_adjusted$adjust, "L")
   expect_lt(fit_unadjusted$p, 0.05)
   expect_gt(fit_adjusted$p, 0.05)
-  expect_lt(fit_adjusted$W, fit_unadjusted$W)
-  expect_lt(abs(fit_adjusted$muDelta), abs(fit_unadjusted$muDelta))
-  expect_lt(abs(log(as.numeric(fit_adjusted$alphaDelta))),
-            abs(log(as.numeric(fit_unadjusted$alphaDelta))))
+  expect_lt(fit_adjusted$statistic, fit_unadjusted$statistic)
+  expect_lt(abs(fit_adjusted$mu_delta), abs(fit_unadjusted$mu_delta))
+  expect_lt(abs(log(as.numeric(fit_adjusted$alpha_delta))),
+            abs(log(as.numeric(fit_unadjusted$alpha_delta))))
 
   expect_equal(fit_unadjusted$p, 0.03698883, tolerance = 1e-4)
   expect_equal(fit_adjusted$p, 0.09027938, tolerance = 1e-4)
-  expect_equal(fit_unadjusted$W, 6.594279, tolerance = 1e-4)
-  expect_equal(fit_adjusted$W, 4.809692, tolerance = 1e-4)
-  expect_equal(fit_unadjusted$muDelta, 0.6720578, tolerance = 1e-4)
-  expect_equal(fit_adjusted$muDelta, 0.5511571, tolerance = 1e-4)
-  expect_equal(as.numeric(fit_unadjusted$alphaDelta), 3.160494, tolerance = 1e-5)
-  expect_equal(as.numeric(fit_adjusted$alphaDelta), 1.836725, tolerance = 1e-5)
+  expect_equal(fit_unadjusted$statistic, 6.594279, tolerance = 1e-4)
+  expect_equal(fit_adjusted$statistic, 4.809692, tolerance = 1e-4)
+  expect_equal(fit_unadjusted$mu_delta, 0.6720578, tolerance = 1e-4)
+  expect_equal(fit_adjusted$mu_delta, 0.5511571, tolerance = 1e-4)
+  expect_equal(as.numeric(fit_unadjusted$alpha_delta), 3.160494, tolerance = 1e-5)
+  expect_equal(as.numeric(fit_adjusted$alpha_delta), 1.836725, tolerance = 1e-5)
 
   summary_text <- paste(capture.output(summary(fit_adjusted)), collapse = "\n")
   expect_match(summary_text, "Adjusted for: L")
 
   capture.output(ci <- confint(fit_adjusted))
-  expect_equal(unname(ci["Difference in means among the observed:", ]), fit_adjusted$muDeltaCI)
-  expect_equal(unname(ci["Odds ratio of being observed:", ]), fit_adjusted$alphaDeltaCI)
-  expect_error(confint(fit_adjusted, parameter = "Delta", method = "projected"),
+  expect_equal(unname(ci["mu_delta", ]), fit_adjusted$mu_delta_ci)
+  expect_equal(unname(ci["alpha_delta", ]), fit_adjusted$alpha_delta_ci)
+  expect_error(confint(fit_adjusted, parameter = "delta", method = "projected"),
                "not implemented for adjusted fits")
-  expect_error(confint(fit_adjusted, parameter = "Delta", method = "profile"),
+  expect_error(confint(fit_adjusted, parameter = "delta", method = "profile"),
                "not implemented for adjusted fits")
   expect_error(confint(fit_adjusted, parameter = "joint"),
                "not implemented for adjusted fits")
-  expect_error(jointContrastCI(fit_adjusted, plot = FALSE),
+  expect_error(joint_contrast_ci(fit_adjusted, plot = FALSE),
                "not implemented for adjusted fits")
 })
 
 test_that("adjusted SPLRT fails cleanly on non-regular adjusted fits", {
   case <- adjusted_splrt_case(202604154, 18, adjust = ~ L1 + L2)
 
-  aliased_fit <- truncComp.default(case$Y,
+  aliased_fit <- truncComp(case$Y,
                                    case$A,
                                    case$R,
                                    method = "SPLRT",
                                    adjust = data.frame(Rcopy = case$R))
-  expect_s3_class(aliased_fit, "TruncComp2")
+  expect_s3_class(aliased_fit, "trunc_comp_fit")
   expect_false(aliased_fit$success)
   expect_match(aliased_fit$error, "rank deficient|not estimable")
 
-  separation_fit <- truncComp.default(case$Y,
+  separation_fit <- truncComp(case$Y,
                                       case$A,
                                       case$R,
                                       method = "SPLRT",
                                       adjust = data.frame(Lsep = case$A))
-  expect_s3_class(separation_fit, "TruncComp2")
+  expect_s3_class(separation_fit, "trunc_comp_fit")
   expect_false(separation_fit$success)
   expect_match(separation_fit$error, "not estimable")
 
@@ -286,12 +286,12 @@ test_that("adjusted SPLRT fails cleanly on non-regular adjusted fits", {
     L2 = factor(c("a", "b", "a", "b", "a", "b", "a", "b")),
     L3 = c(1, 0, 1, 0, 1, 0, 1, 0)
   )
-  sparse_fit <- truncComp.default(sparse_case$Y,
+  sparse_fit <- truncComp(sparse_case$Y,
                                   sparse_case$A,
                                   sparse_case$R,
                                   method = "SPLRT",
                                   adjust = sparse_adjust)
-  expect_s3_class(sparse_fit, "TruncComp2")
+  expect_s3_class(sparse_fit, "trunc_comp_fit")
   expect_false(sparse_fit$success)
   expect_match(sparse_fit$error, "too few observed outcomes|not estimable")
 

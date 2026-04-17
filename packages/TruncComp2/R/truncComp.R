@@ -114,7 +114,7 @@ resolveDefaultAtom <- function(y, a, atom = NULL) {
     return(as.numeric(atom_values))
   }
 
-  stop("atom must be supplied for truncComp.default() unless y[a == 0] has exactly one unique finite value.")
+  stop("atom must be supplied for truncComp(y, a, r, ...) unless y[a == 0] has exactly one unique finite value.")
 }
 
 truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
@@ -169,7 +169,7 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
 #' @param data A data frame containing the variables referenced by `formula`.
 #' @param method Either `"LRT"` for the parametric likelihood-ratio method or
 #'   `"SPLRT"` for the semi-parametric likelihood-ratio method.
-#' @param conf.level Confidence level used for the reported intervals.
+#' @param conf_level Confidence level used for the reported intervals.
 #' @param init Optional compatibility argument retained from older parametric
 #'   implementations. The current model-backed `LRT` path stores it on the
 #'   returned object but does not use it for estimation.
@@ -179,7 +179,8 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
 #'   baseline covariates. The same additive adjustment is used in both the
 #'   observed-outcome and observation components. Adjusted fits support only
 #'   component confidence intervals.
-#' @return An S3 object of class `"TruncComp2"` with component estimates,
+#' @param ... Unused additional arguments.
+#' @return An S3 object of class `"trunc_comp_fit"` with component estimates,
 #'   confidence intervals, the joint likelihood-ratio statistic, metadata about
 #'   the fitting method, the standardized analysis data, and the fitted atom
 #'   value. Failed fits return the same class with `success = FALSE` and an
@@ -188,45 +189,49 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
 #' For successful unadjusted fits, the package also computes a derived
 #' combined-outcome contrast
 #'
-#' `Delta = [p1 * mu1 + (1 - p1) * atom] - [p0 * mu0 + (1 - p0) * atom]`.
+#' `delta = [p1 * mu1 + (1 - p1) * atom] - [p0 * mu0 + (1 - p0) * atom]`.
 #'
-#' The fitted object stores only the `Delta` point estimate. Confidence
-#' intervals for `Delta` are computed on demand through
-#' `confint(fit, parameter = "Delta", method = "welch" | "profile" | "projected")`.
+#' The fitted object stores only the `delta` point estimate. Confidence
+#' intervals for `delta` are computed on demand through
+#' `confint(fit, parameter = "delta", method = "welch" | "profile" | "projected")`.
 #'
-#' Adjusted fits deliberately return `NA` for `Delta` because the implemented
+#' Adjusted fits deliberately return `NA` for `delta` because the implemented
 #' adjusted treatment effects are conditional regression coefficients rather
 #' than standardized marginal contrasts.
 #'
-#' @seealso [summary.TruncComp2()], [print.TruncComp2()], [confint.TruncComp2()],
-#'   [jointContrastCI()]
+#' @seealso [summary.trunc_comp_fit()], [print.trunc_comp_fit()],
+#'   [confint.trunc_comp_fit()], [joint_contrast_ci()]
 #' @examples
 #' library(TruncComp2)
 #' f0 <- function(n) stats::rnorm(n, 3, 1)
 #' f1 <- function(n) stats::rnorm(n, 3.5, 1)
-#' d <- simulateTruncatedData(n = 100, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
+#' d <- simulate_truncated_data(n = 100, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
 #'
 #' # Formula interface
 #' truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
 #' truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 #'
-#' d_adjusted <- loadTruncComp2AdjustedExample()
+#' d_adjusted <- load_trunc_comp2_adjusted_example()
 #' truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
 #' truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "SPLRT", adjust = ~ L)
 #'
 #' # Default interface
-#' truncComp.default(d$Y, d$A, d$R, method = "LRT", atom = 0)
+#' truncComp(d$Y, d$A, d$R, method = "LRT", atom = 0)
 #' @rdname truncComp
 #' @export
-truncComp <- function(formula, atom, data, method, conf.level = 0.95, init = NULL,
-                      adjust = NULL) {
+truncComp <- function(formula, ...) {
+  UseMethod("truncComp")
+}
+
+#' @rdname truncComp
+#' @export
+truncComp.formula <- function(formula, atom, data, method = c("LRT", "SPLRT"),
+                              conf_level = 0.95, init = NULL, adjust = NULL, ...) {
   if(!inherits(formula, "formula")) {
     stop("The formula must be a formula.")
   }
 
-  if(!(method == "LRT" | method == "SPLRT")) {
-    stop("Only LRT or SPLRT supported as methods.")
-  }
+  method <- match.arg(method)
 
   if(length(attr(terms(formula), "term.labels")) != 1) {
     stop("The current implementation must have one covariate in the formula.")
@@ -270,7 +275,7 @@ truncComp <- function(formula, atom, data, method, conf.level = 0.95, init = NUL
                  alive,
                  treatment,
                  method,
-                 conf.level,
+                 conf_level,
                  init,
                  adjust_data = adjustment$data,
                  adjust_formula = adjustment$formula,
@@ -283,9 +288,11 @@ truncComp <- function(formula, atom, data, method, conf.level = 0.95, init = NUL
 #' @param a Binary indicator for whether the continuous outcome is observed.
 #' @param r Binary treatment indicator for the default interface.
 #' @rdname truncComp
-#' @export
-truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL,
-                              adjust = NULL, atom = NULL) {
+#' @exportS3Method truncComp default
+truncComp.default <- function(y, a, r, method = c("LRT", "SPLRT"),
+                              conf_level = 0.95, init = NULL,
+                              adjust = NULL, atom = NULL, ...) {
+  method <- match.arg(method)
   adjustment <- prepareDefaultAdjustment(adjust, length(y))
   atom <- resolveDefaultAtom(y, a, atom = atom)
 
@@ -293,7 +300,7 @@ truncComp.default <- function(y, a, r, method, conf.level = 0.95, init = NULL,
                  a,
                  r,
                  method,
-                 conf.level,
+                 conf_level,
                  init,
                  adjust_data = adjustment$data,
                  adjust_formula = adjustment$formula,

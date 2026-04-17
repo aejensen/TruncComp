@@ -12,7 +12,7 @@
 #'   an internal empirical-likelihood engine for the observed-outcome component.
 #'
 #' The main entry point is [truncComp()], which returns an object of class
-#' `"TruncComp2"` with summaries, confidence intervals, simultaneous confidence
+#' `"trunc_comp_fit"` with summaries, confidence intervals, simultaneous confidence
 #' regions for unadjusted fits, and packaged example data helpers.
 #'
 #' @details
@@ -22,20 +22,20 @@
 #'
 #' Exported user-facing helpers include:
 #'
-#' - [truncComp()] and [truncComp.default()] for fitting the model.
-#' - [summary.TruncComp2()] and [print.TruncComp2()] for displaying results.
-#' - [confint.TruncComp2()] and [jointContrastCI()] for marginal and joint
+#' - [truncComp()] for fitting the model.
+#' - [summary.trunc_comp_fit()] and [print.trunc_comp_fit()] for displaying results.
+#' - [confint.trunc_comp_fit()] and [joint_contrast_ci()] for marginal and joint
 #'   inference.
-#' - [simulateTruncatedData()], [loadTruncComp2Example()], and
-#'   [loadTruncComp2AdjustedExample()] for reproducible examples.
+#' - [simulate_truncated_data()], [load_trunc_comp2_example()], and
+#'   [load_trunc_comp2_adjusted_example()] for reproducible examples.
 #'
 #' For successful unadjusted fits the package stores the derived combined-outcome
-#' contrast `Delta` as a point estimate. Confidence intervals for `Delta` are
-#' computed on demand through [confint.TruncComp2()] using
+#' contrast `delta` as a point estimate. Confidence intervals for `delta` are
+#' computed on demand through [confint.trunc_comp_fit()] using
 #' `method = "welch"`, `"profile"`, or `"projected"`.
 #'
 #' Adjusted fits return conditional treatment effects from the fitted regression
-#' components. In that setting, `Delta`, `Delta` intervals, and joint
+#' components. In that setting, `delta`, `delta` intervals, and joint
 #' confidence regions are intentionally unavailable.
 #'
 #' @references

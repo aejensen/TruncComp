@@ -2,33 +2,40 @@
 % Please edit documentation in R/truncComp.R
 \name{truncComp}
 \alias{truncComp}
+\alias{truncComp.formula}
 \alias{truncComp.default}
 \title{Fit the TruncComp2 two-sample comparison model}
 \usage{
-truncComp(
+truncComp(formula, ...)
+
+\method{truncComp}{formula}(
   formula,
   atom,
   data,
-  method,
-  conf.level = 0.95,
+  method = c("LRT", "SPLRT"),
+  conf_level = 0.95,
   init = NULL,
-  adjust = NULL
+  adjust = NULL,
+  ...
 )
 
-truncComp.default(
+\method{truncComp}{default}(
   y,
   a,
   r,
-  method,
-  conf.level = 0.95,
+  method = c("LRT", "SPLRT"),
+  conf_level = 0.95,
   init = NULL,
   adjust = NULL,
-  atom = NULL
+  atom = NULL,
+  ...
 )
 }
 \arguments{
 \item{formula}{A formula with a continuous outcome on the left-hand side and a
 single binary treatment indicator on the right-hand side.}
+
+\item{...}{Unused additional arguments.}
 
 \item{atom}{A single numeric value used for the special atom outcome. The
 observation indicator is reconstructed internally as \code{Y != atom}. For the
@@ -41,7 +48,7 @@ fitted object.}
 \item{method}{Either \code{"LRT"} for the parametric likelihood-ratio method or
 \code{"SPLRT"} for the semi-parametric likelihood-ratio method.}
 
-\item{conf.level}{Confidence level used for the reported intervals.}
+\item{conf_level}{Confidence level used for the reported intervals.}
 
 \item{init}{Optional compatibility argument retained from older parametric
 implementations. The current model-backed \code{LRT} path stores it on the
@@ -61,7 +68,7 @@ component confidence intervals.}
 \item{r}{Binary treatment indicator for the default interface.}
 }
 \value{
-An S3 object of class \code{"TruncComp2"} with component estimates,
+An S3 object of class \code{"trunc_comp_fit"} with component estimates,
 confidence intervals, the joint likelihood-ratio statistic, metadata about
 the fitting method, the standardized analysis data, and the fitted atom
 value. Failed fits return the same class with \code{success = FALSE} and an
@@ -75,13 +82,13 @@ representing an unobserved or undefined outcome.
 For successful unadjusted fits, the package also computes a derived
 combined-outcome contrast
 
-\verb{Delta = [p1 * mu1 + (1 - p1) * atom] - [p0 * mu0 + (1 - p0) * atom]}.
+\verb{delta = [p1 * mu1 + (1 - p1) * atom] - [p0 * mu0 + (1 - p0) * atom]}.
 
-The fitted object stores only the \code{Delta} point estimate. Confidence
-intervals for \code{Delta} are computed on demand through
-\code{confint(fit, parameter = "Delta", method = "welch" | "profile" | "projected")}.
+The fitted object stores only the \code{delta} point estimate. Confidence
+intervals for \code{delta} are computed on demand through
+\code{confint(fit, parameter = "delta", method = "welch" | "profile" | "projected")}.
 
-Adjusted fits deliberately return \code{NA} for \code{Delta} because the implemented
+Adjusted fits deliberately return \code{NA} for \code{delta} because the implemented
 adjusted treatment effects are conditional regression coefficients rather
 than standardized marginal contrasts.
 }
@@ -89,20 +96,20 @@ than standardized marginal contrasts.
 library(TruncComp2)
 f0 <- function(n) stats::rnorm(n, 3, 1)
 f1 <- function(n) stats::rnorm(n, 3.5, 1)
-d <- simulateTruncatedData(n = 100, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
+d <- simulate_truncated_data(n = 100, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
 
 # Formula interface
 truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
 truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 
-d_adjusted <- loadTruncComp2AdjustedExample()
+d_adjusted <- load_trunc_comp2_adjusted_example()
 truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
 truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "SPLRT", adjust = ~ L)
 
 # Default interface
-truncComp.default(d$Y, d$A, d$R, method = "LRT", atom = 0)
+truncComp(d$Y, d$A, d$R, method = "LRT", atom = 0)
 }
 \seealso{
-\code{\link[=summary.TruncComp2]{summary.TruncComp2()}}, \code{\link[=print.TruncComp2]{print.TruncComp2()}}, \code{\link[=confint.TruncComp2]{confint.TruncComp2()}},
-\code{\link[=jointContrastCI]{jointContrastCI()}}
+\code{\link[=summary.trunc_comp_fit]{summary.trunc_comp_fit()}}, \code{\link[=print.trunc_comp_fit]{print.trunc_comp_fit()}},
+\code{\link[=confint.trunc_comp_fit]{confint.trunc_comp_fit()}}, \code{\link[=joint_contrast_ci]{joint_contrast_ci()}}
 }

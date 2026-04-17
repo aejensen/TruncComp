@@ -14,7 +14,7 @@ an internal empirical-likelihood engine for the observed-outcome component.
 }
 
 The main entry point is \code{\link[=truncComp]{truncComp()}}, which returns an object of class
-\code{"TruncComp2"} with summaries, confidence intervals, simultaneous confidence
+\code{"trunc_comp_fit"} with summaries, confidence intervals, simultaneous confidence
 regions for unadjusted fits, and packaged example data helpers.
 }
 \details{
@@ -28,21 +28,21 @@ supplied through \code{adjust}.
 
 Exported user-facing helpers include:
 \itemize{
-\item \code{\link[=truncComp]{truncComp()}} and \code{\link[=truncComp.default]{truncComp.default()}} for fitting the model.
-\item \code{\link[=summary.TruncComp2]{summary.TruncComp2()}} and \code{\link[=print.TruncComp2]{print.TruncComp2()}} for displaying results.
-\item \code{\link[=confint.TruncComp2]{confint.TruncComp2()}} and \code{\link[=jointContrastCI]{jointContrastCI()}} for marginal and joint
+\item \code{\link[=truncComp]{truncComp()}} for fitting the model.
+\item \code{\link[=summary.trunc_comp_fit]{summary.trunc_comp_fit()}} and \code{\link[=print.trunc_comp_fit]{print.trunc_comp_fit()}} for displaying results.
+\item \code{\link[=confint.trunc_comp_fit]{confint.trunc_comp_fit()}} and \code{\link[=joint_contrast_ci]{joint_contrast_ci()}} for marginal and joint
 inference.
-\item \code{\link[=simulateTruncatedData]{simulateTruncatedData()}}, \code{\link[=loadTruncComp2Example]{loadTruncComp2Example()}}, and
-\code{\link[=loadTruncComp2AdjustedExample]{loadTruncComp2AdjustedExample()}} for reproducible examples.
+\item \code{\link[=simulate_truncated_data]{simulate_truncated_data()}}, \code{\link[=load_trunc_comp2_example]{load_trunc_comp2_example()}}, and
+\code{\link[=load_trunc_comp2_adjusted_example]{load_trunc_comp2_adjusted_example()}} for reproducible examples.
 }
 
 For successful unadjusted fits the package stores the derived combined-outcome
-contrast \code{Delta} as a point estimate. Confidence intervals for \code{Delta} are
-computed on demand through \code{\link[=confint.TruncComp2]{confint.TruncComp2()}} using
+contrast \code{delta} as a point estimate. Confidence intervals for \code{delta} are
+computed on demand through \code{\link[=confint.trunc_comp_fit]{confint.trunc_comp_fit()}} using
 \code{method = "welch"}, \code{"profile"}, or \code{"projected"}.
 
 Adjusted fits return conditional treatment effects from the fitted regression
-components. In that setting, \code{Delta}, \code{Delta} intervals, and joint
+components. In that setting, \code{delta}, \code{delta} intervals, and joint
 confidence regions are intentionally unavailable.
 }
 \references{

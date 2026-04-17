@@ -177,6 +177,7 @@ simulation_study_write_kable_table <- function(table_object, path) {
     "Max fail"
   )
   out <- out[order(out$h, out$n), , drop = FALSE]
+  out$Effect <- gsub("\\\\", intToUtf8(92), out$Effect, fixed = TRUE)
   out[, unname(simulation_study_method_labels())] <- out[, unname(simulation_study_method_labels())] * 100
   out$`Max fail` <- out$`Max fail` * 100
   out
@@ -224,7 +225,8 @@ simulation_study_build_scenario_table <- function(simulation_results, output_dir
     booktabs = TRUE,
     escape = FALSE,
     linesep = rep("", nrow(scenario_table)),
-    caption = "Simulation scenarios for the TruncComp2 power study"
+    caption = "Simulation scenarios for the TruncComp2 power study",
+    label = "tab:simulation"
   )
   table_object <- kableExtra::kable_styling(
     table_object,

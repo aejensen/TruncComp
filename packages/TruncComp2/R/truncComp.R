@@ -190,17 +190,13 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
 #'
 #' `Delta = [p1 * mu1 + (1 - p1) * atom] - [p0 * mu0 + (1 - p0) * atom]`.
 #'
-#' The fitted object distinguishes between:
+#' The fitted object stores only the `Delta` point estimate. Confidence
+#' intervals for `Delta` are computed on demand through
+#' `confint(fit, parameter = "Delta", method = "welch" | "profile" | "projected")`.
 #'
-#' - `DeltaMarginalCI`, a descriptive Welch interval on the raw combined-outcome
-#'   scale.
-#' - `DeltaProjectedCI`, the projection of the simultaneous two-parameter region
-#'   onto `Delta`.
-#' - `DeltaProfileCI`, a one-dimensional profile interval for `Delta`.
-#'
-#' Adjusted fits deliberately return `NA` for `Delta` and all `Delta` intervals
-#' because the implemented adjusted treatment effects are conditional regression
-#' coefficients rather than standardized marginal contrasts.
+#' Adjusted fits deliberately return `NA` for `Delta` because the implemented
+#' adjusted treatment effects are conditional regression coefficients rather
+#' than standardized marginal contrasts.
 #'
 #' @seealso [summary.TruncComp2()], [print.TruncComp2()], [confint.TruncComp2()],
 #'   [jointContrastCI()]

@@ -29,14 +29,10 @@
 #' - [simulateTruncatedData()], [loadTruncComp2Example()], and
 #'   [loadTruncComp2AdjustedExample()] for reproducible examples.
 #'
-#' For successful unadjusted fits the package reports three different interval
-#' constructions for the derived combined-outcome contrast `Delta`:
-#'
-#' - `DeltaMarginalCI`: a Welch interval for the raw combined-outcome mean
-#'   difference.
-#' - `DeltaProjectedCI`: the projection of the two-parameter simultaneous region
-#'   onto the `Delta` scale.
-#' - `DeltaProfileCI`: a one-dimensional profile interval for `Delta`.
+#' For successful unadjusted fits the package stores the derived combined-outcome
+#' contrast `Delta` as a point estimate. Confidence intervals for `Delta` are
+#' computed on demand through [confint.TruncComp2()] using
+#' `method = "welch"`, `"profile"`, or `"projected"`.
 #'
 #' Adjusted fits return conditional treatment effects from the fitted regression
 #' components. In that setting, `Delta` and simultaneous confidence regions are

@@ -40,8 +40,8 @@
 #' likelihood-ratio statistics. When `adjust` is non-`NULL`, it delegates to
 #' `adjusted_SPLRT()`. The helper returns a `"TruncComp2"` object and, on
 #' success, passes it through `augmentDeltaInference()` so unadjusted fits gain
-#' the stored `Delta` summaries. Its role is to expose a single semi-parametric
-#' implementation point to the rest of the package.
+#' the derived `Delta` point estimate. Its role is to expose a single
+#' semi-parametric implementation point to the rest of the package.
 #'
 #' @seealso [el_mean_diff_fit()], [el_regression_fit()], [augmentDeltaInference()]
 #' @keywords internal

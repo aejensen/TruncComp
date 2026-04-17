@@ -142,10 +142,11 @@ handling consistent across the package.
 
 \subsection{\code{buildMarginalCIMatrix(object)}}{
 
-Converts a successful \code{"TruncComp2"} object into the printed marginal
-confidence-interval matrix used by \code{summary()} and \code{confint(..., type = "marginal")}. The helper returns a numeric matrix with human-readable row and
-column names. It appends any finite stored \code{Delta} intervals. Its role is to
-centralize the display formatting of marginal intervals.
+Converts a successful \code{"TruncComp2"} object into the printed component
+confidence-interval matrix used by \code{confint()} when \code{parameter} selects the
+stored component intervals. The helper returns a numeric matrix with
+human-readable row and column names. Its role is to centralize the display
+formatting of the stored one-parameter intervals.
 }
 
 \subsection{\code{parametricJointReference(data, atom = 0)}}{

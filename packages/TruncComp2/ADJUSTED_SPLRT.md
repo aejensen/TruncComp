@@ -24,7 +24,7 @@ The reported quantities are:
 - `alphaDelta = exp(\beta_\delta)`
 
 These are conditional treatment effects. For adjusted `SPLRT`, the package sets
-`Delta = NA` and `DeltaCI = c(NA, NA)`.
+`Delta = NA`, and `confint()` rejects `parameter = "Delta"` and `parameter = "joint"`.
 
 ## Joint Test
 

@@ -11,10 +11,7 @@ test_that("SPLRT reproduces the TruncComp2 example outputs without loading EL", 
   expect_equal(as.numeric(model$alphaDelta), 0.5238095, tolerance = 1e-7)
   expect_equal(model$alphaDeltaCI, c(0.1660407, 1.59682), tolerance = 1e-6)
   expect_equal(model$atom, 0)
-  expect_true(all(is.finite(model$DeltaMarginalCI)))
-  expect_true(all(is.na(model$DeltaProjectedCI)))
-  expect_true(all(is.finite(model$DeltaProfileCI)))
-  expect_equal(model$DeltaCI, model$DeltaProfileCI, tolerance = 1e-12)
+  expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(model)))
   expect_equal(model$W, 31.09545, tolerance = 1e-4)
   expect_lt(abs(model$p - 1.768924e-07), 1e-10)
 })
@@ -23,29 +20,29 @@ test_that("marginal and simultaneous confidence helpers still work", {
   example_data <- loadTruncComp2Example()
   model <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
 
-  capture.output(ci <- confint(model, type = "marginal"))
+  capture.output(ci <- confint(model))
   expect_equal(rownames(ci),
                c("Difference in means among the observed:",
-                 "Odds ratio of being observed:",
-                 "log Odds ratio of being observed:",
-                 "Delta (marginal)",
-                 "Delta (profile likelihood)"))
+                 "Odds ratio of being observed:"))
   expect_equal(unname(ci["Difference in means among the observed:", ]), model$muDeltaCI)
   expect_equal(unname(ci["Odds ratio of being observed:", ]), model$alphaDeltaCI)
-  expect_equal(unname(ci["log Odds ratio of being observed:", ]), log(model$alphaDeltaCI))
-  expect_equal(unname(ci["Delta (marginal)", ]), model$DeltaMarginalCI, tolerance = 1e-10)
-  expect_equal(unname(ci["Delta (profile likelihood)", ]), model$DeltaProfileCI, tolerance = 1e-10)
 
-  capture.output(delta_projected <- confint(model, type = "delta_projected", plot = FALSE))
+  capture.output(delta_welch <- confint(model, parameter = "Delta", method = "welch"))
+  expect_equal(rownames(delta_welch), "Delta (welch)")
+  expect_lte(unname(delta_welch[1, 1]), model$Delta)
+  expect_gte(unname(delta_welch[1, 2]), model$Delta)
+
+  capture.output(delta_projected <- confint(model, parameter = "Delta", method = "projected", plot = FALSE))
   expect_equal(rownames(delta_projected), "Delta (projected)")
   expect_lte(unname(delta_projected[1, 1]), model$Delta)
   expect_gte(unname(delta_projected[1, 2]), model$Delta)
 
-  capture.output(delta_profile <- confint(model, type = "delta_profile", plot = FALSE))
-  expect_equal(rownames(delta_profile), "Delta (profile likelihood)")
-  expect_equal(unname(delta_profile[1, ]), model$DeltaProfileCI, tolerance = 1e-10)
+  capture.output(delta_profile <- confint(model, parameter = "Delta", method = "profile", plot = FALSE))
+  expect_equal(rownames(delta_profile), "Delta (profile)")
+  expect_lte(unname(delta_profile[1, 1]), model$Delta)
+  expect_gte(unname(delta_profile[1, 2]), model$Delta)
 
-  expect_error(confint(model, type = "marginal", conf.level = 0.9),
+  expect_error(confint(model, conf.level = 0.9),
                "stored at the fitted confidence level")
 
   joint <- jointContrastCI(model, plot = FALSE)
@@ -98,8 +95,8 @@ test_that("jointContrastCI rejects unsupported fits", {
   )
   expect_error(jointContrastCI(failed_model, plot = FALSE, offset = 1, resolution = 5),
                "Estimation failed")
-  expect_error(confint(failed_model, type = "delta_projected"), "Estimation failed")
-  expect_error(confint(failed_model, type = "delta_profile"), "Estimation failed")
+  expect_error(confint(failed_model, parameter = "Delta", method = "projected"), "Estimation failed")
+  expect_error(confint(failed_model, parameter = "Delta", method = "profile"), "Estimation failed")
 })
 
 test_that("jointContrastCI falls back to finite default grids", {

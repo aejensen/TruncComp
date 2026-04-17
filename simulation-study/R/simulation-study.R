@@ -14,8 +14,16 @@ simulation_study_config_path <- function(output_dir) {
   file.path(output_dir, "config.rds")
 }
 
+simulation_study_manifest_path <- function(output_dir) {
+  file.path(output_dir, "pending-cells.rds")
+}
+
 simulation_study_cells_dir <- function(output_dir) {
   ensure_dir(file.path(output_dir, "cells"))
+}
+
+simulation_study_slurm_dir <- function(output_dir) {
+  ensure_dir(file.path(output_dir, "slurm"))
 }
 
 simulation_study_methods <- function() {
@@ -321,6 +329,52 @@ simulation_study_cell_path <- function(output_dir, cell) {
   )
 }
 
+simulation_study_prepare_run <- function(output_dir,
+                                         reps = 10000L,
+                                         scenario_ids = NULL,
+                                         n_seq = NULL,
+                                         effect_levels = NULL,
+                                         overwrite = FALSE) {
+  config <- simulation_study_default_config(reps = reps)
+  if (!is.null(n_seq)) {
+    config$n_seq <- as.integer(n_seq)
+  }
+  if (!is.null(effect_levels)) {
+    config$effect_levels <- as.integer(effect_levels)
+  }
+
+  output_dir <- ensure_dir(output_dir)
+  saveRDS(config, simulation_study_config_path(output_dir))
+
+  design <- simulation_study_design(config)
+  if (!is.null(scenario_ids)) {
+    design <- design[design$scenario_id %in% scenario_ids, , drop = FALSE]
+  }
+
+  if (!nrow(design)) {
+    stop("No simulation-study cells matched the requested filters.", call. = FALSE)
+  }
+
+  target_paths <- vapply(
+    split(design, seq_len(nrow(design))),
+    function(cell) simulation_study_cell_path(output_dir, cell),
+    character(1)
+  )
+
+  pending_design <- design
+  if (!overwrite) {
+    pending_design <- pending_design[!file.exists(target_paths), , drop = FALSE]
+  }
+
+  list(
+    config = config,
+    output_dir = output_dir,
+    design = design,
+    pending_design = pending_design,
+    target_paths = target_paths
+  )
+}
+
 .simulation_study_measure_pvalue <- function(expr) {
   start <- proc.time()[["elapsed"]]
   p_value <- tryCatch(
@@ -366,6 +420,10 @@ simulation_study_cell_path <- function(output_dir, cell) {
   }
 
   invisible(path)
+}
+
+simulation_study_write_manifest <- function(design, output_dir) {
+  .simulation_study_write_rds_atomic(design, simulation_study_manifest_path(output_dir))
 }
 
 simulation_study_run_cell <- function(cell, output_dir) {
@@ -541,42 +599,22 @@ run_simulation_study <- function(repo_root,
                                  n_seq = NULL,
                                  effect_levels = NULL,
                                  overwrite = FALSE) {
-  config <- simulation_study_default_config(reps = reps)
-  if (!is.null(n_seq)) {
-    config$n_seq <- as.integer(n_seq)
-  }
-  if (!is.null(effect_levels)) {
-    config$effect_levels <- as.integer(effect_levels)
-  }
-
-  output_dir <- ensure_dir(output_dir)
-  saveRDS(config, simulation_study_config_path(output_dir))
-
-  design <- simulation_study_design(config)
-  if (!is.null(scenario_ids)) {
-    design <- design[design$scenario_id %in% scenario_ids, , drop = FALSE]
-  }
-
-  if (!nrow(design)) {
-    stop("No simulation-study cells matched the requested filters.", call. = FALSE)
-  }
-
-  target_paths <- vapply(
-    split(design, seq_len(nrow(design))),
-    function(cell) simulation_study_cell_path(output_dir, cell),
-    character(1)
+  prepared <- simulation_study_prepare_run(
+    output_dir = output_dir,
+    reps = reps,
+    scenario_ids = scenario_ids,
+    n_seq = n_seq,
+    effect_levels = effect_levels,
+    overwrite = overwrite
   )
-  if (!overwrite) {
-    design <- design[!file.exists(target_paths), , drop = FALSE]
-  }
 
   load_local_trunccomp2(repo_root)
 
-  if (nrow(design)) {
-    cell_tasks <- split(design, seq_len(nrow(design)))
+  if (nrow(prepared$pending_design)) {
+    cell_tasks <- split(prepared$pending_design, seq_len(nrow(prepared$pending_design)))
     worker_fun <- function(cell) {
       message(sprintf("Running %s, h = %d, n = %d", cell$scenario_id, cell$h, cell$n))
-      simulation_study_run_cell(cell, output_dir = output_dir)
+      simulation_study_run_cell(cell, output_dir = prepared$output_dir)
     }
 
     if (.Platform$OS.type != "windows" && workers > 1L) {
@@ -586,7 +624,7 @@ run_simulation_study <- function(repo_root,
     }
   }
 
-  aggregate_simulation_study_results(output_dir, config = config)
+  aggregate_simulation_study_results(prepared$output_dir, config = prepared$config)
 }
 
 simulation_study_metric_wide <- function(simulation_results, value_col) {
@@ -634,4 +672,33 @@ simulation_study_null_flags <- function(simulation_results, lower = 0.04, upper 
   )
 
   merged
+}
+
+simulation_study_finalize_results <- function(repo_root,
+                                              output_dir,
+                                              simulation_results,
+                                              refresh_manuscript_assets = TRUE) {
+  if (refresh_manuscript_assets && isTRUE(simulation_results$complete)) {
+    simulation_study_build_manuscript_assets(repo_root, simulation_results)
+    message("Simulation-study manuscript assets written to manuscript/build.")
+  } else if (refresh_manuscript_assets) {
+    message(
+      sprintf(
+        "Simulation study is incomplete (%d/%d cells), so manuscript assets were not refreshed.",
+        simulation_results$completed_cells,
+        simulation_results$expected_cells
+      )
+    )
+  }
+
+  message(
+    sprintf(
+      "Simulation study complete: %d/%d cells available. Aggregated results written to %s",
+      simulation_results$completed_cells,
+      simulation_results$expected_cells,
+      file.path(output_dir, "simulation-study.rds")
+    )
+  )
+
+  invisible(simulation_results)
 }

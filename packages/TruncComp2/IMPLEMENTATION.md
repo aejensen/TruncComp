@@ -74,9 +74,9 @@ Failed fits use the same top-level S3 class as successful fits, so
 \code{print()}, \code{summary()}, and \code{confint()} dispatch consistently
 even when estimation does not succeed.
 
-For marginal confidence intervals, the fitted object stores the intervals at
+For component confidence intervals, the fitted object stores the intervals at
 its original `conf.level`. The `confint()` method now uses that fitted level by
-default and treats a different requested marginal level as a refit request
+default and treats a different requested component level as a refit request
 rather than silently pretending it can recompute the stored intervals.
 
 ## Parametric Path
@@ -255,12 +255,12 @@ p <- 1 - stats::pchisq(W, 2)
 For adjusted `SPLRT`, the returned object keeps the same top-level fields, but:
 
 - `muDelta` and `alphaDelta` are conditional treatment effects
-- `Delta = NA` and `DeltaCI = c(NA, NA)`
-- simultaneous confidence regions are intentionally rejected
+- `Delta = NA`
+- `confint()` rejects `parameter = "Delta"` and `parameter = "joint"`
 
-The returned object still has the same external shape as before, so the public
-API did not change when the empirical-likelihood dependency was internalized or
-when the adjusted semi-parametric extension was added.
+The returned object still reports the same primary estimands and test statistic,
+but `Delta` confidence intervals are now computed only on demand through
+`confint()`.
 
 ## Internal Empirical-Likelihood Engine
 
@@ -473,11 +473,11 @@ unadjusted `LRT`, it instead evaluates constrained `glm`/`lm` fits with fixed
 `logORdelta` and `muDelta` offsets and adds the resulting two LR components
 pointwise on the grid.
 
-For successful unadjusted fits, the package now computes three `Delta`
-intervals from the stored atom-aware combined-outcome contrast. They are
-numerically and conceptually different.
+For successful unadjusted fits, the package now stores only the atom-aware
+`Delta` point estimate. The three supported `Delta` intervals are computed
+lazily by `confint()` and are numerically and conceptually different.
 
-### `DeltaMarginalCI`
+### `confint(..., parameter = "Delta", method = "welch")`
 
 This is the cheapest interval computationally. The helper in `R/delta.R`
 
@@ -490,10 +490,9 @@ This interval does not use the joint truncated-outcome model beyond the fact
 that `Y` already contains the atom value. It should be read as the ordinary
 two-sample interval for the combined-outcome mean difference.
 
-### `DeltaProjectedCI`
+### `confint(..., parameter = "Delta", method = "projected")`
 
-This interval is available only on demand through
-`confint(..., type = "delta_projected")` because it is materially more
+This interval is available only on demand because it is materially more
 expensive. The default implementation is grid-based, with a direct
 optimization-based alternative retained for explicit use.
 
@@ -507,7 +506,8 @@ Default numerical path:
 
 Optional optimization path:
 
-- call `confint(..., type = "delta_projected", algorithm = "optimize")`
+- call `confint(..., parameter = "Delta", method = "projected",
+  algorithm = "optimize")`
 - build a candidate evaluator for the chosen method:
   - unadjusted `LRT`: constrained `glm`/`lm` fits
   - unadjusted `SPLRT`: constrained logistic profile plus the EL continuous fit
@@ -520,10 +520,10 @@ This interval should be interpreted as the projection of the simultaneous joint
 statement onto the `Delta` scale. It is therefore usually more conservative than
 the one-dimensional profile interval.
 
-### `DeltaProfileCI`
+### `confint(..., parameter = "Delta", method = "profile")`
 
-This is the stored model-based one-dimensional interval for `Delta`. By
-default, it is computed from the joint surface grid, while a slower direct
+This is the model-based one-dimensional interval for `Delta`. By default, it is
+computed from the joint surface grid, while a slower direct
 optimization-based alternative remains available on demand.
 
 Default numerical path:
@@ -533,12 +533,12 @@ Default numerical path:
 - retain the surface points satisfying the 1 d.f. cutoff
   `W(muDelta, logORdelta) <= qchisq(conf.level, 1)`
 - map those accepted points to `Delta`
-- store the resulting range as `DeltaProfileCI` and the backward-compatible
-  alias `DeltaCI`
+- return the resulting range as the default grid-based profile interval
 
 Optional optimization path:
 
-- call `confint(..., type = "delta_profile", algorithm = "optimize")`
+- call `confint(..., parameter = "Delta", method = "profile",
+  algorithm = "optimize")`
 - build a direct profile evaluator `W_Delta(d)`
 - for a fixed target `Delta = d`, profile over the nuisance structure rather
   than over a grid of `Delta`
@@ -569,25 +569,22 @@ After `W_Delta(d)` is available, the lower and upper bounds are found by:
 - identifying where the profiled statistic crosses `qchisq(conf.level, 1)`
 - refining each bound by bisection
 
-The legacy `DeltaCI` field remains as an alias of the stored default
-`DeltaProfileCI`.
-
 To avoid making ordinary fits expensive, the fitted object does not precompute
-`DeltaProjectedCI`; it is obtained only when explicitly requested through
-`confint(..., type = "delta_projected")`.
+any `Delta` confidence interval. All three variants are obtained only when
+explicitly requested through `confint()`.
 
 Practical interpretation:
 
-- `DeltaMarginalCI` is the right interval when the user wants a simple combined
-  mean-difference summary with minimal modeling assumptions.
-- `DeltaProjectedCI` is the right interval when the user wants the `Delta`
+- `method = "welch"` is the right interval when the user wants a simple
+  combined mean-difference summary with minimal modeling assumptions.
+- `method = "projected"` is the right interval when the user wants the `Delta`
   values compatible with the full joint two-parameter simultaneous statement.
   The default public version is grid-based; the optimization-based version is
   available explicitly when needed.
-- `DeltaProfileCI` is the right interval when `Delta` itself is the primary
-  inferential target under the fitted truncated-outcome model. The fitted
-  object stores the grid-based approximation; the direct optimization-based
-  profile interval is available explicitly through `confint()`.
+- `method = "profile"` is the right interval when `Delta` itself is the primary
+  inferential target under the fitted truncated-outcome model. The default
+  public version is grid-based; the direct optimization-based profile interval
+  is available explicitly through `confint()`.
 
 ## Numerical Stability Choices
 
@@ -644,7 +641,7 @@ These verify that:
 - adjusted `LRT` fails cleanly for aliased designs or logistic separation rather than returning misleading conditional effects
 - unadjusted `LRT` boundary cases still return a usable test statistic even when Wald intervals are undefined
 - `SPLRT` still reproduces the package example outputs
-- marginal confidence intervals still print correctly
+- component confidence intervals still print correctly
 - the joint confidence-region surface is finite and well-shaped
 - the null and fitted-point joint statistics behave as expected
 
@@ -665,7 +662,7 @@ The main files involved in the current implementation are:
 - [R/LRT.R](R/LRT.R): parametric likelihood-ratio implementation
 - [R/SPLRT.R](R/SPLRT.R): semi-parametric likelihood-ratio implementation
 - [R/empiricalLikelihood.R](R/empiricalLikelihood.R): internal empirical-likelihood engine
-- [R/CI.R](R/CI.R): marginal and simultaneous confidence procedures
+- [R/CI.R](R/CI.R): component, joint, and on-demand `Delta` confidence procedures
 - [R/logitFunctions.R](R/logitFunctions.R): logistic profile-likelihood helper used for the confidence surface
 - [R/utility.R](R/utility.R): data validation and error-object construction
 

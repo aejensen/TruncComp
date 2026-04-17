@@ -152,7 +152,7 @@ jointContrastPlot <- function(muDelta, logORdelta, surface, m, conf.level) {
       color = "black",
       linewidth = 0.5
     ) +
-    ggplot2::scale_fill_gradientn(colors = rev(fields::tim.colors(128))) +
+    ggplot2::scale_fill_gradientn(colors = rev(grDevices::hcl.colors(128, palette = "YlOrRd", rev = FALSE))) +
     ggplot2::labs(
       x = "Difference in means among the observed",
       y = "log OR of being observed",
@@ -187,157 +187,168 @@ validateConfidenceLevel <- function(conf.level) {
 }
 
 buildMarginalCIMatrix <- function(object) {
-  cMat <- do.call(rbind, list(
-    "Difference in means among the observed:" = object$muDeltaCI,
-    "Odds ratio of being observed:" = object$alphaDeltaCI,
-    "log Odds ratio of being observed:" = suppressWarnings(log(object$alphaDeltaCI))
-  ))
+  buildComponentCIMatrix(object, c("muDelta", "alphaDelta"))
+}
 
-  delta_intervals <- list(
-    "Delta (marginal)" = object$DeltaMarginalCI,
-    "Delta (projected)" = object$DeltaProjectedCI,
-    "Delta (profile likelihood)" = object$DeltaProfileCI
-  )
-
-  for(label in names(delta_intervals)) {
-    interval <- delta_intervals[[label]]
-    if(length(interval) >= 2 && all(is.finite(interval[1:2]))) {
-      cMat <- rbind(cMat, interval[1:2])
-      rownames(cMat)[nrow(cMat)] <- label
-    }
-  }
-
-  a <- (1 - object$conf.level)/2
+ciColumnLabels <- function(conf.level) {
+  a <- (1 - conf.level) / 2
   a <- c(a, 1 - a)
-  pct <- paste(format(100 * a, trim = TRUE, scientific = FALSE, digits = 3), "%")
+  paste(format(100 * a, trim = TRUE, scientific = FALSE, digits = 3), "%")
+}
 
-  colnames(cMat) <- pct
+componentCIInfo <- function(object) {
+  list(
+    muDelta = list(
+      label = "Difference in means among the observed:",
+      interval = object$muDeltaCI
+    ),
+    alphaDelta = list(
+      label = "Odds ratio of being observed:",
+      interval = object$alphaDeltaCI
+    )
+  )
+}
+
+buildComponentCIMatrix <- function(object, parameter) {
+  info <- componentCIInfo(object)
+  rows <- lapply(parameter, function(name) info[[name]]$interval)
+  cMat <- do.call(rbind, rows)
+  rownames(cMat) <- unname(vapply(parameter, function(name) info[[name]]$label, character(1)))
+  colnames(cMat) <- ciColumnLabels(object$conf.level)
   cMat
+}
+
+deltaIntervalLabel <- function(method) {
+  switch(
+    method,
+    welch = "Delta (welch)",
+    profile = "Delta (profile)",
+    projected = "Delta (projected)"
+  )
+}
+
+buildSingleIntervalMatrix <- function(interval, label, conf.level) {
+  matrix(
+    interval,
+    nrow = 1,
+    dimnames = list(label, ciColumnLabels(conf.level))
+  )
 }
 
 #' Confidence intervals for a TruncComp2 fit
 #'
-#' Computes marginal confidence intervals, simultaneous confidence-region
-#' surfaces, and on-demand `Delta` intervals for a fitted `"TruncComp2"` object.
+#' Computes component confidence intervals, joint confidence-region surfaces,
+#' and on-demand `Delta` intervals for a fitted `"TruncComp2"` object.
 #'
 #' @param object A `"TruncComp2"` object returned by [truncComp()].
-#' @param type One of `"marginal"`, `"simultaneous"`, `"delta_projected"`, or
-#'   `"delta_profile"`.
+#' @param parameter Parameter selection for the requested interval. Use
+#'   `"muDelta"` and/or `"alphaDelta"` for the stored component intervals,
+#'   `"Delta"` for the derived combined-outcome contrast, or `"joint"` for the
+#'   two-parameter likelihood-ratio surface.
+#' @param method Interval construction for `parameter = "Delta"`. One of
+#'   `"welch"`, `"profile"`, or `"projected"`.
 #' @param muDelta Optional grid values for the mean-difference axis when
-#'   `type = "simultaneous"`.
+#'   `parameter = "joint"`.
 #' @param logORdelta Optional grid values for the log-odds-ratio axis when
-#'   `type = "simultaneous"`.
+#'   `parameter = "joint"`.
 #' @param conf.level Confidence level for the interval or contour threshold.
-#' @param plot Logical; if `TRUE`, plot the simultaneous confidence surface.
+#' @param plot Logical; if `TRUE`, plot the joint confidence surface.
 #' @param offset Optional simultaneous-grid expansion. If omitted, a
 #'   data-adaptive default is derived from the fitted marginal intervals or from
 #'   fallback data scales. A single number is applied to both axes; a length-2
 #'   vector supplies separate expansions for `muDelta` and `logORdelta`.
-#' @param resolution Number of grid points per axis for the simultaneous
+#' @param resolution Number of grid points per axis for the surface-based
 #'   surface-based calculations.
-#' @param algorithm For `type = "delta_projected"` and `type = "delta_profile"`,
-#'   whether to use the default grid-based approximation (`"grid"`) or the
-#'   slower direct optimization alternative (`"optimize"`).
+#' @param algorithm For `parameter = "Delta"` with `method = "projected"` or
+#'   `method = "profile"`, whether to use the default grid-based approximation
+#'   (`"grid"`) or the slower direct optimization alternative (`"optimize"`).
 #' @param ... Unused additional arguments.
-#' @return Invisibly returns a printed matrix for the marginal, projected, and
-#'   profile intervals, or a list with the evaluated joint surface for
-#'   `type = "simultaneous"`.
+#' @return Invisibly returns a printed matrix for the component and `Delta`
+#'   intervals, or a list with the evaluated joint surface for
+#'   `parameter = "joint"`.
 #' @details
-#' Adjusted fits support only marginal confidence intervals. Simultaneous
-#' regions and `Delta` intervals are available only for successful unadjusted
-#' `LRT` and `SPLRT` fits.
+#' Adjusted fits support only the stored component confidence intervals.
+#' Joint regions and `Delta` intervals are available only for successful
+#' unadjusted `LRT` and `SPLRT` fits.
 #' @examples
 #' library(TruncComp2)
 #' d <- loadTruncComp2Example()
 #' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
-#' confint(fit, type = "marginal")
-#' confint(fit, type = "simultaneous", plot = FALSE, resolution = 10)
-#' confint(fit, type = "delta_profile")
+#' confint(fit)
+#' confint(fit, parameter = "joint", plot = FALSE, resolution = 10)
+#' confint(fit, parameter = "Delta", method = "profile")
 #' @rdname confint.TruncComp
 #' @export
-confint.TruncComp2 <- function(object, type = "marginal", muDelta = NULL, logORdelta = NULL,
+confint.TruncComp2 <- function(object, parameter = c("muDelta", "alphaDelta"),
+                              method = "welch", muDelta = NULL, logORdelta = NULL,
                               conf.level = object$conf.level, plot = TRUE,
                               offset = NULL, resolution = 35, algorithm = c("grid", "optimize"),
                               ...) {
-  if(!(type %in% c("marginal", "simultaneous", "delta_projected", "delta_profile"))) {
-    stop("Type of confidence interval must be either marginal, simultaneous, delta_projected, or delta_profile.")
-  }
-
+  parameter <- unique(match.arg(
+    parameter,
+    choices = c("muDelta", "alphaDelta", "Delta", "joint"),
+    several.ok = TRUE
+  ))
   conf.level <- validateConfidenceLevel(conf.level)
-  algorithm <- validateDeltaIntervalAlgorithm(algorithm)
 
   if(!isTRUE(object$success)) {
     stop("Estimation failed. Cannot display confidence intervals.")
   }
 
-  if(type == "simultaneous" && !is.null(object$adjust)) {
-    stop("Simultaneous confidence regions are not implemented for adjusted fits.")
-  }
-  if(type == "delta_projected" && !is.null(object$adjust)) {
-    stop("Projected Delta intervals are not implemented for adjusted fits.")
-  }
-  if(type == "delta_profile" && !is.null(object$adjust)) {
-    stop("Profile Delta intervals are not implemented for adjusted fits.")
+  if(length(parameter) > 1 && !all(parameter %in% c("muDelta", "alphaDelta"))) {
+    stop("Multiple parameters are only supported for c(\"muDelta\", \"alphaDelta\").")
   }
 
-  if (type == "marginal") {
-    if(!isTRUE(all.equal(conf.level, object$conf.level, tolerance = sqrt(.Machine$double.eps)))) {
-      stop(paste0("Marginal confidence intervals are stored at the fitted confidence level (",
-                  format(object$conf.level),
-                  "). Refit the model with the desired conf.level to change them."))
+  if(length(parameter) == 1 && identical(parameter, "joint")) {
+    if(!is.null(object$adjust)) {
+      stop("Joint confidence regions are not implemented for adjusted fits.")
     }
 
-    cMat <- buildMarginalCIMatrix(object)
-    print.default(cMat)
-  } else if(type == "simultaneous") {
     message("Calculating joint likelihood surface.\nThis may take some time depending on the resolution.")
     joint <- jointContrastCI(object, muDelta, logORdelta, conf.level, plot, offset, resolution)
-  } else if(type == "delta_projected") {
-    projected <- delta_projected_interval(
-      object,
-      conf.level = conf.level,
-      offset = offset,
-      resolution = resolution,
-      algorithm = algorithm
-    )
-    a <- (1 - conf.level) / 2
-    a <- c(a, 1 - a)
-    pct <- paste(format(100 * a, trim = TRUE, scientific = FALSE, digits = 3), "%")
-    projected_mat <- matrix(projected, nrow = 1, dimnames = list("Delta (projected)", pct))
-    print.default(projected_mat)
-  } else {
-    if(identical(algorithm, "grid") &&
-       isTRUE(all.equal(conf.level, object$conf.level, tolerance = sqrt(.Machine$double.eps))) &&
-       is.null(offset) &&
-       identical(validateJointContrastResolution(resolution), as.integer(35)) &&
-       length(object$DeltaProfileCI) >= 2 &&
-       all(is.finite(object$DeltaProfileCI[1:2]))) {
-      profiled <- object$DeltaProfileCI[1:2]
-    } else {
-      profiled <- delta_profile_interval(
+    return(invisible(joint))
+  }
+
+  if(length(parameter) == 1 && identical(parameter, "Delta")) {
+    if(!is.null(object$adjust)) {
+      stop("Delta intervals are not implemented for adjusted fits.")
+    }
+
+    method <- match.arg(method, c("welch", "profile", "projected"))
+    algorithm <- validateDeltaIntervalAlgorithm(algorithm)
+
+    interval <- switch(
+      method,
+      welch = delta_welch_interval(object$data$Y, object$data$R, conf.level),
+      profile = delta_profile_interval(
+        object,
+        conf.level = conf.level,
+        offset = offset,
+        resolution = resolution,
+        algorithm = algorithm
+      ),
+      projected = delta_projected_interval(
         object,
         conf.level = conf.level,
         offset = offset,
         resolution = resolution,
         algorithm = algorithm
       )
-    }
-    a <- (1 - conf.level) / 2
-    a <- c(a, 1 - a)
-    pct <- paste(format(100 * a, trim = TRUE, scientific = FALSE, digits = 3), "%")
-    profiled_mat <- matrix(profiled, nrow = 1, dimnames = list("Delta (profile likelihood)", pct))
-    print.default(profiled_mat)
+    )
+    interval_mat <- buildSingleIntervalMatrix(interval, deltaIntervalLabel(method), conf.level)
+    print.default(interval_mat)
+    return(invisible(interval_mat))
   }
 
-  if(type == "marginal") {
-    invisible(cMat)
-  } else if(type == "delta_projected") {
-    invisible(projected_mat)
-  } else if(type == "delta_profile") {
-    invisible(profiled_mat)
-  } else {
-    invisible(joint)
+  if(!isTRUE(all.equal(conf.level, object$conf.level, tolerance = sqrt(.Machine$double.eps)))) {
+    stop(paste0("Component confidence intervals are stored at the fitted confidence level (",
+                format(object$conf.level),
+                "). Refit the model with the desired conf.level to change them."))
   }
+
+  cMat <- buildComponentCIMatrix(object, parameter)
+  print.default(cMat)
+  invisible(cMat)
 }
 
 parametricJointReference <- function(data, atom = 0) {

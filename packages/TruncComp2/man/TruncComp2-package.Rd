@@ -36,15 +36,10 @@ inference.
 \code{\link[=loadTruncComp2AdjustedExample]{loadTruncComp2AdjustedExample()}} for reproducible examples.
 }
 
-For successful unadjusted fits the package reports three different interval
-constructions for the derived combined-outcome contrast \code{Delta}:
-\itemize{
-\item \code{DeltaMarginalCI}: a Welch interval for the raw combined-outcome mean
-difference.
-\item \code{DeltaProjectedCI}: the projection of the two-parameter simultaneous region
-onto the \code{Delta} scale.
-\item \code{DeltaProfileCI}: a one-dimensional profile interval for \code{Delta}.
-}
+For successful unadjusted fits the package stores the derived combined-outcome
+contrast \code{Delta} as a point estimate. Confidence intervals for \code{Delta} are
+computed on demand through \code{\link[=confint.TruncComp2]{confint.TruncComp2()}} using
+\code{method = "welch"}, \code{"profile"}, or \code{"projected"}.
 
 Adjusted fits return conditional treatment effects from the fitted regression
 components. In that setting, \code{Delta} and simultaneous confidence regions are

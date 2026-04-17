@@ -28,14 +28,26 @@ validate_delta_optimizer <- function(method, tolerance = 0.2) {
   grid_profile <- delta_interval_from_surface(surface_data, stats::qchisq(fit$conf.level, 1))
 
   projected_time <- system.time(
-    projected_opt <- confint(fit, type = "delta_projected", algorithm = "optimize", plot = FALSE)
+    projected_opt <- confint(
+      fit,
+      parameter = "Delta",
+      method = "projected",
+      algorithm = "optimize",
+      plot = FALSE
+    )
   )[["elapsed"]]
   profile_time <- system.time(
-    profile_opt <- confint(fit, type = "delta_profile", algorithm = "optimize", plot = FALSE)
+    profile_opt <- confint(
+      fit,
+      parameter = "Delta",
+      method = "profile",
+      algorithm = "optimize",
+      plot = FALSE
+    )
   )[["elapsed"]]
 
   projected_opt <- unname(projected_opt["Delta (projected)", ])
-  profile_opt <- unname(profile_opt["Delta (profile likelihood)", ])
+  profile_opt <- unname(profile_opt["Delta (profile)", ])
 
   if(max(abs(projected_opt - grid_projected)) > tolerance) {
     stop(sprintf(

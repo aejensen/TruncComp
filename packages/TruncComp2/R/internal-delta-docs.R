@@ -413,14 +413,12 @@ NULL
 #'
 #' ### `augmentDeltaInference(object)`
 #'
-#' Final augmentation step applied to successful fits. For unadjusted fits with a
-#' known atom it computes the stored `Delta` point estimate, the Welch
-#' `DeltaMarginalCI`, leaves `DeltaProjectedCI` as unavailable by default, and
-#' stores the grid-based `DeltaProfileCI` as both `DeltaProfileCI` and the
-#' backward-compatible alias `DeltaCI`. For failed, adjusted, or atom-less fits
-#' it fills all `Delta` fields with `NA` intervals. Its role is to attach the
-#' derived combined-outcome summaries only when they are methodologically
-#' meaningful.
+#' Final augmentation step applied to successful fits. For unadjusted fits with
+#' a known atom it computes the derived `Delta` point estimate. For failed,
+#' adjusted, or atom-less fits it leaves `Delta` as the existing value or sets
+#' it to `NA_real_`. Any interval for `Delta` is computed later, on demand,
+#' through [confint.TruncComp2()]. Its role is to attach the derived
+#' combined-outcome point estimate only when it is methodologically meaningful.
 #'
 #' @seealso [confint.TruncComp2()], [jointContrastCI()], [delta_projected_interval()]
 #' @keywords internal

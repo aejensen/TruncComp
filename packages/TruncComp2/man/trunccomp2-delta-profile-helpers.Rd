@@ -212,14 +212,12 @@ allowing slower exact alternatives for validation or sensitivity analysis.
 
 \subsection{\code{augmentDeltaInference(object)}}{
 
-Final augmentation step applied to successful fits. For unadjusted fits with a
-known atom it computes the stored \code{Delta} point estimate, the Welch
-\code{DeltaMarginalCI}, leaves \code{DeltaProjectedCI} as unavailable by default, and
-stores the grid-based \code{DeltaProfileCI} as both \code{DeltaProfileCI} and the
-backward-compatible alias \code{DeltaCI}. For failed, adjusted, or atom-less fits
-it fills all \code{Delta} fields with \code{NA} intervals. Its role is to attach the
-derived combined-outcome summaries only when they are methodologically
-meaningful.
+Final augmentation step applied to successful fits. For unadjusted fits with
+a known atom it computes the derived \code{Delta} point estimate. For failed,
+adjusted, or atom-less fits it leaves \code{Delta} as the existing value or sets
+it to \code{NA_real_}. Any interval for \code{Delta} is computed later, on demand,
+through \code{\link[=confint.TruncComp2]{confint.TruncComp2()}}. Its role is to attach the derived
+combined-outcome point estimate only when it is methodologically meaningful.
 }
 }
 \seealso{

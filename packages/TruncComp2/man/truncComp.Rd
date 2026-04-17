@@ -77,18 +77,13 @@ combined-outcome contrast
 
 \verb{Delta = [p1 * mu1 + (1 - p1) * atom] - [p0 * mu0 + (1 - p0) * atom]}.
 
-The fitted object distinguishes between:
-\itemize{
-\item \code{DeltaMarginalCI}, a descriptive Welch interval on the raw combined-outcome
-scale.
-\item \code{DeltaProjectedCI}, the projection of the simultaneous two-parameter region
-onto \code{Delta}.
-\item \code{DeltaProfileCI}, a one-dimensional profile interval for \code{Delta}.
-}
+The fitted object stores only the \code{Delta} point estimate. Confidence
+intervals for \code{Delta} are computed on demand through
+\code{confint(fit, parameter = "Delta", method = "welch" | "profile" | "projected")}.
 
-Adjusted fits deliberately return \code{NA} for \code{Delta} and all \code{Delta} intervals
-because the implemented adjusted treatment effects are conditional regression
-coefficients rather than standardized marginal contrasts.
+Adjusted fits deliberately return \code{NA} for \code{Delta} because the implemented
+adjusted treatment effects are conditional regression coefficients rather
+than standardized marginal contrasts.
 }
 \examples{
 library(TruncComp2)

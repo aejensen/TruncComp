@@ -277,7 +277,7 @@ test_that("adjusted parametric engine matches direct glm/lm references", {
     expect_equal(fit$alphaDeltaCI, ref$alphaDeltaCI, tolerance = 1e-10)
     expect_equal(fit$muDeltaCI, ref$muDeltaCI, tolerance = 1e-10)
     expect_true(is.na(fit$Delta))
-    expect_equal(fit$DeltaCI, c(NA_real_, NA_real_))
+    expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
   }
 })
 
@@ -308,10 +308,7 @@ test_that("public LRT path returns the expected object and keeps init compatible
   expect_true(fit$success)
   expect_equal(fit$method, "Parametric Likelihood Ratio Test")
   expect_equal(fit$atom, 0)
-  expect_equal(fit$DeltaCI, fit$DeltaProfileCI, tolerance = 1e-12)
-  expect_true(all(is.finite(fit$DeltaMarginalCI)))
-  expect_true(all(is.na(fit$DeltaProjectedCI)))
-  expect_true(all(is.finite(fit$DeltaProfileCI)))
+  expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
   expect_equal(fit$init, custom_init)
   expect_equal(fit$muDelta, reference$muDelta, tolerance = 1e-10)
   expect_equal(fit$alphaDelta, reference$alphaDelta, tolerance = 1e-10)
@@ -322,20 +319,19 @@ test_that("public LRT path returns the expected object and keeps init compatible
   expect_match(paste(capture.output(summary(fit)), collapse = "\n"), "Joint test statistic")
   expect_match(paste(capture.output(print(fit)), collapse = "\n"), "Parametric Likelihood Ratio Test")
 
-  capture.output(ci <- confint(fit, type = "marginal"))
+  capture.output(ci <- confint(fit))
   expect_equal(unname(ci["Difference in means among the observed:", ]), fit$muDeltaCI)
   expect_equal(unname(ci["Odds ratio of being observed:", ]), fit$alphaDeltaCI)
-  expect_equal(unname(ci["Delta (marginal)", ]), fit$DeltaMarginalCI, tolerance = 1e-10)
-  expect_equal(unname(ci["Delta (profile likelihood)", ]), fit$DeltaProfileCI, tolerance = 1e-10)
 
-  capture.output(delta_projected <- confint(fit, type = "delta_projected", plot = FALSE))
+  capture.output(delta_projected <- confint(fit, parameter = "Delta", method = "projected", plot = FALSE))
   expect_equal(rownames(delta_projected), "Delta (projected)")
   expect_lte(unname(delta_projected[1, 1]), fit$Delta)
   expect_gte(unname(delta_projected[1, 2]), fit$Delta)
 
-  capture.output(delta_profile <- confint(fit, type = "delta_profile", plot = FALSE))
-  expect_equal(rownames(delta_profile), "Delta (profile likelihood)")
-  expect_equal(unname(delta_profile[1, ]), fit$DeltaProfileCI, tolerance = 1e-10)
+  capture.output(delta_profile <- confint(fit, parameter = "Delta", method = "profile", plot = FALSE))
+  expect_equal(rownames(delta_profile), "Delta (profile)")
+  expect_lte(unname(delta_profile[1, 1]), fit$Delta)
+  expect_gte(unname(delta_profile[1, 2]), fit$Delta)
 })
 
 test_that("parametric simultaneous confidence helpers work for unadjusted fits", {
@@ -344,7 +340,7 @@ test_that("parametric simultaneous confidence helpers work for unadjusted fits",
 
   expect_true(fit$success)
 
-  capture.output(joint <- confint(fit, type = "simultaneous", plot = FALSE, offset = 1, resolution = 5))
+  capture.output(joint <- confint(fit, parameter = "joint", plot = FALSE, offset = 1, resolution = 5))
   expect_equal(dim(joint$surface), c(5, 5))
   expect_equal(length(joint$muDelta), 5)
   expect_equal(length(joint$logORdelta), 5)
@@ -428,17 +424,17 @@ test_that("adjusted formula interface stores adjustment metadata and conditional
   expect_equal(fit$adjust, "L1 + L2")
   expect_true(all(c("L1", "L2") %in% names(fit$data)))
   expect_true(is.na(fit$Delta))
-  expect_equal(fit$DeltaCI, c(NA_real_, NA_real_))
+  expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
 
   summary_text <- paste(capture.output(summary(fit)), collapse = "\n")
   expect_match(summary_text, "Adjusted for: L1 \\+ L2")
 
-  capture.output(ci <- confint(fit, type = "marginal"))
+  capture.output(ci <- confint(fit))
   expect_equal(unname(ci["Difference in means among the observed:", ]), fit$muDeltaCI)
   expect_equal(unname(ci["Odds ratio of being observed:", ]), fit$alphaDeltaCI)
-  expect_error(confint(fit, type = "simultaneous"), "adjusted fits")
-  expect_error(confint(fit, type = "delta_projected"), "adjusted fits")
-  expect_error(confint(fit, type = "delta_profile"), "adjusted fits")
+  expect_error(confint(fit, parameter = "joint"), "adjusted fits")
+  expect_error(confint(fit, parameter = "Delta", method = "projected"), "adjusted fits")
+  expect_error(confint(fit, parameter = "Delta", method = "profile"), "adjusted fits")
   expect_error(jointContrastCI(fit, plot = FALSE), "adjusted fits")
 })
 

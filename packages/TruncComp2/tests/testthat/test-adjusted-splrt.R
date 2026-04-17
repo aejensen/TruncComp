@@ -188,7 +188,7 @@ test_that("adjusted SPLRT matches direct logistic and regression-EL references",
     expect_equal(fit$W, ref$mu$statistic + ref$W_alpha, tolerance = 1e-8)
     expect_equal(fit$p, stats::pchisq(fit$W, df = 2, lower.tail = FALSE), tolerance = 1e-12)
     expect_true(is.na(fit$Delta))
-    expect_equal(fit$DeltaCI, c(NA_real_, NA_real_))
+    expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
   }
 })
 
@@ -242,14 +242,14 @@ test_that("adjusted SPLRT handles the packaged adjusted example and attenuates a
   summary_text <- paste(capture.output(summary(fit_adjusted)), collapse = "\n")
   expect_match(summary_text, "Adjusted for: L")
 
-  capture.output(ci <- confint(fit_adjusted, type = "marginal"))
+  capture.output(ci <- confint(fit_adjusted))
   expect_equal(unname(ci["Difference in means among the observed:", ]), fit_adjusted$muDeltaCI)
   expect_equal(unname(ci["Odds ratio of being observed:", ]), fit_adjusted$alphaDeltaCI)
-  expect_error(confint(fit_adjusted, type = "delta_projected"),
+  expect_error(confint(fit_adjusted, parameter = "Delta", method = "projected"),
                "not implemented for adjusted fits")
-  expect_error(confint(fit_adjusted, type = "delta_profile"),
+  expect_error(confint(fit_adjusted, parameter = "Delta", method = "profile"),
                "not implemented for adjusted fits")
-  expect_error(confint(fit_adjusted, type = "simultaneous"),
+  expect_error(confint(fit_adjusted, parameter = "joint"),
                "not implemented for adjusted fits")
   expect_error(jointContrastCI(fit_adjusted, plot = FALSE),
                "not implemented for adjusted fits")

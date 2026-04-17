@@ -8,28 +8,41 @@ fast_delta_example <- function() {
   )
 }
 
-test_that("unadjusted fits expose Delta and the three Delta intervals", {
+test_that("unadjusted fits expose Delta and compute Delta intervals on demand", {
   example_data <- fast_delta_example()
 
   fit_lrt <- truncComp(Y ~ R, atom = 0, data = example_data, method = "LRT")
   fit_splrt <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
   empirical_delta <- mean(example_data$Y[example_data$R == 1]) -
     mean(example_data$Y[example_data$R == 0])
+  welch_intervals <- list()
 
   for(fit in list(fit_lrt, fit_splrt)) {
     expect_true(fit$success)
     expect_equal(fit$Delta, empirical_delta, tolerance = 1e-10)
-    expect_equal(fit$DeltaCI, fit$DeltaProfileCI, tolerance = 1e-12)
-    expect_true(all(is.finite(fit$DeltaMarginalCI)))
-    expect_true(all(is.na(fit$DeltaProjectedCI)))
-    expect_true(all(is.finite(fit$DeltaProfileCI)))
-    expect_lte(fit$DeltaMarginalCI[1], fit$Delta)
-    expect_gte(fit$DeltaMarginalCI[2], fit$Delta)
-    expect_lte(fit$DeltaProfileCI[1], fit$Delta)
-    expect_gte(fit$DeltaProfileCI[2], fit$Delta)
+    expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
+
+    capture.output(delta_welch <- confint(fit, parameter = "Delta", method = "welch"))
+    delta_welch <- unname(delta_welch["Delta (welch)", ])
+    capture.output(delta_projected <- confint(fit, parameter = "Delta", method = "projected", plot = FALSE))
+    delta_projected <- unname(delta_projected["Delta (projected)", ])
+    capture.output(delta_profile <- confint(fit, parameter = "Delta", method = "profile", plot = FALSE))
+    delta_profile <- unname(delta_profile["Delta (profile)", ])
+
+    expect_true(all(is.finite(delta_welch)))
+    expect_true(all(is.finite(delta_projected)))
+    expect_true(all(is.finite(delta_profile)))
+    expect_lte(delta_welch[1], fit$Delta)
+    expect_gte(delta_welch[2], fit$Delta)
+    expect_lte(delta_projected[1], fit$Delta)
+    expect_gte(delta_projected[2], fit$Delta)
+    expect_lte(delta_profile[1], fit$Delta)
+    expect_gte(delta_profile[2], fit$Delta)
+
+    welch_intervals[[length(welch_intervals) + 1]] <- delta_welch
   }
 
-  expect_equal(fit_lrt$DeltaMarginalCI, fit_splrt$DeltaMarginalCI, tolerance = 1e-10)
+  expect_equal(welch_intervals[[1]], welch_intervals[[2]], tolerance = 1e-10)
 })
 
 test_that("grid-based DeltaProjectedCI agrees with high-resolution surface projection", {
@@ -49,7 +62,8 @@ test_that("grid-based DeltaProjectedCI agrees with high-resolution surface proje
 
     capture.output(projected <- confint(
       fit,
-      type = "delta_projected",
+      parameter = "Delta",
+      method = "projected",
       algorithm = "grid",
       resolution = 41,
       plot = FALSE
@@ -78,12 +92,13 @@ test_that("grid-based DeltaProfileCI agrees with high-resolution surface profili
 
     capture.output(profiled <- confint(
       fit,
-      type = "delta_profile",
+      parameter = "Delta",
+      method = "profile",
       algorithm = "grid",
       resolution = 41,
       plot = FALSE
     ))
-    profiled <- unname(profiled["Delta (profile likelihood)", ])
+    profiled <- unname(profiled["Delta (profile)", ])
     expect_equal(profiled, grid_reference, tolerance = 1e-10)
     expect_lte(profiled[1], fit$Delta)
     expect_gte(profiled[2], fit$Delta)
@@ -100,28 +115,35 @@ test_that("optimizer-backed Delta profiling remains available for fast parametri
   fit <- truncComp(Y ~ R, atom = 0, data = fast_delta_example(), method = "LRT")
   capture.output(profiled <- confint(
     fit,
-    type = "delta_profile",
+    parameter = "Delta",
+    method = "profile",
     algorithm = "optimize",
     plot = FALSE
   ))
-  profiled <- unname(profiled["Delta (profile likelihood)", ])
+  profiled <- unname(profiled["Delta (profile)", ])
   expect_lte(profiled[1], fit$Delta)
   expect_gte(profiled[2], fit$Delta)
 })
 
-test_that("stored DeltaProfileCI matches the default grid-based confint result", {
+test_that("default grid-based Delta profile confint matches the direct helper", {
   example_data <- fast_delta_example()
 
   for(method in c("LRT", "SPLRT")) {
     fit <- truncComp(Y ~ R, atom = 0, data = example_data, method = method)
+    reference <- TruncComp2:::delta_profile_interval.grid(
+      fit,
+      conf.level = fit$conf.level,
+      resolution = 35
+    )
     capture.output(profiled <- confint(
       fit,
-      type = "delta_profile",
+      parameter = "Delta",
+      method = "profile",
       algorithm = "grid",
       plot = FALSE
     ))
-    profiled <- unname(profiled["Delta (profile likelihood)", ])
-    expect_equal(profiled, fit$DeltaProfileCI, tolerance = 1e-12)
+    profiled <- unname(profiled["Delta (profile)", ])
+    expect_equal(profiled, reference, tolerance = 1e-12)
   }
 })
 
@@ -143,7 +165,8 @@ test_that("default interface stores and infers the atom value", {
   for(fit in list(fit_formula, fit_default_explicit, fit_default_inferred)) {
     expect_true(fit$success)
     expect_equal(fit$atom, -5)
-    expect_true(all(is.finite(fit$DeltaProfileCI)))
+    capture.output(delta_profile <- confint(fit, parameter = "Delta", method = "profile", plot = FALSE))
+    expect_true(all(is.finite(unname(delta_profile["Delta (profile)", ]))))
   }
 
   expect_equal(fit_default_explicit$Delta, fit_formula$Delta, tolerance = 1e-10)

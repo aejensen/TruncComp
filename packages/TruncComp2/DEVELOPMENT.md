@@ -90,8 +90,9 @@ separate package-local validation script:
 Rscript tools/validate-delta-optimization.R
 ```
 
-That script compares the slower optimizer-based `DeltaProjectedCI` and
-`DeltaProfileCI` alternatives against grid-based references for both the
-parametric and semi-parametric methods. It is intentionally kept out of routine
-package checks because those optimizer paths are materially slower than the
-default grid-based intervals.
+That script compares the slower optimizer-based
+`confint(..., parameter = "Delta", method = "projected" | "profile",
+algorithm = "optimize")` alternatives against grid-based references for both
+the parametric and semi-parametric methods. It is intentionally kept out of
+routine package checks because those optimizer paths are materially slower than
+the default grid-based intervals.

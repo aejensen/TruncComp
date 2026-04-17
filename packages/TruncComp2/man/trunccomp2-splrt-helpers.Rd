@@ -47,8 +47,8 @@ logistic observation models with \code{glm()}, and adds the two component
 likelihood-ratio statistics. When \code{adjust} is non-\code{NULL}, it delegates to
 \code{adjusted_SPLRT()}. The helper returns a \code{"TruncComp2"} object and, on
 success, passes it through \code{augmentDeltaInference()} so unadjusted fits gain
-the stored \code{Delta} summaries. Its role is to expose a single semi-parametric
-implementation point to the rest of the package.
+the derived \code{Delta} point estimate. Its role is to expose a single
+semi-parametric implementation point to the rest of the package.
 }
 }
 \seealso{

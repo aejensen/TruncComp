@@ -7,10 +7,9 @@
 #' @param ... Unused additional arguments.
 #' @return The input object, returned invisibly.
 #' @details
-#' For successful unadjusted fits the summary includes the stored
-#' `DeltaMarginalCI` and `DeltaProfileCI`. The projected interval
-#' `DeltaProjectedCI` remains available on demand through
-#' [confint.TruncComp2()].
+#' For successful unadjusted fits the summary also reports the fitted `Delta`
+#' point estimate. Any confidence interval for `Delta` is computed on demand
+#' through [confint.TruncComp2()].
 #' @examples
 #' library(TruncComp2)
 #' f0 <- function(n) stats::rnorm(n, 3, 1)
@@ -28,7 +27,7 @@ summary.TruncComp2 <- function(object, ...) {
   }
 
   if (isTRUE(object$success)) {
-    cMat <- matrix(NA, 2, 3)
+    cMat <- matrix(NA_real_, 2, 3)
     cMat[1,1] <- object$muDelta
     cMat[1, 2:3] <- object$muDeltaCI
 
@@ -36,26 +35,13 @@ summary.TruncComp2 <- function(object, ...) {
     cMat[2, 2:3] <- object$alphaDeltaCI
 
     if(is.finite(object$Delta)) {
-      delta_rows <- list()
-      if(length(object$DeltaMarginalCI) >= 2 && all(is.finite(object$DeltaMarginalCI[1:2]))) {
-        delta_rows[["Delta (marginal):"]] <- c(object$Delta, object$DeltaMarginalCI)
-      }
-      if(length(object$DeltaProjectedCI) >= 2 && all(is.finite(object$DeltaProjectedCI[1:2]))) {
-        delta_rows[["Delta (projected):"]] <- c(object$Delta, object$DeltaProjectedCI)
-      }
-      if(length(object$DeltaProfileCI) >= 2 && all(is.finite(object$DeltaProfileCI[1:2]))) {
-        delta_rows[["Delta (profile likelihood):"]] <- c(object$Delta, object$DeltaProfileCI)
-      }
-
-      if(length(delta_rows) > 0) {
-        cMat <- rbind(cMat, do.call(rbind, delta_rows))
-      }
+      cMat <- rbind(cMat, c(object$Delta, NA_real_, NA_real_))
     }
 
     colnames(cMat) <- c("Estimate", "CI Lower", "CI Upper")
     rownames(cMat) <- c("Difference in means among the observed:",
                         "Odds ratio of being observed:",
-                        rownames(cMat)[-(1:2)])
+                        if(is.finite(object$Delta)) "Combined-outcome mean difference (Delta):")
 
     cat("Treatment contrasts\n")
     print.default(cMat)

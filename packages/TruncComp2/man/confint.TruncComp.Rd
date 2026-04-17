@@ -6,7 +6,8 @@
 \usage{
 \method{confint}{TruncComp2}(
   object,
-  type = "marginal",
+  parameter = c("muDelta", "alphaDelta"),
+  method = "welch",
   muDelta = NULL,
   logORdelta = NULL,
   conf.level = object$conf.level,
@@ -20,52 +21,57 @@
 \arguments{
 \item{object}{A \code{"TruncComp2"} object returned by \code{\link[=truncComp]{truncComp()}}.}
 
-\item{type}{One of \code{"marginal"}, \code{"simultaneous"}, \code{"delta_projected"}, or
-\code{"delta_profile"}.}
+\item{parameter}{Parameter selection for the requested interval. Use
+\code{"muDelta"} and/or \code{"alphaDelta"} for the stored component intervals,
+\code{"Delta"} for the derived combined-outcome contrast, or \code{"joint"} for the
+two-parameter likelihood-ratio surface.}
+
+\item{method}{Interval construction for \code{parameter = "Delta"}. One of
+\code{"welch"}, \code{"profile"}, or \code{"projected"}.}
 
 \item{muDelta}{Optional grid values for the mean-difference axis when
-\code{type = "simultaneous"}.}
+\code{parameter = "joint"}.}
 
 \item{logORdelta}{Optional grid values for the log-odds-ratio axis when
-\code{type = "simultaneous"}.}
+\code{parameter = "joint"}.}
 
 \item{conf.level}{Confidence level for the interval or contour threshold.}
 
-\item{plot}{Logical; if \code{TRUE}, plot the simultaneous confidence surface.}
+\item{plot}{Logical; if \code{TRUE}, plot the joint confidence surface.}
 
 \item{offset}{Optional simultaneous-grid expansion. If omitted, a
 data-adaptive default is derived from the fitted marginal intervals or from
 fallback data scales. A single number is applied to both axes; a length-2
 vector supplies separate expansions for \code{muDelta} and \code{logORdelta}.}
 
-\item{resolution}{Number of grid points per axis for the simultaneous
+\item{resolution}{Number of grid points per axis for the surface-based
 surface-based calculations.}
 
-\item{algorithm}{For \code{type = "delta_projected"} and \code{type = "delta_profile"},
-whether to use the default grid-based approximation (\code{"grid"}) or the
-slower direct optimization alternative (\code{"optimize"}).}
+\item{algorithm}{For \code{parameter = "Delta"} with \code{method = "projected"} or
+\code{method = "profile"}, whether to use the default grid-based approximation
+(\code{"grid"}) or the slower direct optimization alternative (\code{"optimize"}).}
 
 \item{...}{Unused additional arguments.}
 }
 \value{
-Invisibly returns a printed matrix for the marginal, projected, and
-profile intervals, or a list with the evaluated joint surface for
-\code{type = "simultaneous"}.
+Invisibly returns a printed matrix for the component and \code{Delta}
+intervals, or a list with the evaluated joint surface for
+\code{parameter = "joint"}.
 }
 \description{
-Computes marginal confidence intervals, simultaneous confidence-region
-surfaces, and on-demand \code{Delta} intervals for a fitted \code{"TruncComp2"} object.
+Computes component confidence intervals, joint confidence-region surfaces,
+and on-demand \code{Delta} intervals for a fitted \code{"TruncComp2"} object.
 }
 \details{
-Adjusted fits support only marginal confidence intervals. Simultaneous
-regions and \code{Delta} intervals are available only for successful unadjusted
-\code{LRT} and \code{SPLRT} fits.
+Adjusted fits support only the stored component confidence intervals.
+Joint regions and \code{Delta} intervals are available only for successful
+unadjusted \code{LRT} and \code{SPLRT} fits.
 }
 \examples{
 library(TruncComp2)
 d <- loadTruncComp2Example()
 fit <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
-confint(fit, type = "marginal")
-confint(fit, type = "simultaneous", plot = FALSE, resolution = 10)
-confint(fit, type = "delta_profile")
+confint(fit)
+confint(fit, parameter = "joint", plot = FALSE, resolution = 10)
+confint(fit, parameter = "Delta", method = "profile")
 }

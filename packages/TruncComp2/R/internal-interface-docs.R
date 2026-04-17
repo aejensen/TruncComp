@@ -109,10 +109,9 @@ NULL
 #' isValid(truncCompObj)
 #' truncCompMethod(method)
 #' newTruncComp2(
-#'   muDelta = NULL, muDeltaCI = NULL, alphaDelta = NULL, alphaDeltaCI = NULL,
-#'   Delta = NULL, DeltaCI = NULL, DeltaMarginalCI = NULL,
-#'   DeltaProjectedCI = NULL, DeltaProfileCI = NULL, W = NULL, p = NULL,
-#'   method, conf.level, success, error = "", init = NULL, data = NULL,
+#'   muDelta = NULL, muDeltaCI = NULL, alphaDelta = NULL,
+#'   alphaDeltaCI = NULL, Delta = NULL, W = NULL, p = NULL, method,
+#'   conf.level, success, error = "", init = NULL, data = NULL,
 #'   adjust = NULL, atom = NULL
 #' )
 #' returnErrorData(
@@ -157,8 +156,8 @@ NULL
 #' ### `newTruncComp2(...)`
 #'
 #' Constructs the canonical `"TruncComp2"` object. The arguments mirror the
-#' fields exposed by the package: component estimates and intervals, `Delta`
-#' derivatives, test statistics, method metadata, success state, optional
+#' fields exposed by the package: component estimates and intervals, the `Delta`
+#' point estimate, test statistics, method metadata, success state, optional
 #' standardized data, and the fitted atom. The helper returns a named list with
 #' class `c("TruncComp2", "list")`. It performs only light normalization,
 #' mainly expanding `method` through `truncCompMethod()`. Its role is to ensure

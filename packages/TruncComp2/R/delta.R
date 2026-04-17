@@ -528,8 +528,9 @@ parametricContinuousCandidate <- function(parametricReference, muDelta, tol = 1e
 }
 
 delta_profile_value_scale <- function(object) {
-  if(length(object$DeltaMarginalCI) >= 2 && all(is.finite(object$DeltaMarginalCI[1:2]))) {
-    width <- diff(object$DeltaMarginalCI[1:2])
+  delta_welch_ci <- delta_welch_interval(object$data$Y, object$data$R, object$conf.level)
+  if(length(delta_welch_ci) >= 2 && all(is.finite(delta_welch_ci[1:2]))) {
+    width <- diff(delta_welch_ci[1:2])
     if(is.finite(width) && width > 0) {
       return(as.numeric(width))
     }
@@ -1083,17 +1084,9 @@ delta_profile_interval <- function(object, conf.level = object$conf.level,
 augmentDeltaInference <- function(object) {
   if(!isTRUE(object$success) || !is.null(object$adjust) || is.null(object$atom)) {
     object$Delta <- if(is.null(object$Delta)) NA_real_ else object$Delta
-    object$DeltaMarginalCI <- delta_na_interval()
-    object$DeltaProjectedCI <- delta_na_interval()
-    object$DeltaProfileCI <- delta_na_interval()
-    object$DeltaCI <- delta_na_interval()
     return(object)
   }
 
   object$Delta <- delta_unadjusted_point_estimate(object)
-  object$DeltaMarginalCI <- delta_welch_interval(object$data$Y, object$data$R, object$conf.level)
-  object$DeltaProjectedCI <- delta_na_interval()
-  object$DeltaProfileCI <- delta_profile_interval.grid(object, conf.level = object$conf.level)
-  object$DeltaCI <- object$DeltaProfileCI
   object
 }

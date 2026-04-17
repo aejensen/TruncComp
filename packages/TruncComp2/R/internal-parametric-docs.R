@@ -226,9 +226,9 @@
 #' standardized analysis frame; `init`, `conf.level`, `adjust`, `adjust_spec`,
 #' and `atom` are carried through to the returned object. The helper returns a
 #' `"TruncComp2"` object, either successful or failed. After a successful fit it
-#' calls `augmentDeltaInference()` to fill in the unadjusted `Delta` summaries.
-#' Its role is to bridge the intermediate parametric fit summaries into the
-#' package-wide result class.
+#' calls `augmentDeltaInference()` to attach the unadjusted `Delta` point
+#' estimate when that contrast is well-defined. Its role is to bridge the
+#' intermediate parametric fit summaries into the package-wide result class.
 #'
 #' @seealso [truncComp()], [augmentDeltaInference()], [parametric_lrt_fit()]
 #' @keywords internal

@@ -19,10 +19,9 @@ Prints the estimated treatment contrasts, their confidence intervals, and the
 joint likelihood-ratio result for a fitted \code{"TruncComp2"} object.
 }
 \details{
-For successful unadjusted fits the summary includes the stored
-\code{DeltaMarginalCI} and \code{DeltaProfileCI}. The projected interval
-\code{DeltaProjectedCI} remains available on demand through
-\code{\link[=confint.TruncComp2]{confint.TruncComp2()}}.
+For successful unadjusted fits the summary also reports the fitted \code{Delta}
+point estimate. Any confidence interval for \code{Delta} is computed on demand
+through \code{\link[=confint.TruncComp2]{confint.TruncComp2()}}.
 }
 \examples{
 library(TruncComp2)

@@ -251,9 +251,9 @@ Final parametric estimator used by \code{truncComp_core()}. \code{data} is the
 standardized analysis frame; \code{init}, \code{conf.level}, \code{adjust}, \code{adjust_spec},
 and \code{atom} are carried through to the returned object. The helper returns a
 \code{"TruncComp2"} object, either successful or failed. After a successful fit it
-calls \code{augmentDeltaInference()} to fill in the unadjusted \code{Delta} summaries.
-Its role is to bridge the intermediate parametric fit summaries into the
-package-wide result class.
+calls \code{augmentDeltaInference()} to attach the unadjusted \code{Delta} point
+estimate when that contrast is well-defined. Its role is to bridge the
+intermediate parametric fit summaries into the package-wide result class.
 }
 }
 \seealso{

@@ -71,11 +71,12 @@
 #'
 #' ### `delta_welch_interval(y, r, conf.level)`
 #'
-#' Builds the descriptive raw-scale `DeltaMarginalCI` by treating the combined
-#' outcome `y` as a standard two-sample mean problem split by treatment indicator
-#' `r`. It returns a length-two numeric interval and falls back to a point-mass
-#' interval when the pooled standard error is not usable. Its role is to provide
-#' the model-light `Delta` interval reported for successful unadjusted fits.
+#' Builds the descriptive raw-scale `Delta` Welch interval by treating the
+#' combined outcome `y` as a standard two-sample mean problem split by treatment
+#' indicator `r`. It returns a length-two numeric interval and falls back to a
+#' point-mass interval when the pooled standard error is not usable. Its role is
+#' to provide the model-light `Delta` interval returned by
+#' `confint(..., parameter = "Delta", method = "welch")`.
 #'
 #' ### `delta_unadjusted_point_estimate(object, tol = 1e-8)`
 #'
@@ -227,14 +228,15 @@ NULL
 #' Internal Delta profile and surface helpers
 #'
 #' Developer-facing documentation for the helpers that build grid-based and
-#' optimizer-based `Delta` intervals and attach them to fitted objects.
+#' optimizer-based `Delta` intervals and derive the `Delta` point estimate used
+#' by fitted objects.
 #'
 #' @name trunccomp2-delta-profile-helpers
 #' @title Internal Delta profile and surface helpers
 #' @description
 #' These helpers choose scales and tolerances, profile over the log-odds axis,
 #' derive intervals from joint surfaces, and augment successful unadjusted fits
-#' with their stored `Delta` summaries.
+#' with their `Delta` point estimates.
 #' @aliases delta_profile_value_scale
 #' @aliases delta_profile_initial_step
 #' @aliases delta_profile_target_tolerance

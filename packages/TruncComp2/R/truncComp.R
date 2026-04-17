@@ -178,7 +178,7 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
 #'   the default interface this must be `NULL`, a data frame, or a matrix of
 #'   baseline covariates. The same additive adjustment is used in both the
 #'   observed-outcome and observation components. Adjusted fits support only
-#'   marginal confidence intervals.
+#'   component confidence intervals.
 #' @return An S3 object of class `"TruncComp2"` with component estimates,
 #'   confidence intervals, the joint likelihood-ratio statistic, metadata about
 #'   the fitting method, the standardized analysis data, and the fitted atom

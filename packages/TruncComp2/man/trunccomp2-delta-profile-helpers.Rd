@@ -56,13 +56,14 @@ augmentDeltaInference(object)
 \description{
 These helpers choose scales and tolerances, profile over the log-odds axis,
 derive intervals from joint surfaces, and augment successful unadjusted fits
-with their stored \code{Delta} summaries.
+with their \code{Delta} point estimates.
 }
 \details{
 Internal Delta profile and surface helpers
 
 Developer-facing documentation for the helpers that build grid-based and
-optimizer-based \code{Delta} intervals and attach them to fitted objects.
+optimizer-based \code{Delta} intervals and derive the \code{Delta} point estimate used
+by fitted objects.
 \subsection{\code{delta_profile_value_scale(object)},}{
 
 \code{delta_profile_initial_step(object)}, and

@@ -35,8 +35,8 @@
 #' `method = "welch"`, `"profile"`, or `"projected"`.
 #'
 #' Adjusted fits return conditional treatment effects from the fitted regression
-#' components. In that setting, `Delta` and simultaneous confidence regions are
-#' intentionally unavailable.
+#' components. In that setting, `Delta`, `Delta` intervals, and joint
+#' confidence regions are intentionally unavailable.
 #'
 #' @references
 #' Andreas Kryger Jensen and Theis Lange.

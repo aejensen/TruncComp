@@ -52,7 +52,7 @@ must be \code{NULL} or a one-sided additive formula such as \code{~ age + sex}. 
 the default interface this must be \code{NULL}, a data frame, or a matrix of
 baseline covariates. The same additive adjustment is used in both the
 observed-outcome and observation components. Adjusted fits support only
-marginal confidence intervals.}
+component confidence intervals.}
 
 \item{y}{Outcome vector for the default interface.}
 

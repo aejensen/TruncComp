@@ -42,8 +42,8 @@ computed on demand through \code{\link[=confint.TruncComp2]{confint.TruncComp2()
 \code{method = "welch"}, \code{"profile"}, or \code{"projected"}.
 
 Adjusted fits return conditional treatment effects from the fitted regression
-components. In that setting, \code{Delta} and simultaneous confidence regions are
-intentionally unavailable.
+components. In that setting, \code{Delta}, \code{Delta} intervals, and joint
+confidence regions are intentionally unavailable.
 }
 \references{
 Andreas Kryger Jensen and Theis Lange.

@@ -19,7 +19,7 @@ The currently supported scope is:
 - one binary treatment indicator coded `0/1`
 - one atom value representing the unobserved or undefined outcome
 - optional additive baseline-covariate adjustment for both `method = "LRT"` and `method = "SPLRT"` through `adjust = ~ ...`
-- adjusted `SPLRT` provides fitted tests and marginal confidence intervals, but not simultaneous confidence regions
+- adjusted `SPLRT` provides fitted tests and component confidence intervals, but not joint confidence regions or `Delta` intervals
 
 To install the development version of TruncComp2 run the following commands from within R
 

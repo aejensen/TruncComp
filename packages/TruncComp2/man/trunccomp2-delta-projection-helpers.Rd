@@ -77,11 +77,12 @@ role is to encode the defining transformation used everywhere in the package.
 
 \subsection{\code{delta_welch_interval(y, r, conf.level)}}{
 
-Builds the descriptive raw-scale \code{DeltaMarginalCI} by treating the combined
-outcome \code{y} as a standard two-sample mean problem split by treatment indicator
-\code{r}. It returns a length-two numeric interval and falls back to a point-mass
-interval when the pooled standard error is not usable. Its role is to provide
-the model-light \code{Delta} interval reported for successful unadjusted fits.
+Builds the descriptive raw-scale \code{Delta} Welch interval by treating the
+combined outcome \code{y} as a standard two-sample mean problem split by treatment
+indicator \code{r}. It returns a length-two numeric interval and falls back to a
+point-mass interval when the pooled standard error is not usable. Its role is
+to provide the model-light \code{Delta} interval returned by
+\code{confint(..., parameter = "Delta", method = "welch")}.
 }
 
 \subsection{\code{delta_unadjusted_point_estimate(object, tol = 1e-8)}}{

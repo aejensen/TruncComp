@@ -18,18 +18,17 @@
     )
 }
 
-.simulation_main_power_data <- function(simulation_results) {
+.simulation_power_data_all_scenarios <- function(simulation_results) {
   strongest_h <- max(simulation_results$config$effect_levels)
   simulation_results$method_metrics[
-    simulation_results$method_metrics$scenario_id %in% simulation_results$config$main_text_scenarios &
-      simulation_results$method_metrics$h == strongest_h,
+    simulation_results$method_metrics$h == strongest_h,
     ,
     drop = FALSE
   ]
 }
 
 simulation_study_build_power_curves_figure <- function(simulation_results, path) {
-  plot_data <- .simulation_main_power_data(simulation_results)
+  plot_data <- .simulation_power_data_all_scenarios(simulation_results)
   plot_data$short_label <- factor(
     plot_data$short_label,
     levels = unique(plot_data$short_label[order(plot_data$scenario_order)])
@@ -41,24 +40,23 @@ simulation_study_build_power_curves_figure <- function(simulation_results, path)
   ) +
     ggplot2::geom_line(linewidth = 0.8) +
     ggplot2::geom_point(size = 1.2) +
-    ggplot2::facet_wrap(~ short_label, ncol = 2) +
+    ggplot2::facet_wrap(~ short_label, ncol = 3) +
     ggplot2::scale_x_continuous(breaks = simulation_results$config$n_seq) +
     ggplot2::scale_y_continuous(limits = c(0, 1)) +
     ggplot2::scale_color_manual(values = .simulation_method_palette()) +
     ggplot2::labs(
       x = "Observations per group",
       y = "Estimated power",
-      title = "Power by sample size at the strongest non-null effect level"
+      title = "Power by sample size at the strongest non-null effect level across all six scenarios"
     ) +
     .simulation_figure_theme()
 
-  ggplot2::ggsave(path, plot = plot_object, width = 8.5, height = 5.3, device = grDevices::pdf)
+  ggplot2::ggsave(path, plot = plot_object, width = 10, height = 6.8, device = grDevices::pdf)
 }
 
 simulation_study_build_power_effect_figure <- function(simulation_results, path) {
   plot_data <- simulation_results$method_metrics[
-    simulation_results$method_metrics$scenario_id %in% simulation_results$config$main_text_scenarios &
-      simulation_results$method_metrics$n == simulation_results$config$power_effect_n,
+    simulation_results$method_metrics$n == simulation_results$config$power_effect_n,
     ,
     drop = FALSE
   ]
@@ -73,51 +71,21 @@ simulation_study_build_power_effect_figure <- function(simulation_results, path)
   ) +
     ggplot2::geom_line(linewidth = 0.8) +
     ggplot2::geom_point(size = 1.2) +
-    ggplot2::facet_wrap(~ short_label, ncol = 2) +
+    ggplot2::facet_wrap(~ short_label, ncol = 3) +
     ggplot2::scale_x_continuous(breaks = simulation_results$config$effect_levels) +
     ggplot2::scale_y_continuous(limits = c(0, 1)) +
     ggplot2::scale_color_manual(values = .simulation_method_palette()) +
     ggplot2::labs(
       x = "Effect level h",
       y = "Estimated power",
-      title = sprintf("Power by effect level at n = %d per group", simulation_results$config$power_effect_n)
+      title = sprintf(
+        "Power by effect level at n = %d per group across all six scenarios",
+        simulation_results$config$power_effect_n
+      )
     ) +
     .simulation_figure_theme()
 
-  ggplot2::ggsave(path, plot = plot_object, width = 8.5, height = 5.3, device = grDevices::pdf)
-}
-
-simulation_study_build_supplementary_power_figure <- function(simulation_results, path) {
-  strongest_h <- max(simulation_results$config$effect_levels)
-  plot_data <- simulation_results$method_metrics[
-    simulation_results$method_metrics$scenario_id %in% simulation_results$config$supplementary_scenarios &
-      simulation_results$method_metrics$h == strongest_h,
-    ,
-    drop = FALSE
-  ]
-  plot_data$short_label <- factor(
-    plot_data$short_label,
-    levels = unique(plot_data$short_label[order(plot_data$scenario_order)])
-  )
-
-  plot_object <- ggplot2::ggplot(
-    plot_data,
-    ggplot2::aes(x = n, y = reject_rate, color = method_label)
-  ) +
-    ggplot2::geom_line(linewidth = 0.8) +
-    ggplot2::geom_point(size = 1.2) +
-    ggplot2::facet_wrap(~ short_label, ncol = 2) +
-    ggplot2::scale_x_continuous(breaks = simulation_results$config$n_seq) +
-    ggplot2::scale_y_continuous(limits = c(0, 1)) +
-    ggplot2::scale_color_manual(values = .simulation_method_palette()) +
-    ggplot2::labs(
-      x = "Observations per group",
-      y = "Estimated power",
-      title = "Supplementary power curves for the reference and concordant-effect scenarios"
-    ) +
-    .simulation_figure_theme()
-
-  ggplot2::ggsave(path, plot = plot_object, width = 8.5, height = 4.4, device = grDevices::pdf)
+  ggplot2::ggsave(path, plot = plot_object, width = 10, height = 6.8, device = grDevices::pdf)
 }
 
 simulation_study_build_type1_curves_figure <- function(simulation_results, path) {
@@ -299,10 +267,6 @@ simulation_study_build_manuscript_assets <- function(repo_root, simulation_resul
   simulation_study_build_power_effect_figure(
     simulation_results,
     file.path(figures_dir, "power-effects.pdf")
-  )
-  simulation_study_build_supplementary_power_figure(
-    simulation_results,
-    file.path(figures_dir, "supplementary-power-curves.pdf")
   )
   simulation_study_build_type1_curves_figure(
     simulation_results,

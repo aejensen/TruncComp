@@ -269,19 +269,19 @@ Table~\ref{tab:simulation} lists the data-generating mechanisms. The scenarios w
 
 For each scenario we considered effect levels $h \in \{0, 1, 2, 3\}$, with $h = 0$ as the null configuration, and sample sizes from $50$ to $500$ observations per group in increments of $50$. This yielded $6 \times 4 \times 10 = 240$ scenario-effect-sample-size cells, and each cell used 10,000 Monte Carlo repetitions. Power and empirical size were estimated as rejection proportions at the 5\% level, so the worst-case Monte Carlo standard error of an estimated rejection rate was approximately $0.005$. We compared the parametric and semi-parametric likelihood-ratio tests with Welch's two-sample $t$-test and the Wilcoxon rank-sum test applied directly to the combined outcome; Appendix~\ref{app:supplementary-simulation-results} records the exact simulation protocol and implementation details needed to reproduce the study.
 
-Figure~\ref{fig:powerCurves} shows power as a function of sample size at the strongest non-null level for the four scenarios that most sharply separate the methods: the survival-only case (Scenario~2), the antagonistic cancellation case (Scenario~3), the gamma misspecification case (Scenario~5), and the rare-outlier contamination case (Scenario~6). Figure~\ref{fig:powerEffectCurves} complements that display by plotting power as a function of the effect level at $n = 250$ observations per group for the same four scenarios. The supplementary material reports the corresponding power curves for Scenarios~1 and~4, the full scenario-specific power tables for all $240$ cells, and the null-calibration displays for the $h = 0$ settings.
+Figure~\ref{fig:powerCurves} shows power as a function of sample size at the strongest non-null level across all six scenarios. Figure~\ref{fig:powerEffectCurves} complements that display by plotting power as a function of the effect level at $n = 250$ observations per group across the same six scenarios. The supplementary material reports the full scenario-specific power tables for all $240$ cells and the null-calibration displays for the $h = 0$ settings.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.84\textwidth]{power-curves.pdf}
-\caption{Estimated power as a function of sample size at the strongest non-null level for Scenarios~2, 3, 5, and 6.}
+\caption{Estimated power as a function of sample size at the strongest non-null level for Scenarios~1 through~6, displayed in a $2 \times 3$ layout.}
 \label{fig:powerCurves}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.84\textwidth]{power-effects.pdf}
-\caption{Estimated power as a function of effect level at $n = 250$ observations per group for Scenarios~2, 3, 5, and 6.}
+\caption{Estimated power as a function of effect level at $n = 250$ observations per group for Scenarios~1 through~6, displayed in a $2 \times 3$ layout.}
 \label{fig:powerEffectCurves}
 \end{figure}
 
@@ -289,7 +289,7 @@ Three patterns are most important. First, in Scenario~2, where treatment acts on
 
 The remaining scenarios show the limits of any single preferred procedure. Scenario~5 narrows the gap between the parametric and semi-parametric analyses because the positive part changes shape as well as mean, and Scenario~6 is deliberately favorable to rank-based methods because the positive part contains rare high outliers. Across these settings, however, the two proposed tests are strongest precisely when the data reflect the two-component structure they are designed to detect.
 
-The supplementary null-calibration display in Figure~\ref{fig:type1Curves} shows that all four procedures remain close to the nominal 5\% level in the null settings we considered. The supplementary figures and long tables document the full scenario-by-sample-size patterns, including the reference Scenario~1 and the concordant-improvement Scenario~4.
+The supplementary null-calibration display in Figure~\ref{fig:type1Curves} shows that all four procedures remain close to the nominal 5\% level in the null settings we considered. The long supplementary tables document the full scenario-by-sample-size patterns underlying Figure~\ref{fig:powerCurves}.
 
 \section{Empirical illustration}\label{sec:application}
 
@@ -332,16 +332,9 @@ The six scenario families were as follows. Scenario~1 used $\pi_0 = \pi_1 = 0.85
 
 For each cell, the driver called \texttt{set.seed(20260416 + cell\_id - 1)} before generating the 10,000 replicates, where \texttt{cell\_id} increases first over scenarios, then over effect levels, and then over sample sizes. Each replicate was analyzed by four methods applied to the combined outcome data frame produced by \texttt{simulateTruncatedData()}: \texttt{wilcox.test(Y \textasciitilde{} R, exact = FALSE)} for the Wilcoxon rank-sum test, \texttt{t.test(Y \textasciitilde{} R)} for Welch's two-sample $t$-test, \texttt{truncComp(Y \textasciitilde{} R, atom = 0, method = "LRT")} for the parametric likelihood-ratio test, and \texttt{truncComp(Y \textasciitilde{} R, atom = 0, method = "SPLRT")} for the semi-parametric likelihood-ratio test. In the package implementation, the parametric test combines a logistic likelihood-ratio comparison for $A$ with a Gaussian likelihood-ratio comparison for $Y$ among observations with $A = 1$, whereas the semi-parametric test combines the same logistic component with an empirical-likelihood test for the survivor mean difference. Both proposed procedures report a two-degree-of-freedom $\chi^2$-calibrated joint p-value.
 
-Within each cell, rejection rates were computed as the proportion of successful replicates with p-value below $0.05$ for each method, and the Monte Carlo standard error was computed from that rejection proportion using the number of successful replicates for the given method. If a method call errored or returned a non-finite p-value, that replicate was counted as a failure for that method. The aggregated results object stores method-specific failure rates and runtimes, and the supplementary tables report the largest failure rate across the four methods in each cell. For the manuscript displays, Figure~\ref{fig:powerCurves} uses the strongest non-null effect level ($h = 3$) for Scenarios~2, 3, 5, and 6; Figure~\ref{fig:powerEffectCurves} uses all four effect levels at $n = 250$ per group for those same scenarios; Figure~\ref{fig:suppPowerCurves} uses $h = 3$ for Scenarios~1 and~4; and Figure~\ref{fig:type1Curves} uses the null cells with $h = 0$ across all six scenarios. The six long supplementary tables list the complete power results for all $240$ cells together with the expected combined-outcome contrast $E(\widetilde{Y} \mid R = 1) - E(\widetilde{Y} \mid R = 0)$ used in the code-generated summaries.
+Within each cell, rejection rates were computed as the proportion of successful replicates with p-value below $0.05$ for each method, and the Monte Carlo standard error was computed from that rejection proportion using the number of successful replicates for the given method. If a method call errored or returned a non-finite p-value, that replicate was counted as a failure for that method. The aggregated results object stores method-specific failure rates and runtimes, and the supplementary tables report the largest failure rate across the four methods in each cell. For the manuscript displays, Figure~\ref{fig:powerCurves} uses the strongest non-null effect level ($h = 3$) across all six scenarios; Figure~\ref{fig:powerEffectCurves} uses all four effect levels at $n = 250$ per group across all six scenarios; and Figure~\ref{fig:type1Curves} uses the null cells with $h = 0$ across all six scenarios. The six long supplementary tables list the complete power results for all $240$ cells together with the expected combined-outcome contrast $E(\widetilde{Y} \mid R = 1) - E(\widetilde{Y} \mid R = 0)$ used in the code-generated summaries.
 
-Figure~\ref{fig:suppPowerCurves} shows the sample-size power curves for the remaining two scenarios from the main design, and Figure~\ref{fig:type1Curves} summarizes the $h = 0$ null-calibration results across all six scenarios.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.84\textwidth]{supplementary-power-curves.pdf}
-\caption{Estimated power as a function of sample size at the strongest non-null level for Scenarios~1 and~4.}
-\label{fig:suppPowerCurves}
-\end{figure}
+Figure~\ref{fig:type1Curves} summarizes the $h = 0$ null-calibration results across all six scenarios.
 
 \begin{figure}[htbp]
 \centering

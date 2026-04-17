@@ -68,3 +68,18 @@ The Slurm wrapper writes:
 Once the array finishes, the dependent collector job aggregates all available
 cell files. If the full design is complete, it also refreshes
 `manuscript/build`.
+
+## Rebuilding manuscript assets from copied raw outputs
+
+If the raw per-cell `.rds` outputs were produced on another machine, copy them
+into `simulation-study/results/trunccomp2-study/cells/` in this repository and
+run:
+
+```sh
+Rscript simulation-study/scripts/collect-simulation-study-results.R
+```
+
+The collector will infer the study configuration from the copied cell files if
+`config.rds` is not present, write the aggregated CSV/RDS outputs under
+`simulation-study/results/trunccomp2-study/`, and refresh the manuscript-facing
+figures and tables under `manuscript/build/`.

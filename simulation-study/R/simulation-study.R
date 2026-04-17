@@ -26,6 +26,15 @@ simulation_study_slurm_dir <- function(output_dir) {
   ensure_dir(file.path(output_dir, "slurm"))
 }
 
+simulation_study_existing_cell_paths <- function(output_dir) {
+  cells_dir <- file.path(output_dir, "cells")
+  if (!dir.exists(cells_dir)) {
+    return(character())
+  }
+
+  sort(list.files(cells_dir, pattern = "\\.rds$", full.names = TRUE))
+}
+
 simulation_study_methods <- function() {
   c("wilcoxon", "t_test", "lrt", "splrt")
 }
@@ -519,13 +528,53 @@ simulation_study_run_cell <- function(cell, output_dir) {
   result
 }
 
+simulation_study_infer_config_from_cells <- function(output_dir) {
+  cell_paths <- simulation_study_existing_cell_paths(output_dir)
+  if (!length(cell_paths)) {
+    stop("No simulation-study cell files were found. Run the simulation driver first.", call. = FALSE)
+  }
+
+  cell_results <- lapply(cell_paths, readRDS)
+  cell_metrics <- do.call(rbind, lapply(cell_results, function(x) x$cell_summary))
+  rownames(cell_metrics) <- NULL
+
+  reps <- unique(cell_metrics$reps)
+  alpha <- unique(cell_metrics$alpha)
+  atom <- unique(cell_metrics$atom)
+  if (length(reps) != 1L || length(alpha) != 1L || length(atom) != 1L) {
+    stop(
+      "Unable to infer a single simulation-study configuration from the available cell files.",
+      call. = FALSE
+    )
+  }
+
+  config <- simulation_study_default_config(
+    reps = as.integer(reps[[1]]),
+    n_seq = sort(unique(as.integer(cell_metrics$n))),
+    effect_levels = sort(unique(as.integer(cell_metrics$h))),
+    alpha = as.numeric(alpha[[1]]),
+    atom = as.numeric(atom[[1]])
+  )
+
+  default_power_n <- simulation_study_default_config()$power_effect_n
+  if (default_power_n %in% config$n_seq) {
+    config$power_effect_n <- as.integer(default_power_n)
+  } else {
+    config$power_effect_n <- as.integer(config$n_seq[[ceiling(length(config$n_seq) / 2)]])
+  }
+
+  config
+}
+
 aggregate_simulation_study_results <- function(output_dir, config = NULL) {
   if (is.null(config)) {
     config_path <- simulation_study_config_path(output_dir)
-    if (!file.exists(config_path)) {
-      stop("No simulation-study config found. Run the simulation driver first.", call. = FALSE)
+    if (file.exists(config_path)) {
+      config <- readRDS(config_path)
+    } else {
+      config <- simulation_study_infer_config_from_cells(output_dir)
+      saveRDS(config, file = config_path)
     }
-    config <- readRDS(config_path)
   }
 
   design <- simulation_study_design(config)
@@ -537,7 +586,10 @@ aggregate_simulation_study_results <- function(output_dir, config = NULL) {
   existing <- file.exists(cell_paths)
 
   if (!any(existing)) {
-    stop("No simulation-study cell files were found. Run the simulation driver first.", call. = FALSE)
+    stop(
+      "No simulation-study cell files were found. Copy the raw cell outputs into simulation-study/results/.../cells/ or run the simulation driver first.",
+      call. = FALSE
+    )
   }
 
   cell_results <- lapply(cell_paths[existing], readRDS)

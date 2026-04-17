@@ -19,13 +19,47 @@ assert_simulation_assets_exist <- function(output_dir) {
     stop(
       paste(
         "Missing prebuilt simulation-study manuscript assets under manuscript/build.",
-        "Run `Rscript simulation-study/scripts/run-simulation-study.R` to generate them."
+        paste(
+          "Copy the raw cell outputs into `simulation-study/results/trunccomp2-study/cells/`",
+          "and run `Rscript simulation-study/scripts/collect-simulation-study-results.R`,",
+          "or run `Rscript simulation-study/scripts/run-simulation-study.R` from scratch."
+        )
       ),
       call. = FALSE
     )
   }
 
   invisible(required_paths)
+}
+
+refresh_simulation_assets_if_available <- function(repo_root) {
+  study_dir <- file.path(repo_root, "simulation-study")
+  output_dir <- file.path(study_dir, "results", "trunccomp2-study")
+  cells_dir <- file.path(output_dir, "cells")
+  results_path <- file.path(output_dir, "simulation-study.rds")
+
+  has_cells <- dir.exists(cells_dir) && length(list.files(cells_dir, pattern = "\\.rds$", full.names = TRUE)) > 0
+  has_results <- file.exists(results_path)
+  if (!(has_cells || has_results)) {
+    return(invisible(FALSE))
+  }
+
+  source(file.path(study_dir, "R", "simulation-study.R"), local = globalenv())
+  source(file.path(study_dir, "R", "manuscript-assets.R"), local = globalenv())
+
+  simulation_results <- if (has_cells) {
+    aggregate_simulation_study_results(output_dir)
+  } else {
+    readRDS(results_path)
+  }
+
+  simulation_study_finalize_results(
+    repo_root = repo_root,
+    output_dir = output_dir,
+    simulation_results = simulation_results
+  )
+
+  invisible(TRUE)
 }
 
 build_manuscript_assets <- function(output_dir, repo_root) {
@@ -35,6 +69,7 @@ build_manuscript_assets <- function(output_dir, repo_root) {
   ensure_dir(file.path(output_dir, "tables"))
 
   load_local_trunccomp(repo_root)
+  refresh_simulation_assets_if_available(repo_root)
 
   example_results <- compute_example_results(repo_root)
   application_results <- compute_application_results(manuscript_dir)

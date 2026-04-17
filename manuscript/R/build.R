@@ -1,65 +1,47 @@
-assert_simulation_assets_exist <- function(output_dir) {
-  required_paths <- c(
-    file.path(output_dir, "figures", "power-curves.pdf"),
-    file.path(output_dir, "figures", "power-effects.pdf"),
-    file.path(output_dir, "figures", "supplementary-power-curves.pdf"),
-    file.path(output_dir, "figures", "type1-curves.pdf"),
-    file.path(output_dir, "tables", "simulation-scenarios.tex"),
-    file.path(output_dir, "tables", "supplementary-power-s1.tex"),
-    file.path(output_dir, "tables", "supplementary-power-s2.tex"),
-    file.path(output_dir, "tables", "supplementary-power-s3.tex"),
-    file.path(output_dir, "tables", "supplementary-power-s4.tex"),
-    file.path(output_dir, "tables", "supplementary-power-s5.tex"),
-    file.path(output_dir, "tables", "supplementary-power-s6.tex"),
-    file.path(output_dir, "tables", "supplementary-type1.tex")
-  )
+simulation_study_manuscript_results_path <- function(repo_root) {
+  file.path(repo_root, "manuscript", "simulation-study-results.rds")
+}
 
-  missing <- required_paths[!file.exists(required_paths)]
-  if (length(missing)) {
+load_manuscript_simulation_results <- function(repo_root) {
+  results_path <- simulation_study_manuscript_results_path(repo_root)
+  if (!file.exists(results_path)) {
     stop(
       paste(
-        "Missing prebuilt simulation-study manuscript assets under manuscript/build.",
+        "Missing manuscript/simulation-study-results.rds.",
         paste(
-          "Copy the raw cell outputs into `simulation-study/results/trunccomp2-study/cells/`",
-          "and run `Rscript simulation-study/scripts/collect-simulation-study-results.R`,",
-          "or run `Rscript simulation-study/scripts/run-simulation-study.R` from scratch."
+          "Run `Rscript simulation-study/scripts/collect-simulation-study-results.R`",
+          "or `Rscript simulation-study/scripts/run-simulation-study.R` on the machine",
+          "with the full raw simulation outputs to publish the manuscript-ready results file."
         )
       ),
       call. = FALSE
     )
   }
 
-  invisible(required_paths)
+  simulation_results <- readRDS(results_path)
+  if (!isTRUE(simulation_results$complete)) {
+    stop(
+      paste(
+        "The published manuscript simulation results are incomplete.",
+        "Regenerate the full study before building manuscript simulation figures and tables."
+      ),
+      call. = FALSE
+    )
+  }
+
+  simulation_results
 }
 
-refresh_simulation_assets_if_available <- function(repo_root) {
+build_simulation_manuscript_assets <- function(repo_root) {
   study_dir <- file.path(repo_root, "simulation-study")
-  output_dir <- file.path(study_dir, "results", "trunccomp2-study")
-  cells_dir <- file.path(output_dir, "cells")
-  results_path <- file.path(output_dir, "simulation-study.rds")
-
-  has_cells <- dir.exists(cells_dir) && length(list.files(cells_dir, pattern = "\\.rds$", full.names = TRUE)) > 0
-  has_results <- file.exists(results_path)
-  if (!(has_cells || has_results)) {
-    return(invisible(FALSE))
-  }
 
   source(file.path(study_dir, "R", "simulation-study.R"), local = globalenv())
   source(file.path(study_dir, "R", "manuscript-assets.R"), local = globalenv())
 
-  simulation_results <- if (has_cells) {
-    aggregate_simulation_study_results(output_dir)
-  } else {
-    readRDS(results_path)
-  }
+  simulation_results <- load_manuscript_simulation_results(repo_root)
+  simulation_study_build_manuscript_assets(repo_root, simulation_results)
 
-  simulation_study_finalize_results(
-    repo_root = repo_root,
-    output_dir = output_dir,
-    simulation_results = simulation_results
-  )
-
-  invisible(TRUE)
+  invisible(simulation_results)
 }
 
 build_manuscript_assets <- function(output_dir, repo_root) {
@@ -69,11 +51,10 @@ build_manuscript_assets <- function(output_dir, repo_root) {
   ensure_dir(file.path(output_dir, "tables"))
 
   load_local_trunccomp(repo_root)
-  refresh_simulation_assets_if_available(repo_root)
+  simulation_results <- build_simulation_manuscript_assets(repo_root)
 
   example_results <- compute_example_results(repo_root)
   application_results <- compute_application_results(manuscript_dir)
-  assert_simulation_assets_exist(output_dir)
 
   build_example_histogram(example_results, file.path(figures_dir, "example-histogram.pdf"))
   build_example_surface_figure(example_results, file.path(figures_dir, "example-simultaneous-confidence.pdf"))
@@ -106,6 +87,7 @@ build_manuscript_assets <- function(output_dir, repo_root) {
   unlink(file.path(manuscript_dir, "Rplots.pdf"), force = TRUE)
 
   invisible(list(
+    simulation_results = simulation_results,
     example_results = example_results,
     application_results = application_results
   ))

@@ -10,6 +10,10 @@ simulation_study_results_path <- function(repo_root) {
   file.path(simulation_study_output_dir(repo_root), "simulation-study.rds")
 }
 
+simulation_study_manuscript_results_path <- function(repo_root) {
+  file.path(repo_root, "manuscript", "simulation-study-results.rds")
+}
+
 simulation_study_config_path <- function(output_dir) {
   file.path(output_dir, "config.rds")
 }
@@ -643,6 +647,11 @@ aggregate_simulation_study_results <- function(output_dir, config = NULL) {
   results
 }
 
+simulation_study_publish_manuscript_results <- function(repo_root, simulation_results) {
+  path <- simulation_study_manuscript_results_path(repo_root)
+  .simulation_study_write_rds_atomic(simulation_results, path)
+}
+
 run_simulation_study <- function(repo_root,
                                  output_dir,
                                  reps = 10000L,
@@ -729,14 +738,20 @@ simulation_study_null_flags <- function(simulation_results, lower = 0.04, upper 
 simulation_study_finalize_results <- function(repo_root,
                                               output_dir,
                                               simulation_results,
-                                              refresh_manuscript_assets = TRUE) {
-  if (refresh_manuscript_assets && isTRUE(simulation_results$complete)) {
-    simulation_study_build_manuscript_assets(repo_root, simulation_results)
-    message("Simulation-study manuscript assets written to manuscript/build.")
-  } else if (refresh_manuscript_assets) {
+                                              publish_manuscript_results = TRUE) {
+  if (publish_manuscript_results && isTRUE(simulation_results$complete)) {
+    manuscript_results_path <- simulation_study_publish_manuscript_results(repo_root, simulation_results)
+    message(sprintf(
+      "Simulation-study manuscript results written to %s",
+      manuscript_results_path
+    ))
+  } else if (publish_manuscript_results) {
     message(
       sprintf(
-        "Simulation study is incomplete (%d/%d cells), so manuscript assets were not refreshed.",
+        paste(
+          "Simulation study is incomplete (%d/%d cells),",
+          "so manuscript simulation-study results were not published."
+        ),
         simulation_results$completed_cells,
         simulation_results$expected_cells
       )

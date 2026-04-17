@@ -312,11 +312,11 @@ test_that("public LRT path returns the expected object and keeps init compatible
   reference <- runtime_model_reference(case)
   custom_init <- list(alpha = 0, alphaDelta = 0, mu = 0, muDelta = 0, sigma = 1)
 
-  fit <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT", init = custom_init)
+  fit <- trunc_comp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "lrt", init = custom_init)
 
   expect_s3_class(fit, "trunc_comp_fit")
   expect_true(fit$success)
-  expect_equal(fit$method, "Parametric Likelihood Ratio Test")
+  expect_equal(fit$method, "lrt")
   expect_equal(fit$atom, 0)
   expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
   expect_equal(fit$init, custom_init)
@@ -327,7 +327,7 @@ test_that("public LRT path returns the expected object and keeps init compatible
   expect_equal(fit$alpha_delta_ci, reference$alpha_delta_ci, tolerance = 1e-10)
 
   expect_match(paste(capture.output(summary(fit)), collapse = "\n"), "Joint test statistic")
-  expect_match(paste(capture.output(print(fit)), collapse = "\n"), "Parametric Likelihood Ratio Test")
+  expect_match(paste(capture.output(print(fit)), collapse = "\n"), "Parametric likelihood-ratio test")
 
   capture.output(ci <- confint(fit))
   expect_equal(unname(ci["mu_delta", ]), fit$mu_delta_ci)
@@ -346,7 +346,7 @@ test_that("public LRT path returns the expected object and keeps init compatible
 
 test_that("parametric simultaneous confidence helpers work for unadjusted fits", {
   case <- interior_lrt_case(20260601, 16, 2.1, 2.8, 0.75, 0.45, 0.70)
-  fit <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT")
+  fit <- trunc_comp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "lrt")
 
   expect_true(fit$success)
 
@@ -355,7 +355,7 @@ test_that("parametric simultaneous confidence helpers work for unadjusted fits",
   expect_equal(length(joint$mu_delta), 5)
   expect_equal(length(joint$log_or_delta), 5)
 
-  direct_joint <- joint_contrast_ci(fit, plot = FALSE, offset = 1, resolution = 5)
+  direct_joint <- joint_contrast_surface(fit, plot = FALSE, offset = 1, resolution = 5)
   expect_equal(direct_joint$surface, joint$surface, tolerance = 1e-10)
 
   parametric_reference <- TruncComp2:::parametricJointReference(fit$data)
@@ -375,11 +375,11 @@ test_that("parametric simultaneous confidence helpers work for unadjusted fits",
 
 test_that("parametric simultaneous helpers derive default offsets from fitted data", {
   case <- interior_lrt_case(20260602, 18, 2.0, 2.7, 0.8, 0.40, 0.75)
-  fit <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT")
+  fit <- trunc_comp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "lrt")
   expect_true(fit$success)
 
   offsets <- TruncComp2:::jointContrastDefaultOffsets(fit)
-  joint <- joint_contrast_ci(fit, plot = FALSE, resolution = 5)
+  joint <- joint_contrast_surface(fit, plot = FALSE, resolution = 5)
 
   expect_equal(joint$mu_delta,
                seq(fit$mu_delta_ci[1] - offsets[1],
@@ -402,7 +402,7 @@ test_that("parametric simultaneous surface matches direct constrained model fits
   )
 
   for(case in cases) {
-    fit <- truncComp(case$data$Y, case$data$A, case$data$R, method = "LRT")
+    fit <- trunc_comp(case$data$Y, case$data$A, case$data$R, method = "lrt")
     expect_true(fit$success)
 
     parametric_reference <- TruncComp2:::parametricJointReference(case$data)
@@ -423,11 +423,11 @@ test_that("parametric simultaneous surface matches direct constrained model fits
 
 test_that("adjusted formula interface stores adjustment metadata and conditional outputs", {
   case <- adjusted_lrt_case(20260521, 18)
-  fit <- truncComp(Y ~ R,
-                   atom = 0,
-                   data = model_data_for_formula(case, adjust = ~ L1 + L2),
-                   method = "LRT",
-                   adjust = ~ L1 + L2)
+  fit <- trunc_comp(Y ~ R,
+                    atom = 0,
+                    data = model_data_for_formula(case, adjust = ~ L1 + L2),
+                    method = "lrt",
+                    adjust = ~ L1 + L2)
 
   expect_s3_class(fit, "trunc_comp_fit")
   expect_true(fit$success)
@@ -445,11 +445,11 @@ test_that("adjusted formula interface stores adjustment metadata and conditional
   expect_error(confint(fit, parameter = "joint"), "adjusted fits")
   expect_error(confint(fit, parameter = "delta", method = "projected"), "adjusted fits")
   expect_error(confint(fit, parameter = "delta", method = "profile"), "adjusted fits")
-  expect_error(joint_contrast_ci(fit, plot = FALSE), "adjusted fits")
+  expect_error(joint_contrast_surface(fit, plot = FALSE), "adjusted fits")
 })
 
 test_that("packaged adjusted example illustrates attenuation after covariate adjustment", {
-  example_data <- load_trunc_comp2_adjusted_example()
+  example_data <- trunc_comp_adjusted_example
 
   expect_s3_class(example_data, "data.frame")
   expect_equal(names(example_data), c("R", "L", "Y"))
@@ -466,29 +466,29 @@ test_that("packaged adjusted example illustrates attenuation after covariate adj
   expect_equal(unname(as.integer(table(example_data$L, example_data$R)[, "1"])),
                c(3, 8, 14))
 
-  fit_unadjusted <- truncComp(Y ~ R,
-                              atom = 0,
-                              data = example_data[, c("Y", "R")],
-                              method = "LRT")
-  fit_adjusted <- truncComp(Y ~ R,
-                            atom = 0,
-                            data = example_data,
-                            method = "LRT",
-                            adjust = ~ L)
+  fit_unadjusted <- trunc_comp(Y ~ R,
+                               atom = 0,
+                               data = example_data[, c("Y", "R")],
+                               method = "lrt")
+  fit_adjusted <- trunc_comp(Y ~ R,
+                             atom = 0,
+                             data = example_data,
+                             method = "lrt",
+                             adjust = ~ L)
 
   expect_true(fit_unadjusted$success)
   expect_true(fit_adjusted$success)
   expect_equal(fit_adjusted$adjust, "L")
 
-  expect_lt(fit_unadjusted$p, 0.05)
-  expect_gt(fit_adjusted$p, 0.05)
+  expect_lt(fit_unadjusted$p.value, 0.05)
+  expect_gt(fit_adjusted$p.value, 0.05)
   expect_lt(fit_adjusted$statistic, fit_unadjusted$statistic)
   expect_lt(abs(fit_adjusted$mu_delta), abs(fit_unadjusted$mu_delta))
   expect_lt(abs(log(as.numeric(fit_adjusted$alpha_delta))),
             abs(log(as.numeric(fit_unadjusted$alpha_delta))))
 
-  expect_equal(fit_unadjusted$p, 0.04787936, tolerance = 1e-4)
-  expect_equal(fit_adjusted$p, 0.14451384, tolerance = 1e-4)
+  expect_equal(fit_unadjusted$p.value, 0.04787936, tolerance = 1e-4)
+  expect_equal(fit_adjusted$p.value, 0.14451384, tolerance = 1e-4)
   expect_equal(fit_unadjusted$statistic, 6.078142, tolerance = 1e-4)
   expect_equal(fit_adjusted$statistic, 3.86876, tolerance = 1e-4)
   expect_equal(fit_unadjusted$mu_delta, 0.6720578, tolerance = 1e-4)
@@ -500,12 +500,12 @@ test_that("packaged adjusted example illustrates attenuation after covariate adj
 test_that("adjust equals ~1 reproduces the unadjusted parametric fit", {
   case <- adjusted_lrt_case(20260522, 18)
 
-  unadjusted <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT")
-  intercept_only <- truncComp(Y ~ R,
-                              atom = 0,
-                              data = case[, c("Y", "R")],
-                              method = "LRT",
-                              adjust = ~ 1)
+  unadjusted <- trunc_comp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "lrt")
+  intercept_only <- trunc_comp(Y ~ R,
+                               atom = 0,
+                               data = case[, c("Y", "R")],
+                               method = "lrt",
+                               adjust = ~ 1)
 
   expect_true(unadjusted$success)
   expect_true(intercept_only$success)
@@ -520,21 +520,21 @@ test_that("adjust equals ~1 reproduces the unadjusted parametric fit", {
 test_that("adjusted default interface accepts data.frame and matrix covariates", {
   case <- adjusted_lrt_case(20260523, 18)
 
-  fit_df <- truncComp(case$Y,
-                              case$A,
-                              case$R,
-                              method = "LRT",
-                              adjust = case["L1"])
-  fit_matrix <- truncComp(case$Y,
-                                  case$A,
-                                  case$R,
-                                  method = "LRT",
-                                  adjust = as.matrix(case["L1"]))
-  fit_formula <- truncComp(Y ~ R,
-                           atom = 0,
-                           data = model_data_for_formula(case, adjust = ~ L1),
-                           method = "LRT",
-                           adjust = ~ L1)
+  fit_df <- trunc_comp(case$Y,
+                       case$A,
+                       case$R,
+                       method = "lrt",
+                       adjust = case["L1"])
+  fit_matrix <- trunc_comp(case$Y,
+                           case$A,
+                           case$R,
+                           method = "lrt",
+                           adjust = as.matrix(case["L1"]))
+  fit_formula <- trunc_comp(Y ~ R,
+                            atom = 0,
+                            data = model_data_for_formula(case, adjust = ~ L1),
+                            method = "lrt",
+                            adjust = ~ L1)
 
   expect_true(fit_df$success)
   expect_true(fit_matrix$success)
@@ -561,12 +561,12 @@ test_that("covariate adjustment changes the conditional fit under strong confoun
   expect_gte(sum(a[r == 1]), 3)
   expect_false(all(a == 1))
 
-  unadjusted <- truncComp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "LRT")
-  adjusted <- truncComp(Y ~ R,
-                        atom = 0,
-                        data = case[, c("Y", "R", "L1")],
-                        method = "LRT",
-                        adjust = ~ L1)
+  unadjusted <- trunc_comp(Y ~ R, atom = 0, data = case[, c("Y", "R")], method = "lrt")
+  adjusted <- trunc_comp(Y ~ R,
+                         atom = 0,
+                         data = case[, c("Y", "R", "L1")],
+                         method = "lrt",
+                         adjust = ~ L1)
 
   expect_true(unadjusted$success)
   expect_true(adjusted$success)
@@ -579,38 +579,38 @@ test_that("adjusted interface validates formulas and default adjustment shapes",
   formula_data <- model_data_for_formula(case, adjust = ~ L1 + L2)
 
   expect_error(
-    truncComp(Y ~ R, atom = 0, data = formula_data, method = "LRT", adjust = Y ~ L1),
+    trunc_comp(Y ~ R, atom = 0, data = formula_data, method = "lrt", adjust = Y ~ L1),
     "one-sided formula"
   )
   expect_error(
-    truncComp(Y ~ R, atom = 0, data = formula_data, method = "LRT", adjust = ~ R + L1),
+    trunc_comp(Y ~ R, atom = 0, data = formula_data, method = "lrt", adjust = ~ R + L1),
     "must not include the outcome or treatment variable"
   )
   expect_error(
-    truncComp(Y ~ R, atom = 0, data = formula_data, method = "LRT", adjust = ~ L1 * L2),
+    trunc_comp(Y ~ R, atom = 0, data = formula_data, method = "lrt", adjust = ~ L1 * L2),
     "additive"
   )
   expect_error(
-    truncComp(Y ~ R, atom = 0, data = formula_data, method = "SPLRT", adjust = ~ L1:L2),
+    trunc_comp(Y ~ R, atom = 0, data = formula_data, method = "splrt", adjust = ~ L1:L2),
     "additive"
   )
 
   missing_outcome <- formula_data
   missing_outcome$Y[1] <- NA_real_
   expect_error(
-    truncComp(Y ~ R, atom = 0, data = missing_outcome, method = "LRT", adjust = ~ L1 + L2),
+    trunc_comp(Y ~ R, atom = 0, data = missing_outcome, method = "lrt", adjust = ~ L1 + L2),
     "missing values"
   )
 
   missing_covariate <- formula_data
   missing_covariate$L1[1] <- NA_real_
   expect_error(
-    truncComp(Y ~ R, atom = 0, data = missing_covariate, method = "LRT", adjust = ~ L1 + L2),
+    trunc_comp(Y ~ R, atom = 0, data = missing_covariate, method = "lrt", adjust = ~ L1 + L2),
     "missing values"
   )
 
   expect_error(
-    truncComp(case$Y, case$A, case$R, method = "LRT", adjust = case["L1"][1:5, , drop = FALSE]),
+    trunc_comp(case$Y, case$A, case$R, method = "lrt", adjust = case["L1"][1:5, , drop = FALSE]),
     "same number of rows"
   )
 })
@@ -638,20 +638,20 @@ test_that("observed-only factor levels are dropped before adjusted observed-outc
 test_that("adjusted fits fail cleanly when treatment is aliased or the logistic model separates", {
   case <- adjusted_lrt_case(20260526, 18)
 
-  aliased_fit <- truncComp(case$Y,
-                                   case$A,
-                                   case$R,
-                                   method = "LRT",
-                                   adjust = data.frame(Rcopy = case$R))
+  aliased_fit <- trunc_comp(case$Y,
+                            case$A,
+                            case$R,
+                            method = "lrt",
+                            adjust = data.frame(Rcopy = case$R))
   expect_s3_class(aliased_fit, "trunc_comp_fit")
   expect_false(aliased_fit$success)
   expect_match(aliased_fit$error, "not estimable")
 
-  separation_fit <- truncComp(case$Y,
-                                      case$A,
-                                      case$R,
-                                      method = "LRT",
-                                      adjust = data.frame(Lsep = case$A))
+  separation_fit <- trunc_comp(case$Y,
+                               case$A,
+                               case$R,
+                               method = "lrt",
+                               adjust = data.frame(Lsep = case$A))
   expect_s3_class(separation_fit, "trunc_comp_fit")
   expect_false(separation_fit$success)
   expect_match(separation_fit$error, "not estimable")
@@ -663,7 +663,7 @@ test_that("LRT boundary cases keep the statistic even when Wald intervals are un
     A = c(1, 1, 0, 1, 1, 0),
     R = c(0, 0, 0, 1, 1, 1)
   )
-  same_fit <- truncComp(same_constants$Y, same_constants$A, same_constants$R, method = "LRT")
+  same_fit <- trunc_comp(same_constants$Y, same_constants$A, same_constants$R, method = "lrt")
   expect_true(same_fit$success)
   expect_equal(same_fit$mu_delta, 0)
   expect_equal(same_fit$alpha_delta, 1)
@@ -675,14 +675,14 @@ test_that("LRT boundary cases keep the statistic even when Wald intervals are un
     A = c(1, 1, 0, 1, 1, 0),
     R = c(0, 0, 0, 1, 1, 1)
   )
-  separated_fit <- truncComp(separated_constants$Y,
-                                     separated_constants$A,
-                                     separated_constants$R,
-                                     method = "LRT")
+  separated_fit <- trunc_comp(separated_constants$Y,
+                              separated_constants$A,
+                              separated_constants$R,
+                              method = "lrt")
   expect_true(separated_fit$success)
   expect_equal(separated_fit$mu_delta, 1)
   expect_true(is.infinite(separated_fit$statistic))
-  expect_equal(separated_fit$p, 0)
+  expect_equal(separated_fit$p.value, 0)
   expect_true(all(is.na(separated_fit$mu_delta_ci)))
 
   all_observed_arm <- data.frame(
@@ -690,22 +690,22 @@ test_that("LRT boundary cases keep the statistic even when Wald intervals are un
     A = c(1, 1, 1, 1, 0, 1, 1, 1),
     R = c(0, 0, 0, 0, 1, 1, 1, 1)
   )
-  boundary_fit <- truncComp(all_observed_arm$Y,
-                                    all_observed_arm$A,
-                                    all_observed_arm$R,
-                                    method = "LRT")
+  boundary_fit <- trunc_comp(all_observed_arm$Y,
+                             all_observed_arm$A,
+                             all_observed_arm$R,
+                             method = "lrt")
   expect_true(boundary_fit$success)
   expect_equal(boundary_fit$alpha_delta, 0)
   expect_true(all(is.na(boundary_fit$alpha_delta_ci)))
   expect_true(is.finite(boundary_fit$statistic) || is.infinite(boundary_fit$statistic))
 })
 
-test_that("LRT still returns a failed TruncComp2 object on invalid data", {
+test_that("LRT still returns a failed trunc_comp_fit object on invalid data", {
   expect_warning(
-    fit <- truncComp(c(0, 1, 0, 2),
-                             c(0, 1, 0, 1),
-                             c(0, 0, 1, 1),
-                             method = "LRT"),
+    fit <- trunc_comp(c(0, 1, 0, 2),
+                      c(0, 1, 0, 1),
+                      c(0, 0, 1, 1),
+                      method = "lrt"),
     "data error"
   )
 

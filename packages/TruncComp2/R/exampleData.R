@@ -1,58 +1,58 @@
-.truncComp2ExtdataPath <- function(filename) {
-  ns_path <- getNamespaceInfo(asNamespace("TruncComp2"), "path")
-  candidates <- c(
-    file.path(ns_path, "extdata", filename),
-    file.path(ns_path, "inst", "extdata", filename)
-  )
+.load_package_dataset <- function(name) {
+  dataset_env <- new.env(parent = emptyenv())
+  utils::data(list = name, package = "TruncComp2", envir = dataset_env)
 
-  path <- candidates[file.exists(candidates)][1]
-  if(length(path) == 0 || !nzchar(path)) {
-    stop("Could not locate ", filename, ".")
+  if(!exists(name, envir = dataset_env, inherits = FALSE)) {
+    stop("Could not load dataset ", name, ".", call. = FALSE)
   }
 
-  path
+  get(name, envir = dataset_env, inherits = FALSE)
 }
 
-#' Load the packaged TruncComp2 example data
+#' Deprecated compatibility wrapper for `trunc_comp_example`
 #'
-#' Loads the fixed example data used in the package documentation, tests, and
-#' examples.
+#' Returns the packaged example dataset formerly exposed through a dedicated
+#' loader function. Use `data("trunc_comp_example", package = "TruncComp2")`
+#' instead.
 #'
-#' @return A data frame with 50 observations and 2 variables: `R`, the binary
-#'   treatment indicator coded `0` or `1`, and `Y`, the combined outcome where
-#'   the atom value `0` denotes an unobserved or undefined continuous outcome.
-#' @details
-#' The example is stored as an `.rds` file under
-#' `inst/extdata/TruncComp2Example.rds`. This helper provides a stable public
-#' loading mechanism without relying on `data()`.
+#' @return A data frame identical to the `trunc_comp_example` dataset.
 #' @examples
 #' d <- load_trunc_comp2_example()
 #' head(d)
 #' @export
 load_trunc_comp2_example <- function() {
-  readRDS(.truncComp2ExtdataPath("TruncComp2Example.rds"))
+  .Deprecated(msg = paste(
+    "`load_trunc_comp2_example()` is deprecated;",
+    "use `data(\"trunc_comp_example\", package = \"TruncComp2\")` instead."
+  ))
+  .load_package_dataset("trunc_comp_example")
 }
 
-#' Load the packaged adjusted TruncComp2 example data
+#' Deprecated compatibility wrapper for `trunc_comp_adjusted_example`
 #'
-#' Loads the fixed example data used to illustrate additive covariate adjustment
-#' in both the parametric and semi-parametric procedures.
+#' Returns the packaged adjusted example dataset formerly exposed through a
+#' dedicated loader function. Use
+#' `data("trunc_comp_adjusted_example", package = "TruncComp2")` instead.
 #'
-#' @return A data frame with 50 observations and 3 variables: `R`, the binary
-#'   treatment indicator; `L`, a three-level categorical baseline covariate with
-#'   levels `low`, `mid`, and `high`; and `Y`, the combined outcome where the
-#'   atom value `0` denotes an unobserved or undefined continuous outcome.
-#' @details
-#' The example is stored as an `.rds` file under
-#' `inst/extdata/TruncComp2AdjustedExample.rds`. This helper provides a stable
-#' public loading mechanism without relying on `data()`.
+#' @return A data frame identical to the `trunc_comp_adjusted_example` dataset.
 #' @examples
 #' d <- load_trunc_comp2_adjusted_example()
 #' head(d)
 #' @export
 load_trunc_comp2_adjusted_example <- function() {
-  readRDS(.truncComp2ExtdataPath("TruncComp2AdjustedExample.rds"))
+  .Deprecated(msg = paste(
+    "`load_trunc_comp2_adjusted_example()` is deprecated;",
+    "use `data(\"trunc_comp_adjusted_example\", package = \"TruncComp2\")` instead."
+  ))
+  .load_package_dataset("trunc_comp_adjusted_example")
 }
 
-loadTruncComp2Example <- load_trunc_comp2_example
-loadTruncComp2AdjustedExample <- load_trunc_comp2_adjusted_example
+loadTruncComp2Example <- function() {
+  .Deprecated("load_trunc_comp2_example")
+  load_trunc_comp2_example()
+}
+
+loadTruncComp2AdjustedExample <- function() {
+  .Deprecated("load_trunc_comp2_adjusted_example")
+  load_trunc_comp2_adjusted_example()
+}

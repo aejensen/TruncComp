@@ -18,7 +18,7 @@ delta_validation_data <- function() {
 
 validate_delta_optimizer <- function(method, tolerance = 0.2) {
   data <- delta_validation_data()
-  fit <- truncComp(Y ~ R, atom = 0, data = data, method = method)
+  fit <- trunc_comp(Y ~ R, atom = 0, data = data, method = method)
   if(!isTRUE(fit$success)) {
     stop(sprintf("%s fit failed unexpectedly during delta optimizer validation.", method))
   }
@@ -75,7 +75,7 @@ validate_delta_optimizer <- function(method, tolerance = 0.2) {
 }
 
 cat("Validating optimizer-backed Delta intervals against grid references\n")
-for(method in c("LRT", "SPLRT")) {
+for(method in c("lrt", "splrt")) {
   validate_delta_optimizer(method)
 }
 cat("Delta optimizer validation complete\n")

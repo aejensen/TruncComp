@@ -10,7 +10,7 @@
   method = "welch",
   mu_delta = NULL,
   log_or_delta = NULL,
-  conf_level = object$conf_level,
+  conf.level = object$conf.level,
   plot = TRUE,
   offset = NULL,
   resolution = 35,
@@ -19,7 +19,7 @@
 )
 }
 \arguments{
-\item{object}{A \code{"trunc_comp_fit"} object returned by \code{\link[=truncComp]{truncComp()}}.}
+\item{object}{A \code{"trunc_comp_fit"} object returned by \code{\link[=trunc_comp]{trunc_comp()}}.}
 
 \item{parameter}{Parameter selection for the requested interval. Use
 \code{"mu_delta"} and/or \code{"alpha_delta"} for the stored component intervals,
@@ -35,7 +35,7 @@ two-parameter likelihood-ratio surface.}
 \item{log_or_delta}{Optional grid values for the log-odds-ratio axis when
 \code{parameter = "joint"}.}
 
-\item{conf_level}{Confidence level for the interval or contour threshold.}
+\item{conf.level}{Confidence level for the interval or contour threshold.}
 
 \item{plot}{Logical; if \code{TRUE}, plot the joint confidence surface.}
 
@@ -65,12 +65,12 @@ and on-demand \code{delta} intervals for a fitted \code{"trunc_comp_fit"} object
 \details{
 Adjusted fits support only the stored component confidence intervals.
 Joint regions and \code{delta} intervals are available only for successful
-unadjusted \code{LRT} and \code{SPLRT} fits.
+unadjusted \code{lrt} and \code{splrt} fits.
 }
 \examples{
 library(TruncComp2)
-d <- load_trunc_comp2_example()
-fit <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+data("trunc_comp_example", package = "TruncComp2")
+fit <- trunc_comp(Y ~ R, atom = 0, data = trunc_comp_example, method = "lrt")
 confint(fit)
 confint(fit, parameter = "joint", plot = FALSE, resolution = 10)
 confint(fit, parameter = "delta", method = "profile")

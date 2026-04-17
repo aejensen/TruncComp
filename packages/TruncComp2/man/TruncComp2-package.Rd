@@ -8,14 +8,14 @@
 \description{
 \code{TruncComp2} provides a common user interface for two estimation paths:
 \itemize{
-\item \code{method = "LRT"} fits the fully parametric likelihood-ratio procedure.
-\item \code{method = "SPLRT"} fits the semi-parametric likelihood-ratio procedure with
+\item \code{method = "lrt"} fits the fully parametric likelihood-ratio procedure.
+\item \code{method = "splrt"} fits the semi-parametric likelihood-ratio procedure with
 an internal empirical-likelihood engine for the observed-outcome component.
 }
 
-The main entry point is \code{\link[=truncComp]{truncComp()}}, which returns an object of class
+The main entry point is \code{\link[=trunc_comp]{trunc_comp()}}, which returns an object of class
 \code{"trunc_comp_fit"} with summaries, confidence intervals, simultaneous confidence
-regions for unadjusted fits, and packaged example data helpers.
+regions for unadjusted fits, and packaged example datasets.
 }
 \details{
 Implements parametric and semi-parametric likelihood-ratio procedures for
@@ -28,12 +28,12 @@ supplied through \code{adjust}.
 
 Exported user-facing helpers include:
 \itemize{
-\item \code{\link[=truncComp]{truncComp()}} for fitting the model.
+\item \code{\link[=trunc_comp]{trunc_comp()}} for fitting the model.
 \item \code{\link[=summary.trunc_comp_fit]{summary.trunc_comp_fit()}} and \code{\link[=print.trunc_comp_fit]{print.trunc_comp_fit()}} for displaying results.
-\item \code{\link[=confint.trunc_comp_fit]{confint.trunc_comp_fit()}} and \code{\link[=joint_contrast_ci]{joint_contrast_ci()}} for marginal and joint
+\item \code{\link[=confint.trunc_comp_fit]{confint.trunc_comp_fit()}} and \code{\link[=joint_contrast_surface]{joint_contrast_surface()}} for marginal and joint
 inference.
-\item \code{\link[=simulate_truncated_data]{simulate_truncated_data()}}, \code{\link[=load_trunc_comp2_example]{load_trunc_comp2_example()}}, and
-\code{\link[=load_trunc_comp2_adjusted_example]{load_trunc_comp2_adjusted_example()}} for reproducible examples.
+\item \code{\link[=simulate_truncated_data]{simulate_truncated_data()}}, \code{trunc_comp_example}, and
+\code{trunc_comp_adjusted_example} for reproducible examples.
 }
 
 For successful unadjusted fits the package stores the derived combined-outcome

@@ -27,11 +27,11 @@ generate_case <- function(seed, n = 20, treatment_effect = 0, logit_treatment = 
 run_scenario <- function(label, seeds, treatment_effect, logit_treatment) {
   fits <- lapply(seeds, function(seed) {
     data <- generate_case(seed, treatment_effect = treatment_effect, logit_treatment = logit_treatment)
-    truncComp(Y ~ R, atom = 0, data = data, method = "SPLRT", adjust = ~ L1 + L2)
+    trunc_comp(Y ~ R, atom = 0, data = data, method = "splrt", adjust = ~ L1 + L2)
   })
 
   successful <- vapply(fits, function(fit) isTRUE(fit$success), logical(1))
-  p_values <- vapply(fits[successful], function(fit) fit$p, numeric(1))
+  p_values <- vapply(fits[successful], function(fit) fit$p.value, numeric(1))
 
   cat("\nScenario:", label, "\n")
   cat("Successful fits:", sum(successful), "of", length(fits), "\n")

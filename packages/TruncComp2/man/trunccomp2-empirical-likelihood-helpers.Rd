@@ -304,6 +304,6 @@ single adjusted empirical-likelihood API to the \code{SPLRT} wrapper.
 }
 }
 \seealso{
-\code{\link[=SPLRT]{SPLRT()}}, \code{\link[=adjusted_SPLRT]{adjusted_SPLRT()}}, \code{\link[=jointContrastCI]{jointContrastCI()}}
+\code{\link[=SPLRT]{SPLRT()}}, \code{\link[=adjusted_SPLRT]{adjusted_SPLRT()}}, \code{\link[=joint_contrast_surface]{joint_contrast_surface()}}
 }
 \keyword{internal}

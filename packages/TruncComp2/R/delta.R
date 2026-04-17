@@ -55,11 +55,11 @@ delta_unadjusted_point_estimate <- function(object, tol = 1e-8) {
   pi0 <- mean(object$data$A[object$data$R == 0])
   pi1 <- mean(object$data$A[object$data$R == 1])
 
-  if(identical(object$method, "Semi-empirical Likelihood Ratio Test")) {
-    theta_fit <- el_mean_diff_theta(object$muDelta, y1, y0, tol = tol)
+  if(identical(object$method, "splrt")) {
+    theta_fit <- el_mean_diff_theta(object$mu_delta, y1, y0, tol = tol)
     if(isTRUE(theta_fit$feasible) && is.finite(theta_fit$theta)) {
       mu1 <- theta_fit$theta
-      mu0 <- theta_fit$theta - object$muDelta
+      mu0 <- theta_fit$theta - object$mu_delta
       return(delta_from_components(object$atom, mu0, mu1, pi0, pi1))
     }
   }
@@ -226,14 +226,14 @@ splrtJointCandidate <- function(splrtReference, muDelta, logORdelta, tol = 1e-8)
 }
 
 delta_projection_candidate_factory <- function(object) {
-  if(identical(object$method, "Parametric Likelihood Ratio Test")) {
+  if(identical(object$method, "lrt")) {
     reference <- prepareParametricJointReference(object$data, atom = object$atom)
     return(function(muDelta, logORdelta) {
       parametricJointCandidate(reference, muDelta, logORdelta)
     })
   }
 
-  if(identical(object$method, "Semi-empirical Likelihood Ratio Test")) {
+  if(identical(object$method, "splrt")) {
     reference <- prepareSPLRTJointReference(object$data, atom = object$atom)
     return(function(muDelta, logORdelta) {
       splrtJointCandidate(reference, muDelta, logORdelta)
@@ -257,10 +257,10 @@ delta_projection_penalty_scale <- function(object) {
 }
 
 delta_projection_center <- function(object, bounds) {
-  log_alpha <- suppressWarnings(log(as.numeric(object$alphaDelta)))
+  log_alpha <- suppressWarnings(log(as.numeric(object$alpha_delta)))
 
   c(
-    if(is.finite(object$muDelta)) object$muDelta else mean(bounds$muDelta),
+    if(is.finite(object$mu_delta)) object$mu_delta else mean(bounds$muDelta),
     if(is.finite(log_alpha)) log_alpha else mean(bounds$logORdelta)
   )
 }
@@ -735,11 +735,11 @@ delta_profile_splrt_candidate_factory <- function(object, tol = 1e-8) {
 }
 
 delta_profile_candidate_factory <- function(object, tol = 1e-8) {
-  if(identical(object$method, "Parametric Likelihood Ratio Test")) {
+  if(identical(object$method, "lrt")) {
     return(delta_profile_lrt_candidate_factory(object, tol = tol))
   }
 
-  if(identical(object$method, "Semi-empirical Likelihood Ratio Test")) {
+  if(identical(object$method, "splrt")) {
     return(delta_profile_splrt_candidate_factory(object, tol = tol))
   }
 
@@ -831,7 +831,7 @@ delta_profile_optimize_logor <- function(candidate_fun, center, width,
 
 delta_profile_factory <- function(object, tol = 1e-8) {
   candidate_builder <- delta_profile_candidate_factory(object, tol = tol)
-  center <- suppressWarnings(log(as.numeric(object$alphaDelta)))
+  center <- suppressWarnings(log(as.numeric(object$alpha_delta)))
   if(!is.finite(center)) {
     center <- 0
   }
@@ -845,12 +845,12 @@ delta_profile_factory <- function(object, tol = 1e-8) {
       return(get(key, envir = delta_cache, inherits = FALSE))
     }
 
-    if(abs(targetDelta - object$Delta) <= delta_profile_target_tolerance(object$Delta, scale = scale)) {
-      fitted_log_or <- suppressWarnings(log(as.numeric(object$alphaDelta)))
+    if(abs(targetDelta - object$delta) <= delta_profile_target_tolerance(object$delta, scale = scale)) {
+      fitted_log_or <- suppressWarnings(log(as.numeric(object$alpha_delta)))
       out <- list(
         statistic = 0,
-        Delta = object$Delta,
-        muDelta = object$muDelta,
+        Delta = object$delta,
+        muDelta = object$mu_delta,
         logORdelta = if(is.finite(fitted_log_or)) fitted_log_or else center
       )
       assign(key, out, envir = delta_cache)
@@ -923,7 +923,7 @@ delta_profile_interval.optimize <- function(object, conf.level = object$conf.lev
 
   lower <- delta_profile_find_bound(
     profile_fun,
-    estimate = object$Delta,
+    estimate = object$delta,
     crit = crit,
     direction = "lower",
     initial_step = step,
@@ -931,7 +931,7 @@ delta_profile_interval.optimize <- function(object, conf.level = object$conf.lev
   )
   upper <- delta_profile_find_bound(
     profile_fun,
-    estimate = object$Delta,
+    estimate = object$delta,
     crit = crit,
     direction = "upper",
     initial_step = step,
@@ -970,7 +970,7 @@ delta_surface_for_inference <- function(object, conf.level = object$conf.level,
       include_delta = TRUE
     )
     accepted <- is.finite(surface_data$surface) &
-      is.finite(surface_data$deltaSurface) &
+      is.finite(surface_data$delta_surface) &
       surface_data$surface <= threshold
 
     if(any(accepted) && !delta_boundary_touched(accepted)) {
@@ -985,14 +985,14 @@ delta_surface_for_inference <- function(object, conf.level = object$conf.level,
 
 delta_interval_from_surface <- function(surface_data, threshold) {
   accepted <- is.finite(surface_data$surface) &
-    is.finite(surface_data$deltaSurface) &
+    is.finite(surface_data$delta_surface) &
     surface_data$surface <= threshold
 
   if(!any(accepted)) {
     return(delta_na_interval())
   }
 
-  as.numeric(range(surface_data$deltaSurface[accepted]))
+  as.numeric(range(surface_data$delta_surface[accepted]))
 }
 
 validateDeltaIntervalAlgorithm <- function(algorithm) {
@@ -1084,9 +1084,9 @@ delta_profile_interval <- function(object, conf.level = object$conf.level,
 augmentDeltaInference <- function(object) {
   if(!isTRUE(object$success) || !is.null(object$adjust) || is.null(object$atom)) {
     object$delta <- if(is.null(object$delta)) NA_real_ else object$delta
-    return(syncTruncComp2Aliases(object))
+    return(object)
   }
 
   object$delta <- delta_unadjusted_point_estimate(object)
-  syncTruncComp2Aliases(object)
+  object
 }

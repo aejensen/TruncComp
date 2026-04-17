@@ -76,7 +76,7 @@
 #' indicator `r`. It returns a length-two numeric interval and falls back to a
 #' point-mass interval when the pooled standard error is not usable. Its role is
 #' to provide the model-light `Delta` interval returned by
-#' `confint(..., parameter = "Delta", method = "welch")`.
+#' `confint(..., parameter = "delta", method = "welch")`.
 #'
 #' ### `delta_unadjusted_point_estimate(object, tol = 1e-8)`
 #'
@@ -84,7 +84,7 @@
 #' object. For the semi-parametric method it first solves the empirical-
 #' likelihood nuisance location so the arm-specific observed means are coherent
 #' with the fitted mean difference; otherwise it uses the raw observed means. It
-#' returns a scalar numeric value. Its role is to populate `object$Delta` in a
+#' returns a scalar numeric value. Its role is to populate `object$delta` in a
 #' way that matches the fitted method.
 #'
 #' ### `prepareParametricJointReference(data, atom)` and
@@ -221,7 +221,8 @@
 #' role is to support the one-dimensional `Delta` profile optimization, where
 #' the Bernoulli part is handled separately.
 #'
-#' @seealso [delta_profile_interval()], [jointContrastCI()], [augmentDeltaInference()]
+#' @seealso [delta_profile_interval()], [joint_contrast_surface()],
+#'   [augmentDeltaInference()]
 #' @keywords internal
 NULL
 
@@ -360,7 +361,7 @@ NULL
 #'
 #' Creates the memoized profile function `targetDelta -> best candidate` for a
 #' fitted object. The returned closure caches results by target `Delta`, returns
-#' the fitted point with statistic zero when the target matches `object$Delta`,
+#' the fitted point with statistic zero when the target matches `object$delta`,
 #' and otherwise delegates to `delta_profile_optimize_logor()`. Its role is to
 #' expose a reusable profile function for interval inversion.
 #'
@@ -419,9 +420,10 @@ NULL
 #' a known atom it computes the derived `Delta` point estimate. For failed,
 #' adjusted, or atom-less fits it leaves `Delta` as the existing value or sets
 #' it to `NA_real_`. Any interval for `Delta` is computed later, on demand,
-#' through [confint.TruncComp2()]. Its role is to attach the derived
+#' through [confint.trunc_comp_fit()]. Its role is to attach the derived
 #' combined-outcome point estimate only when it is methodologically meaningful.
 #'
-#' @seealso [confint.TruncComp2()], [jointContrastCI()], [delta_projected_interval()]
+#' @seealso [confint.trunc_comp_fit()], [joint_contrast_surface()],
+#'   [delta_projected_interval()]
 #' @keywords internal
 NULL

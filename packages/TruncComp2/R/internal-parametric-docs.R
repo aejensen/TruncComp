@@ -1,7 +1,7 @@
 #' Internal parametric likelihood-ratio helpers
 #'
 #' Developer-facing documentation for the helpers that implement the parametric
-#' Bernoulli-plus-Normal likelihood-ratio path used by `method = "LRT"`.
+#' Bernoulli-plus-Normal likelihood-ratio path used by `method = "lrt"`.
 #'
 #' @name trunccomp2-lrt-helpers
 #' @title Internal parametric likelihood-ratio helpers
@@ -56,7 +56,7 @@
 #' )
 #' LRT(
 #'   data, init = NULL, conf.level = 0.95, adjust = NULL,
-#'   adjust_spec = NULL, atom = NULL
+#'   adjust_spec = NULL, atom = NULL, call = NULL
 #' )
 #' @details
 #' ### `parametric_safe_xlogy(x, y)`
@@ -220,17 +220,17 @@
 #' wrapper simple while still supporting both implementations.
 #'
 #' ### `LRT(data, init = NULL, conf.level = 0.95, adjust = NULL,
-#' adjust_spec = NULL, atom = NULL)`
+#' adjust_spec = NULL, atom = NULL, call = NULL)`
 #'
-#' Final parametric estimator used by `truncComp_core()`. `data` is the
+#' Final parametric estimator used by `trunc_comp_core()`. `data` is the
 #' standardized analysis frame; `init`, `conf.level`, `adjust`, `adjust_spec`,
-#' and `atom` are carried through to the returned object. The helper returns a
-#' `"TruncComp2"` object, either successful or failed. After a successful fit it
+#' `atom`, and `call` are carried through to the returned object. The helper
+#' returns a `"trunc_comp_fit"` object, either successful or failed. After a successful fit it
 #' calls `augmentDeltaInference()` to attach the unadjusted `Delta` point
 #' estimate when that contrast is well-defined. Its role is to bridge the
 #' intermediate parametric fit summaries into the package-wide result class.
 #'
-#' @seealso [truncComp()], [augmentDeltaInference()], [parametric_lrt_fit()]
+#' @seealso [trunc_comp()], [augmentDeltaInference()], [parametric_lrt_fit()]
 #' @keywords internal
 NULL
 
@@ -357,6 +357,6 @@ NULL
 #' component of the semi-parametric simultaneous region and the optimizer-based
 #' `Delta` calculations.
 #'
-#' @seealso [logit.prepare()], [jointContrastCI()], [delta_profile_factory()]
+#' @seealso [logit.prepare()], [joint_contrast_surface()], [delta_profile_factory()]
 #' @keywords internal
 NULL

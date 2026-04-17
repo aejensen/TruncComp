@@ -7,9 +7,13 @@
 \title{Internal semi-parametric likelihood-ratio helpers}
 \usage{
 adjusted_SPLRT(
-  data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, atom = NULL
+  data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, atom = NULL,
+  call = NULL
 )
-SPLRT(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, atom = NULL)
+SPLRT(
+  data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, atom = NULL,
+  call = NULL
+)
 }
 \description{
 These helpers combine empirical-likelihood inference for the observed-outcome
@@ -20,16 +24,17 @@ process.
 Internal semi-parametric likelihood-ratio helpers
 
 Developer-facing documentation for the high-level semi-parametric fitting
-wrappers used by \code{method = "SPLRT"}.
+wrappers used by \code{method = "splrt"}.
 \subsection{`adjusted_SPLRT(data, conf.level = 0.95, adjust = NULL,}{
 
-adjust_spec = NULL, atom = NULL)`
+adjust_spec = NULL, atom = NULL, call = NULL)`
 
 Fits the adjusted semi-parametric procedure. \code{data} is the standardized
 analysis frame, \code{conf.level} controls the marginal intervals, \code{adjust} is the
 additive baseline-covariate formula, \code{adjust_spec} is the printable metadata
-string stored on the result, and \code{atom} is carried through for consistency.
-The helper returns a successful or failed \code{"TruncComp2"} object. It rejects
+string stored on the result, \code{atom} is carried through for consistency, and
+\code{call} stores the matched public call when available. The helper returns a
+successful or failed \code{"trunc_comp_fit"} object. It rejects
 irregular adjusted logistic fits using the parametric regularity checks and
 delegates the observed-outcome component to \code{el_regression_fit()}. Its role
 is to keep the adjusted \code{SPLRT} logic separate from the simpler unadjusted
@@ -38,14 +43,14 @@ empirical-likelihood path while preserving the same result structure.
 
 \subsection{`SPLRT(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL,}{
 
-atom = NULL)`
+atom = NULL, call = NULL)`
 
-Main semi-parametric estimator called by \code{truncComp_core()}. In the
+Main semi-parametric estimator called by \code{trunc_comp_core()}. In the
 unadjusted case it extracts the observed outcomes by arm, runs the
 two-sample empirical-likelihood test with \code{el_mean_diff_fit()}, fits the
 logistic observation models with \code{glm()}, and adds the two component
 likelihood-ratio statistics. When \code{adjust} is non-\code{NULL}, it delegates to
-\code{adjusted_SPLRT()}. The helper returns a \code{"TruncComp2"} object and, on
+\code{adjusted_SPLRT()}. The helper returns a \code{"trunc_comp_fit"} object and, on
 success, passes it through \code{augmentDeltaInference()} so unadjusted fits gain
 the derived \code{Delta} point estimate. Its role is to expose a single
 semi-parametric implementation point to the rest of the package.

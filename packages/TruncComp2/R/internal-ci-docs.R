@@ -37,7 +37,7 @@
 #' jointContrastDefaultOffsets(m)
 #' normalizeJointContrastOffsets(m, offset = NULL)
 #' jointContrastDefaultBounds(m, offset = NULL)
-#' jointContrastPlot(muDelta, logORdelta, surface, m, conf.level)
+#' jointContrastPlot(mu_delta, log_or_delta, surface, m, conf.level)
 #' validateConfidenceLevel(conf.level)
 #' buildMarginalCIMatrix(object)
 #' parametricJointReference(data, atom = 0)
@@ -79,7 +79,7 @@
 #'
 #' Provide fallback expansions for the mean-difference and log-odds axes when
 #' marginal intervals are unavailable or degenerate. `m` is a fitted
-#' `"TruncComp2"` object. Each helper returns a scalar positive offset derived
+#' `"trunc_comp_fit"` object. Each helper returns a scalar positive offset derived
 #' from observed-data variability or, failing that, a scale based on the raw
 #' data and sample size. Their role is to make simultaneous-region evaluation
 #' possible even when the component intervals are `NA`.
@@ -108,10 +108,10 @@
 #' The helper returns that list directly. Its role is to provide the initial box
 #' used by both simultaneous regions and grid-based `Delta` intervals.
 #'
-#' ### `jointContrastPlot(muDelta, logORdelta, surface, m, conf.level)`
+#' ### `jointContrastPlot(mu_delta, log_or_delta, surface, m, conf.level)`
 #'
 #' Creates the `ggplot2` raster-and-contour visualization for the joint
-#' likelihood surface. The grid vectors `muDelta` and `logORdelta`, the matrix
+#' likelihood surface. The grid vectors `mu_delta` and `log_or_delta`, the matrix
 #' `surface`, the fitted object `m`, and the contour level `conf.level` fully
 #' determine the result. The helper returns a `ggplot` object. It quietly omits
 #' the fitted-point overlay when the estimate is not finite. Its role is to keep
@@ -126,7 +126,7 @@
 #'
 #' ### `buildMarginalCIMatrix(object)`
 #'
-#' Converts a successful `"TruncComp2"` object into the printed component
+#' Converts a successful `"trunc_comp_fit"` object into the printed component
 #' confidence-interval matrix used by `confint()` when `parameter` selects the
 #' stored component intervals. The helper returns a numeric matrix with
 #' human-readable row and column names. Its role is to centralize the display
@@ -162,16 +162,17 @@
 #' conf.level = m$conf.level, plot = TRUE, offset = NULL, resolution = 35,
 #' include_delta = FALSE)`
 #'
-#' Core surface evaluator used by [jointContrastCI()] and the grid-based
-#' `Delta` intervals. `m` must be a successful unadjusted `"TruncComp2"` fit;
+#' Core surface evaluator used by [joint_contrast_surface()] and the grid-based
+#' `Delta` intervals. `m` must be a successful unadjusted `"trunc_comp_fit"` fit;
 #' the remaining arguments define or derive the evaluation grid, whether to plot,
 #' and whether the derived `Delta` values should also be stored. The helper
 #' returns a list containing the axis vectors, the surface matrix, and optionally
-#' `deltaSurface`. It errors on failed fits, adjusted fits, unsupported methods,
+#' `delta_surface`. It errors on failed fits, adjusted fits, unsupported methods,
 #' or invalid confidence levels. Its role is to centralize all joint-surface
 #' evaluation logic so the public helpers and the internal `Delta` routines stay
 #' aligned.
 #'
-#' @seealso [confint.TruncComp2()], [jointContrastCI()], [delta_surface_for_inference()]
+#' @seealso [confint.trunc_comp_fit()], [joint_contrast_surface()],
+#'   [delta_surface_for_inference()]
 #' @keywords internal
 NULL

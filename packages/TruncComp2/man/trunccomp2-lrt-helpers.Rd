@@ -50,7 +50,7 @@ parametric_lrt_fit(
 )
 LRT(
   data, init = NULL, conf.level = 0.95, adjust = NULL,
-  adjust_spec = NULL, atom = NULL
+  adjust_spec = NULL, atom = NULL, call = NULL
 )
 }
 \description{
@@ -62,7 +62,7 @@ parametric fit object returned by \code{\link[=LRT]{LRT()}}.
 Internal parametric likelihood-ratio helpers
 
 Developer-facing documentation for the helpers that implement the parametric
-Bernoulli-plus-Normal likelihood-ratio path used by \code{method = "LRT"}.
+Bernoulli-plus-Normal likelihood-ratio path used by \code{method = "lrt"}.
 \subsection{\code{parametric_safe_xlogy(x, y)}}{
 
 Computes \code{x * log(y)} elementwise while forcing structurally zero terms to
@@ -245,18 +245,18 @@ wrapper simple while still supporting both implementations.
 
 \subsection{`LRT(data, init = NULL, conf.level = 0.95, adjust = NULL,}{
 
-adjust_spec = NULL, atom = NULL)`
+adjust_spec = NULL, atom = NULL, call = NULL)`
 
-Final parametric estimator used by \code{truncComp_core()}. \code{data} is the
+Final parametric estimator used by \code{trunc_comp_core()}. \code{data} is the
 standardized analysis frame; \code{init}, \code{conf.level}, \code{adjust}, \code{adjust_spec},
-and \code{atom} are carried through to the returned object. The helper returns a
-\code{"TruncComp2"} object, either successful or failed. After a successful fit it
+\code{atom}, and \code{call} are carried through to the returned object. The helper
+returns a \code{"trunc_comp_fit"} object, either successful or failed. After a successful fit it
 calls \code{augmentDeltaInference()} to attach the unadjusted \code{Delta} point
 estimate when that contrast is well-defined. Its role is to bridge the
 intermediate parametric fit summaries into the package-wide result class.
 }
 }
 \seealso{
-\code{\link[=truncComp]{truncComp()}}, \code{\link[=augmentDeltaInference]{augmentDeltaInference()}}, \code{\link[=parametric_lrt_fit]{parametric_lrt_fit()}}
+\code{\link[=trunc_comp]{trunc_comp()}}, \code{\link[=augmentDeltaInference]{augmentDeltaInference()}}, \code{\link[=parametric_lrt_fit]{parametric_lrt_fit()}}
 }
 \keyword{internal}

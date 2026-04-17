@@ -1,5 +1,5 @@
 adjusted_SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL,
-                           atom = NULL) {
+                           atom = NULL, call = NULL) {
   if(is.null(adjust_spec)) {
     adjust_spec <- adjustmentSpecification(adjust)
   }
@@ -9,13 +9,14 @@ adjusted_SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec =
     parametric_glm_is_regular(fits$bernoulli_alt, term = "R", tol = 1e-8)
 
   if(!glm_regular) {
-    return(returnErrorData(
+    return(new_failed_trunc_comp_fit(
       "Adjusted semi-parametric SPLRT is not estimable under the supplied covariates.",
-      method = "SPLRT",
+      method = "splrt",
       conf.level = conf.level,
       data = data,
       adjust = adjust_spec,
-      atom = atom
+      atom = atom,
+      call = call
     ))
   }
 
@@ -25,13 +26,14 @@ adjusted_SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec =
   alphaDeltaCI <- parametric_term_interval(fits$bernoulli_alt, "R", conf.level, transform = exp)
 
   if(!all(is.finite(c(ll_null, ll_alt, alphaDelta, alphaDeltaCI)))) {
-    return(returnErrorData(
+    return(new_failed_trunc_comp_fit(
       "Adjusted semi-parametric SPLRT is not estimable under the supplied covariates.",
-      method = "SPLRT",
+      method = "splrt",
       conf.level = conf.level,
       data = data,
       adjust = adjust_spec,
-      atom = atom
+      atom = atom,
+      call = call
     ))
   }
 
@@ -44,41 +46,50 @@ adjusted_SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec =
   )
 
   if(!isTRUE(el_fit$success)) {
-    return(returnErrorData(
+    return(new_failed_trunc_comp_fit(
       el_fit$error,
-      method = "SPLRT",
+      method = "splrt",
       conf.level = conf.level,
       data = data,
       adjust = adjust_spec,
-      atom = atom
+      atom = atom,
+      call = call
     ))
   }
 
   alphaW <- parametric_clamp_statistic(2 * (ll_alt - ll_null))
   W <- parametric_clamp_statistic(el_fit$statistic + alphaW)
 
-  newTruncComp2(
-    muDelta = as.numeric(el_fit$estimate),
-    muDeltaCI = as.numeric(el_fit$conf.int),
-    alphaDelta = as.numeric(alphaDelta),
-    alphaDeltaCI = as.numeric(alphaDeltaCI),
-    Delta = NA_real_,
-    W = W,
-    p = stats::pchisq(W, 2, lower.tail = FALSE),
-    method = "SPLRT",
+  new_trunc_comp_fit(
+    mu_delta = as.numeric(el_fit$estimate),
+    mu_delta_ci = as.numeric(el_fit$conf.int),
+    alpha_delta = as.numeric(alphaDelta),
+    alpha_delta_ci = as.numeric(alphaDeltaCI),
+    delta = NA_real_,
+    statistic = W,
+    p.value = stats::pchisq(W, 2, lower.tail = FALSE),
+    method = "splrt",
     conf.level = conf.level,
     success = TRUE,
     init = NULL,
     data = data,
     adjust = adjust_spec,
-    atom = atom
+    atom = atom,
+    call = call
   )
 }
 
-SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, atom = NULL) {
+SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL,
+                  atom = NULL, call = NULL) {
   if(!is.null(adjust)) {
-    return(adjusted_SPLRT(data, conf.level = conf.level, adjust = adjust, adjust_spec = adjust_spec,
-                          atom = atom))
+    return(adjusted_SPLRT(
+      data,
+      conf.level = conf.level,
+      adjust = adjust,
+      adjust_spec = adjust_spec,
+      atom = atom,
+      call = call
+    ))
   }
 
   yAlive1 <- data[data$R == 0 & data$A == 1, "Y"]
@@ -109,21 +120,24 @@ SPLRT <- function(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, at
 
   #Joint likelihood ratio test
   W <- as.numeric(muW + alphaW) #Joint test statistic
-  p <- 1 - stats::pchisq(W, 2)  #Joint p-value
+  p.value <- 1 - stats::pchisq(W, 2)  #Joint p-value
 
-  out <- newTruncComp2(muDelta = muDelta,
-                       muDeltaCI = muDeltaCI,
-                       alphaDelta = alphaDelta,
-                       alphaDeltaCI = alphaDeltaCI,
-                       Delta = NA_real_,
-                       W = W,
-                       p = p,
-                       method = "SPLRT",
-                       conf.level = conf.level,
-                       success = TRUE,
-                       init = NULL,
-                       data = data,
-                       atom = atom)
+  out <- new_trunc_comp_fit(
+    mu_delta = muDelta,
+    mu_delta_ci = muDeltaCI,
+    alpha_delta = alphaDelta,
+    alpha_delta_ci = alphaDeltaCI,
+    delta = NA_real_,
+    statistic = W,
+    p.value = p.value,
+    method = "splrt",
+    conf.level = conf.level,
+    success = TRUE,
+    init = NULL,
+    data = data,
+    atom = atom,
+    call = call
+  )
 
   augmentDeltaInference(out)
 }

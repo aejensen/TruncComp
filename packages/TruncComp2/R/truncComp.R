@@ -114,15 +114,13 @@ resolveDefaultAtom <- function(y, a, atom = NULL) {
     return(as.numeric(atom_values))
   }
 
-  stop("atom must be supplied for truncComp(y, a, r, ...) unless y[a == 0] has exactly one unique finite value.")
+  stop("atom must be supplied for trunc_comp(y, a, r, ...) unless y[a == 0] has exactly one unique finite value.")
 }
 
-truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
-                           adjust_data = NULL, adjust_formula = NULL,
-                           atom = NULL) {
-  if(!(method == "LRT" || method == "SPLRT")) {
-    stop("Only LRT or SPLRT supported as methods.")
-  }
+trunc_comp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
+                            adjust_data = NULL, adjust_formula = NULL,
+                            atom = NULL, call = NULL) {
+  method <- normalize_trunc_comp_method(method)
 
   d <- data.frame(Y = y, A = a, R = r)
   if(!is.null(adjust_data)) {
@@ -134,23 +132,42 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
   if(!isDataOkay(d)) {
     error <- "Estimation failed due to data error."
     warning(error)
-    return(returnErrorData(error,
-                           method,
-                           conf.level,
-                           init = init,
-                           data = d,
-                           adjust = adjust_spec,
-                           atom = atom))
+    return(new_failed_trunc_comp_fit(
+      error,
+      method,
+      conf.level,
+      init = init,
+      data = d,
+      adjust = adjust_spec,
+      atom = atom,
+      call = call
+    ))
   }
 
-  if(method == "LRT") {
-    out <- LRT(d, init, conf.level, adjust = adjust_formula, adjust_spec = adjust_spec, atom = atom)
-  } else if(method == "SPLRT") {
-    out <- SPLRT(d, conf.level, adjust = adjust_formula, adjust_spec = adjust_spec, atom = atom)
+  if(method == "lrt") {
+    out <- LRT(
+      d,
+      init,
+      conf.level,
+      adjust = adjust_formula,
+      adjust_spec = adjust_spec,
+      atom = atom,
+      call = call
+    )
+  } else {
+    out <- SPLRT(
+      d,
+      conf.level,
+      adjust = adjust_formula,
+      adjust_spec = adjust_spec,
+      atom = atom,
+      call = call
+    )
   }
 
   out$data <- d
   out$atom <- atom
+  out$call <- call
   out
 }
 
@@ -159,17 +176,20 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
 #' Compares two groups when a continuous outcome has a distinguished atom value
 #' representing an unobserved or undefined outcome.
 #'
-#' @param formula A formula with a continuous outcome on the left-hand side and a
-#'   single binary treatment indicator on the right-hand side.
+#' @param formula For the formula interface, a formula with a continuous outcome
+#'   on the left-hand side and a single binary treatment indicator on the
+#'   right-hand side. For the default interface, the first positional argument
+#'   is the outcome vector.
 #' @param atom A single numeric value used for the special atom outcome. The
 #'   observation indicator is reconstructed internally as `Y != atom`. For the
 #'   default interface, `atom` may be omitted only when `y[a == 0]` has exactly
 #'   one unique finite value, in which case it is inferred and stored on the
 #'   fitted object.
 #' @param data A data frame containing the variables referenced by `formula`.
-#' @param method Either `"LRT"` for the parametric likelihood-ratio method or
-#'   `"SPLRT"` for the semi-parametric likelihood-ratio method.
-#' @param conf_level Confidence level used for the reported intervals.
+#' @param method Either `"lrt"` for the parametric likelihood-ratio method or
+#'   `"splrt"` for the semi-parametric likelihood-ratio method. Upper-case
+#'   values are accepted for compatibility.
+#' @param conf.level Confidence level used for the reported intervals.
 #' @param init Optional compatibility argument retained from older parametric
 #'   implementations. The current model-backed `LRT` path stores it on the
 #'   returned object but does not use it for estimation.
@@ -182,9 +202,9 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
 #' @param ... Unused additional arguments.
 #' @return An S3 object of class `"trunc_comp_fit"` with component estimates,
 #'   confidence intervals, the joint likelihood-ratio statistic, metadata about
-#'   the fitting method, the standardized analysis data, and the fitted atom
-#'   value. Failed fits return the same class with `success = FALSE` and an
-#'   error message.
+#'   the fitting method, the standardized analysis data, the matched call, and
+#'   the fitted atom value. Failed fits return the same class with
+#'   `success = FALSE` and an error message.
 #' @details
 #' For successful unadjusted fits, the package also computes a derived
 #' combined-outcome contrast
@@ -199,8 +219,11 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
 #' adjusted treatment effects are conditional regression coefficients rather
 #' than standardized marginal contrasts.
 #'
+#' `trunc_comp()` is the primary interface. The older camelCase entry point
+#' [truncComp()] remains available as a deprecated compatibility wrapper.
+#'
 #' @seealso [summary.trunc_comp_fit()], [print.trunc_comp_fit()],
-#'   [confint.trunc_comp_fit()], [joint_contrast_ci()]
+#'   [confint.trunc_comp_fit()], [joint_contrast_surface()]
 #' @examples
 #' library(TruncComp2)
 #' f0 <- function(n) stats::rnorm(n, 3, 1)
@@ -208,30 +231,30 @@ truncComp_core <- function(y, a, r, method, conf.level = 0.95, init = NULL,
 #' d <- simulate_truncated_data(n = 100, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
 #'
 #' # Formula interface
-#' truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
-#' truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+#' trunc_comp(Y ~ R, atom = 0, data = d, method = "lrt")
+#' trunc_comp(Y ~ R, atom = 0, data = d, method = "splrt")
 #'
-#' d_adjusted <- load_trunc_comp2_adjusted_example()
-#' truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
-#' truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "SPLRT", adjust = ~ L)
+#' data("trunc_comp_adjusted_example", package = "TruncComp2")
+#' trunc_comp(Y ~ R, atom = 0, data = trunc_comp_adjusted_example, method = "lrt", adjust = ~ L)
+#' trunc_comp(Y ~ R, atom = 0, data = trunc_comp_adjusted_example, method = "splrt", adjust = ~ L)
 #'
 #' # Default interface
-#' truncComp(d$Y, d$A, d$R, method = "LRT", atom = 0)
-#' @rdname truncComp
+#' trunc_comp(d$Y, d$A, d$R, method = "lrt", atom = 0)
+#' @rdname trunc_comp
 #' @export
-truncComp <- function(formula, ...) {
-  UseMethod("truncComp")
+trunc_comp <- function(formula, ...) {
+  UseMethod("trunc_comp")
 }
 
-#' @rdname truncComp
+#' @rdname trunc_comp
 #' @export
-truncComp.formula <- function(formula, atom, data, method = c("LRT", "SPLRT"),
-                              conf_level = 0.95, init = NULL, adjust = NULL, ...) {
+trunc_comp.formula <- function(formula, atom, data, method = c("lrt", "splrt"),
+                               conf.level = 0.95, init = NULL, adjust = NULL, ...) {
   if(!inherits(formula, "formula")) {
     stop("The formula must be a formula.")
   }
 
-  method <- match.arg(method)
+  method <- normalize_trunc_comp_method(method)
 
   if(length(attr(terms(formula), "term.labels")) != 1) {
     stop("The current implementation must have one covariate in the formula.")
@@ -271,38 +294,53 @@ truncComp.formula <- function(formula, atom, data, method = c("LRT", "SPLRT"),
   }
 
 
-  truncComp_core(outcome,
-                 alive,
-                 treatment,
-                 method,
-                 conf_level,
-                 init,
-                 adjust_data = adjustment$data,
-                 adjust_formula = adjustment$formula,
-                 atom = atom)
+  trunc_comp_core(
+    outcome,
+    alive,
+    treatment,
+    method,
+    conf.level,
+    init,
+    adjust_data = adjustment$data,
+    adjust_formula = adjustment$formula,
+    atom = atom,
+    call = match.call()
+  )
 }
 
-#' Default interface for [truncComp()]
+#' Default interface for [trunc_comp()]
 #'
-#' @param y Outcome vector for the default interface.
 #' @param a Binary indicator for whether the continuous outcome is observed.
 #' @param r Binary treatment indicator for the default interface.
-#' @rdname truncComp
-#' @exportS3Method truncComp default
-truncComp.default <- function(y, a, r, method = c("LRT", "SPLRT"),
-                              conf_level = 0.95, init = NULL,
-                              adjust = NULL, atom = NULL, ...) {
-  method <- match.arg(method)
+#' @rdname trunc_comp
+#' @exportS3Method trunc_comp default
+trunc_comp.default <- function(formula, a, r, method = c("lrt", "splrt"),
+                               conf.level = 0.95, init = NULL,
+                               adjust = NULL, atom = NULL, ...) {
+  y <- formula
+  method <- normalize_trunc_comp_method(method)
   adjustment <- prepareDefaultAdjustment(adjust, length(y))
   atom <- resolveDefaultAtom(y, a, atom = atom)
 
-  truncComp_core(y,
-                 a,
-                 r,
-                 method,
-                 conf_level,
-                 init,
-                 adjust_data = adjustment$data,
-                 adjust_formula = adjustment$formula,
-                 atom = atom)
+  trunc_comp_core(
+    y,
+    a,
+    r,
+    method,
+    conf.level,
+    init,
+    adjust_data = adjustment$data,
+    adjust_formula = adjustment$formula,
+    atom = atom,
+    call = match.call()
+  )
+}
+
+#' Deprecated compatibility wrapper for [trunc_comp()]
+#'
+#' @rdname trunc_comp
+#' @export
+truncComp <- function(formula, ...) {
+  .Deprecated("trunc_comp")
+  trunc_comp(formula, ...)
 }

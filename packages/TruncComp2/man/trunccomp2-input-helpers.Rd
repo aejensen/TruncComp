@@ -6,16 +6,16 @@
 \alias{prepareFormulaAdjustment}
 \alias{prepareDefaultAdjustment}
 \alias{resolveDefaultAtom}
-\alias{truncComp_core}
+\alias{trunc_comp_core}
 \title{Internal interface normalization helpers}
 \usage{
 normalizeFormulaAdjust(adjust, outcome_name, treatment_name)
 prepareFormulaAdjustment(data, adjust)
 prepareDefaultAdjustment(adjust, n)
 resolveDefaultAtom(y, a, atom = NULL)
-truncComp_core(
+trunc_comp_core(
   y, a, r, method, conf.level = 0.95, init = NULL,
-  adjust_data = NULL, adjust_formula = NULL, atom = NULL
+  adjust_data = NULL, adjust_formula = NULL, atom = NULL, call = NULL
 )
 }
 \description{
@@ -27,7 +27,7 @@ into the shared fitting core.
 Internal interface normalization helpers
 
 Developer-facing documentation for the helpers that turn the public
-\code{truncComp()} inputs into the standardized \code{Y}/\code{A}/\code{R} analysis frame used by
+\code{trunc_comp()} inputs into the standardized \code{Y}/\code{A}/\code{R} analysis frame used by
 both estimation engines.
 \subsection{\code{normalizeFormulaAdjust(adjust, outcome_name, treatment_name)}}{
 
@@ -56,7 +56,7 @@ identical across \code{LRT} and \code{SPLRT}.
 
 \subsection{\code{prepareDefaultAdjustment(adjust, n)}}{
 
-Normalizes adjustment covariates passed through \code{truncComp.default()}.
+Normalizes adjustment covariates passed through \code{trunc_comp.default()}.
 \code{adjust} may be \code{NULL}, a data frame, or a matrix, and \code{n} is the expected
 number of rows matching \code{y}. The helper returns a list with standardized
 adjustment data and an additive formula created with \code{reformulate()}. It
@@ -77,15 +77,15 @@ not scalar and finite, or when implicit inference is impossible because
 make later \code{Delta} calculations reproducible even when the user omits \code{atom}.
 }
 
-\subsection{`truncComp_core(y, a, r, method, conf.level = 0.95, init = NULL,}{
+\subsection{`trunc_comp_core(y, a, r, method, conf.level = 0.95, init = NULL,}{
 
-adjust_data = NULL, adjust_formula = NULL, atom = NULL)`
+adjust_data = NULL, adjust_formula = NULL, atom = NULL, call = NULL)`
 
 Shared engine used by both public interfaces after argument normalization.
 \code{y}, \code{a}, and \code{r} are the standardized outcome, observation, and treatment
 vectors; \code{method} chooses \code{LRT} or \code{SPLRT}; \code{conf.level}, \code{init}, and \code{atom}
 are stored on the result; and \code{adjust_data} plus \code{adjust_formula} represent
-optional baseline covariates. The helper returns a \code{"TruncComp2"} object from
+optional baseline covariates. The helper returns a \code{"trunc_comp_fit"} object from
 \code{\link[=LRT]{LRT()}} or \code{\link[=SPLRT]{SPLRT()}}, augmented with the standardized analysis data and atom.
 If \code{isDataOkay()} fails it returns a structured error object instead of
 attempting estimation. Its role is to keep the two public interfaces thin and
@@ -93,6 +93,6 @@ to guarantee that both methods see the same canonical analysis frame.
 }
 }
 \seealso{
-\code{\link[=truncComp]{truncComp()}}, \code{\link[=truncComp.default]{truncComp.default()}}, \code{\link[=LRT]{LRT()}}, \code{\link[=SPLRT]{SPLRT()}}
+\code{\link[=trunc_comp]{trunc_comp()}}, \code{\link[=trunc_comp.default]{trunc_comp.default()}}, \code{\link[=LRT]{LRT()}}, \code{\link[=SPLRT]{SPLRT()}}
 }
 \keyword{internal}

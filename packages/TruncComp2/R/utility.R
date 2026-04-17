@@ -24,78 +24,75 @@ adjustmentSpecification <- function(adjust) {
   paste(labels, collapse = " + ")
 }
 
-isValid <- function(truncCompObj) {
-  isTRUE(truncCompObj$success)
+is_valid_trunc_comp_fit <- function(object) {
+  isTRUE(object$success)
 }
 
-truncCompMethod <- function(method) {
-  if(identical(method, "LRT") || identical(method, "Parametric Likelihood Ratio Test")) {
-    return("Parametric Likelihood Ratio Test")
+normalize_trunc_comp_method <- function(method) {
+  match.arg(tolower(method), c("lrt", "splrt"))
+}
+
+trunc_comp_method_label <- function(method) {
+  method <- normalize_trunc_comp_method(method)
+
+  switch(
+    method,
+    lrt = "Parametric likelihood-ratio test",
+    splrt = "Semi-parametric likelihood-ratio test"
+  )
+}
+
+numeric_or_na <- function(x) {
+  if(is.null(x) || length(x) == 0) {
+    return(NA_real_)
   }
 
-  if(identical(method, "SPLRT") || identical(method, "Semi-empirical Likelihood Ratio Test")) {
-    return("Semi-empirical Likelihood Ratio Test")
-  }
-
-  method
+  as.numeric(x[[1]])
 }
 
-syncTruncComp2Aliases <- function(object) {
-  object$mu_delta <- object$muDelta <- object$mu_delta
-  object$mu_delta_ci <- object$muDeltaCI <- object$mu_delta_ci
-  object$alpha_delta <- object$alphaDelta <- object$alpha_delta
-  object$alpha_delta_ci <- object$alphaDeltaCI <- object$alpha_delta_ci
-  object$delta <- object$Delta <- object$delta
-  object$statistic <- object$W <- object$statistic
-  object$conf_level <- object$conf.level <- object$conf_level
-  object
-}
-
-newTruncComp2 <- function(muDelta = NULL, muDeltaCI = NULL,
-                         alphaDelta = NULL, alphaDeltaCI = NULL,
-                         Delta = NULL,
-                         W = NULL, p = NULL,
-                         method, conf.level, success,
-                         error = "", init = NULL, data = NULL,
-                         adjust = NULL, atom = NULL) {
-  method <- truncCompMethod(method)
+new_trunc_comp_fit <- function(mu_delta = NULL, mu_delta_ci = NULL,
+                               alpha_delta = NULL, alpha_delta_ci = NULL,
+                               delta = NULL,
+                               statistic = NULL, p.value = NULL,
+                               method, conf.level, success,
+                               error = "", init = NULL, data = NULL,
+                               adjust = NULL, atom = NULL, call = NULL) {
+  method <- normalize_trunc_comp_method(method)
 
   out <- list(
-    mu_delta = muDelta,
-    mu_delta_ci = muDeltaCI,
-    alpha_delta = alphaDelta,
-    alpha_delta_ci = alphaDeltaCI,
-    delta = Delta,
-    statistic = W,
-    p = p,
+    mu_delta = mu_delta,
+    mu_delta_ci = mu_delta_ci,
+    alpha_delta = alpha_delta,
+    alpha_delta_ci = alpha_delta_ci,
+    delta = delta,
+    statistic = statistic,
+    p.value = p.value,
     method = method,
-    conf_level = conf.level,
+    conf.level = conf.level,
     success = success,
     error = error,
     init = init,
     data = data,
     adjust = adjust,
     atom = atom,
-    muDelta = muDelta,
-    muDeltaCI = muDeltaCI,
-    alphaDelta = alphaDelta,
-    alphaDeltaCI = alphaDeltaCI,
-    Delta = Delta,
-    W = W,
-    conf.level = conf.level
+    call = call
   )
-  class(out) <- c("trunc_comp_fit", "TruncComp2", "list")
-  syncTruncComp2Aliases(out)
+  class(out) <- c("trunc_comp_fit", "list")
+  out
 }
 
-returnErrorData <- function(error, method, conf.level, init = NULL, data = NULL,
-                            adjust = NULL, atom = NULL) {
-  newTruncComp2(method = method,
-               conf.level = conf.level,
-               success = FALSE,
-               error = error,
-               init = init,
-               data = data,
-               adjust = adjust,
-               atom = atom)
+new_failed_trunc_comp_fit <- function(error, method, conf.level, init = NULL,
+                                      data = NULL, adjust = NULL, atom = NULL,
+                                      call = NULL) {
+  new_trunc_comp_fit(
+    method = method,
+    conf.level = conf.level,
+    success = FALSE,
+    error = error,
+    init = init,
+    data = data,
+    adjust = adjust,
+    atom = atom,
+    call = call
+  )
 }

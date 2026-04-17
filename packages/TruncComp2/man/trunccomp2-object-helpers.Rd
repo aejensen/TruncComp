@@ -4,25 +4,29 @@
 \alias{trunccomp2-object-helpers}
 \alias{isDataOkay}
 \alias{adjustmentSpecification}
-\alias{isValid}
-\alias{truncCompMethod}
-\alias{newTruncComp2}
-\alias{returnErrorData}
+\alias{is_valid_trunc_comp_fit}
+\alias{normalize_trunc_comp_method}
+\alias{trunc_comp_method_label}
+\alias{new_trunc_comp_fit}
+\alias{new_failed_trunc_comp_fit}
+\alias{numeric_or_na}
 \title{Internal object-construction helpers}
 \usage{
 isDataOkay(d)
 adjustmentSpecification(adjust)
-isValid(truncCompObj)
-truncCompMethod(method)
-newTruncComp2(
-  muDelta = NULL, muDeltaCI = NULL, alphaDelta = NULL,
-  alphaDeltaCI = NULL, Delta = NULL, W = NULL, p = NULL, method,
-  conf.level, success, error = "", init = NULL, data = NULL,
-  adjust = NULL, atom = NULL
+is_valid_trunc_comp_fit(object)
+normalize_trunc_comp_method(method)
+trunc_comp_method_label(method)
+numeric_or_na(x)
+new_trunc_comp_fit(
+  mu_delta = NULL, mu_delta_ci = NULL, alpha_delta = NULL,
+  alpha_delta_ci = NULL, delta = NULL, statistic = NULL,
+  p.value = NULL, method, conf.level, success, error = "",
+  init = NULL, data = NULL, adjust = NULL, atom = NULL, call = NULL
 )
-returnErrorData(
+new_failed_trunc_comp_fit(
   error, method, conf.level, init = NULL, data = NULL,
-  adjust = NULL, atom = NULL
+  adjust = NULL, atom = NULL, call = NULL
 )
 }
 \description{
@@ -34,7 +38,7 @@ Internal object-construction helpers
 
 Developer-facing documentation for the low-level helpers that validate the
 standardized data, summarize adjustment metadata, and create successful or
-failed \code{"TruncComp2"} result objects.
+failed \code{"trunc_comp_fit"} result objects.
 \subsection{\code{isDataOkay(d)}}{
 
 Performs the final minimum-data check on the standardized analysis frame \code{d}.
@@ -55,48 +59,46 @@ has passed earlier validation. Its role is to provide stable metadata for the
 fitted object and printed summaries.
 }
 
-\subsection{\code{isValid(truncCompObj)}}{
+\subsection{\code{is_valid_trunc_comp_fit(object)}}{
 
 Small predicate for checking whether a result object represents a successful
-fit. \code{truncCompObj} is any object expected to carry a \code{success} field. The
+fit. \code{object} is any object expected to carry a \code{success} field. The
 helper returns \code{TRUE} only when \code{success} is explicitly \code{TRUE}, and \code{FALSE}
 otherwise. Its role is to give downstream helpers a single convention for
 success checks.
 }
 
-\subsection{\code{truncCompMethod(method)}}{
+\subsection{\code{normalize_trunc_comp_method(method)} and}{
 
-Normalizes short method identifiers into the descriptive labels stored on the
-public object. \code{method} may be the short internal codes or already-expanded
-labels. The helper returns the display string that should appear in summaries.
-Unknown labels are passed through unchanged. Its role is to decouple the user
-interface from internal branching strings.
+\code{trunc_comp_method_label(method)}
+
+These helpers normalize method identifiers and derive the display labels used
+in printed summaries. Their role is to separate the canonical object field
+(\code{"lrt"} / \code{"splrt"}) from the human-readable summary text.
 }
 
-\subsection{\code{newTruncComp2(...)}}{
+\subsection{\code{numeric_or_na(x)}}{
 
-Constructs the canonical \code{"TruncComp2"} object. The arguments mirror the
-fields exposed by the package: component estimates and intervals, the \code{Delta}
-point estimate, test statistics, method metadata, success state, optional
-standardized data, and the fitted atom. The helper returns a named list with
-class \code{c("TruncComp2", "list")}. It performs only light normalization,
-mainly expanding \code{method} through \code{truncCompMethod()}. Its role is to ensure
-the parametric and semi-parametric branches emit identically shaped results.
+Small coercion helper used by \code{print()} and \code{coef()} so missing estimates are
+displayed as \code{NA_real_} rather than disappearing from named vectors.
 }
 
-\subsection{`returnErrorData(error, method, conf.level, init = NULL, data = NULL,}{
+\subsection{\code{new_trunc_comp_fit(...)}}{
 
-adjust = NULL, atom = NULL)`
+Constructs the canonical \code{"trunc_comp_fit"} object. The arguments mirror the
+fields exposed by the package: component estimates and intervals, the \code{delta}
+point estimate, test statistic, \code{p.value}, method metadata, success state,
+optional standardized data, the fitted atom, and the matched call.
+}
 
-Convenience wrapper for creating failed \code{"TruncComp2"} objects. \code{error}
-supplies the message to store, while the remaining arguments preserve method
-and input metadata. The helper returns the same class as a successful fit but
-with \code{success = FALSE} and the estimate fields left \code{NULL}. Its role is to
-make print, summary, and confidence-interval dispatch behave consistently
-even after estimation fails.
+\subsection{\code{new_failed_trunc_comp_fit(...)}}{
+
+Convenience wrapper for creating failed \code{"trunc_comp_fit"} objects while
+preserving method and input metadata.
 }
 }
 \seealso{
-\code{\link[=newTruncComp2]{newTruncComp2()}}, \code{\link[=summary.TruncComp2]{summary.TruncComp2()}}, \code{\link[=print.TruncComp2]{print.TruncComp2()}}
+\code{\link[=new_trunc_comp_fit]{new_trunc_comp_fit()}}, \code{\link[=summary.trunc_comp_fit]{summary.trunc_comp_fit()}},
+\code{\link[=print.trunc_comp_fit]{print.trunc_comp_fit()}}
 }
 \keyword{internal}

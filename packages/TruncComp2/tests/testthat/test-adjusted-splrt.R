@@ -35,11 +35,11 @@ adjusted_splrt_case <- function(seed, n, adjust = ~ L1 + L2,
     y[a == 1] <- stats::rnorm(sum(a), mu[a == 1], 0.75)
 
     data <- data.frame(Y = y, A = a, R = r, L1 = l1, L2 = l2)
-    fit <- truncComp(data$Y,
-                             data$A,
-                             data$R,
-                             method = "SPLRT",
-                             adjust = data[, adjust_vars, drop = FALSE])
+    fit <- trunc_comp(data$Y,
+                      data$A,
+                      data$R,
+                      method = "splrt",
+                      adjust = data[, adjust_vars, drop = FALSE])
 
     if(isTRUE(fit$success)) {
       return(data)
@@ -142,17 +142,17 @@ combined_el_objective <- function(par, design, delta) {
 }
 
 test_that("adjust equals ~1 reproduces the unadjusted SPLRT fit", {
-  example_data <- load_trunc_comp2_adjusted_example()
+  example_data <- trunc_comp_adjusted_example
 
-  unadjusted <- truncComp(Y ~ R,
-                          atom = 0,
-                          data = example_data[, c("Y", "R")],
-                          method = "SPLRT")
-  intercept_only <- truncComp(Y ~ R,
-                              atom = 0,
-                              data = example_data,
-                              method = "SPLRT",
-                              adjust = ~ 1)
+  unadjusted <- trunc_comp(Y ~ R,
+                           atom = 0,
+                           data = example_data[, c("Y", "R")],
+                           method = "splrt")
+  intercept_only <- trunc_comp(Y ~ R,
+                               atom = 0,
+                               data = example_data,
+                               method = "splrt",
+                               adjust = ~ 1)
 
   expect_true(unadjusted$success)
   expect_true(intercept_only$success)
@@ -172,11 +172,11 @@ test_that("adjusted SPLRT matches direct logistic and regression-EL references",
   )
 
   for(case in cases) {
-    fit <- truncComp(Y ~ R,
-                     atom = 0,
-                     data = case$data[, c("Y", "R", all.vars(case$adjust)), drop = FALSE],
-                     method = "SPLRT",
-                     adjust = case$adjust)
+    fit <- trunc_comp(Y ~ R,
+                      atom = 0,
+                      data = case$data[, c("Y", "R", all.vars(case$adjust)), drop = FALSE],
+                      method = "splrt",
+                      adjust = case$adjust)
     ref <- adjusted_splrt_reference(case$data, case$adjust)
 
     expect_true(fit$success)
@@ -186,7 +186,7 @@ test_that("adjusted SPLRT matches direct logistic and regression-EL references",
     expect_equal(fit$alpha_delta, ref$alphaDelta, tolerance = 1e-10)
     expect_equal(fit$alpha_delta_ci, ref$alphaDeltaCI, tolerance = 1e-8)
     expect_equal(fit$statistic, ref$mu$statistic + ref$W_alpha, tolerance = 1e-8)
-    expect_equal(fit$p, stats::pchisq(fit$statistic, df = 2, lower.tail = FALSE), tolerance = 1e-12)
+    expect_equal(fit$p.value, stats::pchisq(fit$statistic, df = 2, lower.tail = FALSE), tolerance = 1e-12)
     expect_true(is.na(fit$delta))
     expect_false(any(c("DeltaCI", "DeltaMarginalCI", "DeltaProjectedCI", "DeltaProfileCI") %in% names(fit)))
   }
@@ -208,30 +208,30 @@ test_that("regression EL profile matches a direct combined optimization on a sma
 })
 
 test_that("adjusted SPLRT handles the packaged adjusted example and attenuates after adjustment", {
-  example_data <- load_trunc_comp2_adjusted_example()
+  example_data <- trunc_comp_adjusted_example
 
-  fit_unadjusted <- truncComp(Y ~ R,
-                              atom = 0,
-                              data = example_data[, c("Y", "R")],
-                              method = "SPLRT")
-  fit_adjusted <- truncComp(Y ~ R,
-                            atom = 0,
-                            data = example_data,
-                            method = "SPLRT",
-                            adjust = ~ L)
+  fit_unadjusted <- trunc_comp(Y ~ R,
+                               atom = 0,
+                               data = example_data[, c("Y", "R")],
+                               method = "splrt")
+  fit_adjusted <- trunc_comp(Y ~ R,
+                             atom = 0,
+                             data = example_data,
+                             method = "splrt",
+                             adjust = ~ L)
 
   expect_true(fit_unadjusted$success)
   expect_true(fit_adjusted$success)
   expect_equal(fit_adjusted$adjust, "L")
-  expect_lt(fit_unadjusted$p, 0.05)
-  expect_gt(fit_adjusted$p, 0.05)
+  expect_lt(fit_unadjusted$p.value, 0.05)
+  expect_gt(fit_adjusted$p.value, 0.05)
   expect_lt(fit_adjusted$statistic, fit_unadjusted$statistic)
   expect_lt(abs(fit_adjusted$mu_delta), abs(fit_unadjusted$mu_delta))
   expect_lt(abs(log(as.numeric(fit_adjusted$alpha_delta))),
             abs(log(as.numeric(fit_unadjusted$alpha_delta))))
 
-  expect_equal(fit_unadjusted$p, 0.03698883, tolerance = 1e-4)
-  expect_equal(fit_adjusted$p, 0.09027938, tolerance = 1e-4)
+  expect_equal(fit_unadjusted$p.value, 0.03698883, tolerance = 1e-4)
+  expect_equal(fit_adjusted$p.value, 0.09027938, tolerance = 1e-4)
   expect_equal(fit_unadjusted$statistic, 6.594279, tolerance = 1e-4)
   expect_equal(fit_adjusted$statistic, 4.809692, tolerance = 1e-4)
   expect_equal(fit_unadjusted$mu_delta, 0.6720578, tolerance = 1e-4)
@@ -251,27 +251,27 @@ test_that("adjusted SPLRT handles the packaged adjusted example and attenuates a
                "not implemented for adjusted fits")
   expect_error(confint(fit_adjusted, parameter = "joint"),
                "not implemented for adjusted fits")
-  expect_error(joint_contrast_ci(fit_adjusted, plot = FALSE),
+  expect_error(joint_contrast_surface(fit_adjusted, plot = FALSE),
                "not implemented for adjusted fits")
 })
 
 test_that("adjusted SPLRT fails cleanly on non-regular adjusted fits", {
   case <- adjusted_splrt_case(202604154, 18, adjust = ~ L1 + L2)
 
-  aliased_fit <- truncComp(case$Y,
-                                   case$A,
-                                   case$R,
-                                   method = "SPLRT",
-                                   adjust = data.frame(Rcopy = case$R))
+  aliased_fit <- trunc_comp(case$Y,
+                            case$A,
+                            case$R,
+                            method = "splrt",
+                            adjust = data.frame(Rcopy = case$R))
   expect_s3_class(aliased_fit, "trunc_comp_fit")
   expect_false(aliased_fit$success)
   expect_match(aliased_fit$error, "rank deficient|not estimable")
 
-  separation_fit <- truncComp(case$Y,
-                                      case$A,
-                                      case$R,
-                                      method = "SPLRT",
-                                      adjust = data.frame(Lsep = case$A))
+  separation_fit <- trunc_comp(case$Y,
+                               case$A,
+                               case$R,
+                               method = "splrt",
+                               adjust = data.frame(Lsep = case$A))
   expect_s3_class(separation_fit, "trunc_comp_fit")
   expect_false(separation_fit$success)
   expect_match(separation_fit$error, "not estimable")
@@ -286,11 +286,11 @@ test_that("adjusted SPLRT fails cleanly on non-regular adjusted fits", {
     L2 = factor(c("a", "b", "a", "b", "a", "b", "a", "b")),
     L3 = c(1, 0, 1, 0, 1, 0, 1, 0)
   )
-  sparse_fit <- truncComp(sparse_case$Y,
-                                  sparse_case$A,
-                                  sparse_case$R,
-                                  method = "SPLRT",
-                                  adjust = sparse_adjust)
+  sparse_fit <- trunc_comp(sparse_case$Y,
+                           sparse_case$A,
+                           sparse_case$R,
+                           method = "splrt",
+                           adjust = sparse_adjust)
   expect_s3_class(sparse_fit, "trunc_comp_fit")
   expect_false(sparse_fit$success)
   expect_match(sparse_fit$error, "too few observed outcomes|not estimable")
@@ -298,7 +298,7 @@ test_that("adjusted SPLRT fails cleanly on non-regular adjusted fits", {
   missing_covariate <- case[, c("Y", "R", "L1")]
   missing_covariate$L1[1] <- NA_real_
   expect_error(
-    truncComp(Y ~ R, atom = 0, data = missing_covariate, method = "SPLRT", adjust = ~ L1),
+    trunc_comp(Y ~ R, atom = 0, data = missing_covariate, method = "splrt", adjust = ~ L1),
     "missing values"
   )
 })

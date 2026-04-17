@@ -29,6 +29,10 @@ Rscript -e 'if(!requireNamespace("roxygen2", quietly = TRUE)) install.packages("
 Run that before package checks so the generated `man/*.Rd` files and
 `NAMESPACE` stay in sync with the source comments.
 
+The primary user-facing fitting interface is now `trunc_comp()`. The older
+camelCase helpers remain only as deprecated compatibility wrappers and should
+not be used in new docs, examples, or tests.
+
 ## Package-Local Verification
 
 From the package root, run:
@@ -72,6 +76,15 @@ Rscript tools/generate-el-fixture.R
 
 This script is package-local and writes only into `tests/testthat/fixtures/`.
 
+Packaged datasets can be rebuilt with:
+
+```sh
+Rscript tools/build-package-data.R
+```
+
+That script refreshes `data/trunc_comp_example.rda` and
+`data/trunc_comp_adjusted_example.rda`.
+
 For the adjusted semi-parametric extension, a package-local validation script is
 also available:
 
@@ -91,7 +104,7 @@ Rscript tools/validate-delta-optimization.R
 ```
 
 That script compares the slower optimizer-based
-`confint(..., parameter = "Delta", method = "projected" | "profile",
+`confint(..., parameter = "delta", method = "projected" | "profile",
 algorithm = "optimize")` alternatives against grid-based references for both
 the parametric and semi-parametric methods. It is intentionally kept out of
 routine package checks because those optimizer paths are materially slower than

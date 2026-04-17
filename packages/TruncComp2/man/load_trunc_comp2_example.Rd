@@ -2,23 +2,17 @@
 % Please edit documentation in R/exampleData.R
 \name{load_trunc_comp2_example}
 \alias{load_trunc_comp2_example}
-\title{Load the packaged TruncComp2 example data}
+\title{Deprecated compatibility wrapper for \code{trunc_comp_example}}
 \usage{
 load_trunc_comp2_example()
 }
 \value{
-A data frame with 50 observations and 2 variables: \code{R}, the binary
-treatment indicator coded \code{0} or \code{1}, and \code{Y}, the combined outcome where
-the atom value \code{0} denotes an unobserved or undefined continuous outcome.
+A data frame identical to the \code{trunc_comp_example} dataset.
 }
 \description{
-Loads the fixed example data used in the package documentation, tests, and
-examples.
-}
-\details{
-The example is stored as an \code{.rds} file under
-\code{inst/extdata/TruncComp2Example.rds}. This helper provides a stable public
-loading mechanism without relying on \code{data()}.
+Returns the packaged example dataset formerly exposed through a dedicated
+loader function. Use \code{data("trunc_comp_example", package = "TruncComp2")}
+instead.
 }
 \examples{
 d <- load_trunc_comp2_example()

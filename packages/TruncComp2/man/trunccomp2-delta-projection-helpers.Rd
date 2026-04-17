@@ -82,7 +82,7 @@ combined outcome \code{y} as a standard two-sample mean problem split by treatme
 indicator \code{r}. It returns a length-two numeric interval and falls back to a
 point-mass interval when the pooled standard error is not usable. Its role is
 to provide the model-light \code{Delta} interval returned by
-\code{confint(..., parameter = "Delta", method = "welch")}.
+\code{confint(..., parameter = "delta", method = "welch")}.
 }
 
 \subsection{\code{delta_unadjusted_point_estimate(object, tol = 1e-8)}}{
@@ -91,7 +91,7 @@ Reconstructs the fitted \code{Delta} point estimate for an unadjusted successful
 object. For the semi-parametric method it first solves the empirical-
 likelihood nuisance location so the arm-specific observed means are coherent
 with the fitted mean difference; otherwise it uses the raw observed means. It
-returns a scalar numeric value. Its role is to populate \code{object$Delta} in a
+returns a scalar numeric value. Its role is to populate \code{object$delta} in a
 way that matches the fitted method.
 }
 
@@ -254,6 +254,7 @@ the Bernoulli part is handled separately.
 }
 }
 \seealso{
-\code{\link[=delta_profile_interval]{delta_profile_interval()}}, \code{\link[=jointContrastCI]{jointContrastCI()}}, \code{\link[=augmentDeltaInference]{augmentDeltaInference()}}
+\code{\link[=delta_profile_interval]{delta_profile_interval()}}, \code{\link[=joint_contrast_surface]{joint_contrast_surface()}},
+\code{\link[=augmentDeltaInference]{augmentDeltaInference()}}
 }
 \keyword{internal}

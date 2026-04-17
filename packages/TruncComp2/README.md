@@ -3,10 +3,10 @@ Development version of the R package TruncComp2 for two-sample comparison of tru
 
 The package implements:
 
-- a parametric likelihood-ratio test (`method = "LRT"`)
-- a semi-parametric likelihood-ratio test (`method = "SPLRT"`)
+- a parametric likelihood-ratio test (`method = "lrt"`)
+- a semi-parametric likelihood-ratio test (`method = "splrt"`)
 
-The current implementation keeps the same public API for both methods, but now computes both paths internally:
+The current implementation exposes a unified R-idiomatic API for both methods and computes both paths internally:
 
 - the parametric method uses `glm` and observed-outcome `lm` fits with ML log-likelihood comparison, plus explicit fallbacks for singular boundary cases
 - both methods can adjust for baseline covariates through a shared `adjust = ~ ...` specification, returning conditional treatment effects
@@ -18,7 +18,7 @@ The currently supported scope is:
 
 - one binary treatment indicator coded `0/1`
 - one atom value representing the unobserved or undefined outcome
-- optional additive baseline-covariate adjustment for both `method = "LRT"` and `method = "SPLRT"` through `adjust = ~ ...`
+- optional additive baseline-covariate adjustment for both `method = "lrt"` and `method = "splrt"` through `adjust = ~ ...`
 - adjusted `SPLRT` provides fitted tests and component confidence intervals, but not joint confidence regions or `delta` intervals
 
 To install the development version of TruncComp2 run the following commands from within R
@@ -41,18 +41,18 @@ Rscript -e 'if(!requireNamespace("roxygen2", quietly = TRUE)) install.packages("
 - Implementation walkthrough: [IMPLEMENTATION.md](IMPLEMENTATION.md)
 - Adjusted semi-parametric methodology note: [ADJUSTED_SPLRT.md](ADJUSTED_SPLRT.md)
 - Package-local development guide: [DEVELOPMENT.md](DEVELOPMENT.md)
-- Packaged example data loader: `load_trunc_comp2_example()`
-- Packaged adjusted example data loader: `load_trunc_comp2_adjusted_example()`
+- Packaged example dataset: `trunc_comp_example`
+- Packaged adjusted example dataset: `trunc_comp_adjusted_example`
 
 # Main Interface
 
 The primary entry point is:
 
 ```r
-truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
-truncComp(Y ~ R, atom = 0, data = d, method = "LRT", adjust = ~ age + sex)
-truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
-truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT", adjust = ~ age + sex)
+trunc_comp(Y ~ R, atom = 0, data = d, method = "lrt")
+trunc_comp(Y ~ R, atom = 0, data = d, method = "lrt", adjust = ~ age + sex)
+trunc_comp(Y ~ R, atom = 0, data = d, method = "splrt")
+trunc_comp(Y ~ R, atom = 0, data = d, method = "splrt", adjust = ~ age + sex)
 ```
 
 The fitted object reports:
@@ -60,8 +60,8 @@ The fitted object reports:
 - `mu_delta`: difference in means among the observed
 - `alpha_delta`: odds ratio of being observed
 - `delta`: combined-outcome mean difference at the fitted atom value
-- `W`: joint likelihood-ratio test statistic
-- `p`: joint p-value
+- `statistic`: joint likelihood-ratio test statistic
+- `p.value`: joint p-value
 
 The fitted object stores the component intervals `mu_delta_ci` and
 `alpha_delta_ci`, but it does not store `delta` confidence intervals. Any
@@ -72,7 +72,7 @@ conditional treatment effects from the adjusted observed-outcome and logistic
 submodels. In that adjusted setting, `delta` is not reported and remains `NA`,
 and `confint()` rejects `parameter = "delta"` and `parameter = "joint"`.
 
-For both `method = "LRT"` and `method = "SPLRT"`, joint confidence-region
+For both `method = "lrt"` and `method = "splrt"`, joint confidence-region
 surfaces are available for unadjusted fits through
 `confint(..., parameter = "joint")`. If `offset` is omitted, the default
 surface window is expanded adaptively from the fitted data, and the plot is
@@ -103,10 +103,11 @@ simultaneous region in
 defined by
 
 ```text
-C_joint = { (mu, psi) : W(mu, psi) <= qchisq(conf_level, 2) }.
+C_joint = { (mu, psi) : W(mu, psi) <= qchisq(conf.level, 2) }.
 ```
 
-This is what `confint(fit, parameter = "joint")` and `joint_contrast_ci(fit)`
+This is what `confint(fit, parameter = "joint")` and
+`joint_contrast_surface(fit)`
 compute.
 
 For the derived combined-outcome contrast
@@ -138,7 +139,7 @@ fits:
    This is the one-dimensional profile interval for `delta`:
 
    ```text
-   C_profile = { d : W_Delta(d) <= qchisq(conf_level, 1) }
+   C_profile = { d : W_Delta(d) <= qchisq(conf.level, 1) }
    ```
 
    The default implementation is grid-based. The slower direct
@@ -174,7 +175,7 @@ pi1 <- 0.6
 d <- TruncComp2::simulate_truncated_data(25, f0, f1, pi0, pi1, atom = 0)
 
 #Estimate parameters using the parametric method
-fit_lrt <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+fit_lrt <- trunc_comp(Y ~ R, atom = 0, data = d, method = "lrt")
 summary(fit_lrt)
 confint(fit_lrt)
 confint(fit_lrt, parameter = "delta", method = "welch")
@@ -183,24 +184,46 @@ confint(fit_lrt, parameter = "delta", method = "profile")
 confint(fit_lrt, parameter = "delta", method = "profile", algorithm = "optimize")
 
 #Load the fixed adjusted example and compare unadjusted vs adjusted LRT
-d_adjusted <- load_trunc_comp2_adjusted_example()
-fit_lrt_unadjusted_example <- truncComp(Y ~ R, atom = 0, data = d_adjusted[, c("Y", "R")], method = "LRT")
-fit_lrt_adjusted <- truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "LRT", adjust = ~ L)
+data("trunc_comp_adjusted_example", package = "TruncComp2")
+fit_lrt_unadjusted_example <- trunc_comp(
+  Y ~ R,
+  atom = 0,
+  data = trunc_comp_adjusted_example[, c("Y", "R")],
+  method = "lrt"
+)
+fit_lrt_adjusted <- trunc_comp(
+  Y ~ R,
+  atom = 0,
+  data = trunc_comp_adjusted_example,
+  method = "lrt",
+  adjust = ~ L
+)
 summary(fit_lrt_unadjusted_example)
 summary(fit_lrt_adjusted)
 
 #The same adjusted example also works with the semi-parametric method
-fit_splrt_unadjusted_example <- truncComp(Y ~ R, atom = 0, data = d_adjusted[, c("Y", "R")], method = "SPLRT")
-fit_splrt_adjusted <- truncComp(Y ~ R, atom = 0, data = d_adjusted, method = "SPLRT", adjust = ~ L)
+fit_splrt_unadjusted_example <- trunc_comp(
+  Y ~ R,
+  atom = 0,
+  data = trunc_comp_adjusted_example[, c("Y", "R")],
+  method = "splrt"
+)
+fit_splrt_adjusted <- trunc_comp(
+  Y ~ R,
+  atom = 0,
+  data = trunc_comp_adjusted_example,
+  method = "splrt",
+  adjust = ~ L
+)
 summary(fit_splrt_unadjusted_example)
 summary(fit_splrt_adjusted)
 
 #Estimate parameters using the semi-parametric method
-fit_splrt <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+fit_splrt <- trunc_comp(Y ~ R, atom = 0, data = d, method = "splrt")
 summary(fit_splrt)
 
 #The default interface also accepts atom explicitly and can infer it when y[a == 0]
-truncComp(d$Y, d$A, d$R, method = "LRT", atom = 0)
+trunc_comp(d$Y, d$A, d$R, method = "lrt", atom = 0)
 
 #Get simultaneous confidence region for an unadjusted fit
 confint(fit_lrt, parameter = "joint", plot = TRUE, resolution = 10)

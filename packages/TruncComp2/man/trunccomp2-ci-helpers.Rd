@@ -31,7 +31,7 @@ jointContrastAxisOffset(interval = NULL, center = NULL, fallback = NULL)
 jointContrastDefaultOffsets(m)
 normalizeJointContrastOffsets(m, offset = NULL)
 jointContrastDefaultBounds(m, offset = NULL)
-jointContrastPlot(muDelta, logORdelta, surface, m, conf.level)
+jointContrastPlot(mu_delta, log_or_delta, surface, m, conf.level)
 validateConfidenceLevel(conf.level)
 buildMarginalCIMatrix(object)
 parametricJointReference(data, atom = 0)
@@ -88,7 +88,7 @@ simultaneous region synchronized with the same resolution logic.
 
 Provide fallback expansions for the mean-difference and log-odds axes when
 marginal intervals are unavailable or degenerate. \code{m} is a fitted
-\code{"TruncComp2"} object. Each helper returns a scalar positive offset derived
+\code{"trunc_comp_fit"} object. Each helper returns a scalar positive offset derived
 from observed-data variability or, failing that, a scale based on the raw
 data and sample size. Their role is to make simultaneous-region evaluation
 possible even when the component intervals are \code{NA}.
@@ -122,10 +122,10 @@ The helper returns that list directly. Its role is to provide the initial box
 used by both simultaneous regions and grid-based \code{Delta} intervals.
 }
 
-\subsection{\code{jointContrastPlot(muDelta, logORdelta, surface, m, conf.level)}}{
+\subsection{\code{jointContrastPlot(mu_delta, log_or_delta, surface, m, conf.level)}}{
 
 Creates the \code{ggplot2} raster-and-contour visualization for the joint
-likelihood surface. The grid vectors \code{muDelta} and \code{logORdelta}, the matrix
+likelihood surface. The grid vectors \code{mu_delta} and \code{log_or_delta}, the matrix
 \code{surface}, the fitted object \code{m}, and the contour level \code{conf.level} fully
 determine the result. The helper returns a \code{ggplot} object. It quietly omits
 the fitted-point overlay when the estimate is not finite. Its role is to keep
@@ -142,7 +142,7 @@ handling consistent across the package.
 
 \subsection{\code{buildMarginalCIMatrix(object)}}{
 
-Converts a successful \code{"TruncComp2"} object into the printed component
+Converts a successful \code{"trunc_comp_fit"} object into the printed component
 confidence-interval matrix used by \code{confint()} when \code{parameter} selects the
 stored component intervals. The helper returns a numeric matrix with
 human-readable row and column names. Its role is to centralize the display
@@ -184,18 +184,19 @@ confidence-region evaluation.
 conf.level = m$conf.level, plot = TRUE, offset = NULL, resolution = 35,
 include_delta = FALSE)`
 
-Core surface evaluator used by \code{\link[=jointContrastCI]{jointContrastCI()}} and the grid-based
-\code{Delta} intervals. \code{m} must be a successful unadjusted \code{"TruncComp2"} fit;
+Core surface evaluator used by \code{\link[=joint_contrast_surface]{joint_contrast_surface()}} and the grid-based
+\code{Delta} intervals. \code{m} must be a successful unadjusted \code{"trunc_comp_fit"} fit;
 the remaining arguments define or derive the evaluation grid, whether to plot,
 and whether the derived \code{Delta} values should also be stored. The helper
 returns a list containing the axis vectors, the surface matrix, and optionally
-\code{deltaSurface}. It errors on failed fits, adjusted fits, unsupported methods,
+\code{delta_surface}. It errors on failed fits, adjusted fits, unsupported methods,
 or invalid confidence levels. Its role is to centralize all joint-surface
 evaluation logic so the public helpers and the internal \code{Delta} routines stay
 aligned.
 }
 }
 \seealso{
-\code{\link[=confint.TruncComp2]{confint.TruncComp2()}}, \code{\link[=jointContrastCI]{jointContrastCI()}}, \code{\link[=delta_surface_for_inference]{delta_surface_for_inference()}}
+\code{\link[=confint.trunc_comp_fit]{confint.trunc_comp_fit()}}, \code{\link[=joint_contrast_surface]{joint_contrast_surface()}},
+\code{\link[=delta_surface_for_inference]{delta_surface_for_inference()}}
 }
 \keyword{internal}

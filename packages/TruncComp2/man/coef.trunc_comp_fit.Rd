@@ -7,7 +7,7 @@
 \method{coef}{trunc_comp_fit}(object, ...)
 }
 \arguments{
-\item{object}{A \code{"trunc_comp_fit"} object returned by \code{\link[=truncComp]{truncComp()}}.}
+\item{object}{A \code{"trunc_comp_fit"} object returned by \code{\link[=trunc_comp]{trunc_comp()}}.}
 
 \item{...}{Unused additional arguments.}
 }
@@ -21,7 +21,7 @@ Returns the primary fitted treatment-effect estimates from a
 }
 \examples{
 library(TruncComp2)
-d <- load_trunc_comp2_example()
-fit <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+data("trunc_comp_example", package = "TruncComp2")
+fit <- trunc_comp(Y ~ R, atom = 0, data = trunc_comp_example, method = "lrt")
 coef(fit)
 }

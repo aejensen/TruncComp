@@ -2,14 +2,12 @@
 % Please edit documentation in R/internal-interface-docs.R
 \name{trunccomp2-simulation-helpers}
 \alias{trunccomp2-simulation-helpers}
-\alias{.truncComp2ExtdataPath}
 \alias{.validateSimulationInputs}
 \alias{.drawObservedOutcome}
 \alias{.simulateTruncatedGroup}
 \alias{simTruncData}
 \title{Internal example-loading and simulation helpers}
 \usage{
-.truncComp2ExtdataPath(filename)
 .validateSimulationInputs(n, f0, f1, pi0, pi1, atom = 0)
 .drawObservedOutcome(generator, n, label)
 .simulateTruncatedGroup(n, r, generator, probability, label, atom = 0)
@@ -18,27 +16,18 @@ simTruncData(
 )
 }
 \description{
-These helpers keep example data access stable across installed and source
-layouts and provide compact wrappers around the public simulation interface.
+These helpers provide compact wrappers around the public simulation
+interface and the package datasets used by the deprecated example loaders.
 }
 \details{
 Internal example-loading and simulation helpers
 
-Developer-facing documentation for the utilities that locate bundled example
-files and build reproducible simulated datasets for tests, examples, and
+Developer-facing documentation for the utilities that access bundled example
+data and build reproducible simulated datasets for tests, examples, and
 validation scripts.
-\subsection{\code{.truncComp2ExtdataPath(filename)}}{
-
-Resolves the installed path to a packaged example \code{.rds} file. \code{filename} is
-the expected file name within \code{extdata}. The helper returns the first
-matching path under either the installed-package layout or the source-like
-\code{inst/extdata} layout. It errors if no candidate exists. Its role is to make
-the public example loaders robust in both installed and development contexts.
-}
-
 \subsection{\code{.validateSimulationInputs(n, f0, f1, pi0, pi1, atom = 0)}}{
 
-Checks the user-supplied inputs for \code{\link[=simulateTruncatedData]{simulateTruncatedData()}}. \code{n} must be a
+Checks the user-supplied inputs for \code{\link[=simulate_truncated_data]{simulate_truncated_data()}}. \code{n} must be a
 positive integer, \code{f0} and \code{f1} must be functions, \code{pi0} and \code{pi1} must lie
 in \verb{[0, 1]}, and \code{atom} must be scalar and finite. The helper returns \code{NULL}
 invisibly and throws descriptive errors on invalid inputs. Its role is to
@@ -75,7 +64,7 @@ the two treatment groups.
 
 atom = 0)`
 
-Legacy convenience wrapper around \code{\link[=simulateTruncatedData]{simulateTruncatedData()}}. \code{mu0} and \code{mu1}
+Legacy convenience wrapper around \code{\link[=simulate_truncated_data]{simulate_truncated_data()}}. \code{mu0} and \code{mu1}
 define the group means, \code{sigma} controls the Normal scale, \code{dist} chooses
 either \code{"norm"} or the shifted \code{"t-sq"} generator, \code{df} supplies the degrees
 of freedom for the \code{t} case, and the remaining arguments are passed through
@@ -83,12 +72,12 @@ to the public simulator. The wrapper validates that \code{mu0} and \code{mu1} ar
 scalar finite numeric values, that the Normal case uses a positive finite
 \code{sigma}, and that the \code{t} case uses a finite \code{df > 1} so the documented group
 means are well-defined. The helper returns the same standardized data frame
-as \code{\link[=simulateTruncatedData]{simulateTruncatedData()}}. Its role is to preserve a compact simulation
+as \code{\link[=simulate_truncated_data]{simulate_truncated_data()}}. Its role is to preserve a compact simulation
 shortcut used in older scripts and notes.
 }
 }
 \seealso{
-\code{\link[=simulateTruncatedData]{simulateTruncatedData()}}, \code{\link[=loadTruncComp2Example]{loadTruncComp2Example()}},
-\code{\link[=loadTruncComp2AdjustedExample]{loadTruncComp2AdjustedExample()}}
+\code{\link[=simulate_truncated_data]{simulate_truncated_data()}}, \code{\link[=load_trunc_comp2_example]{load_trunc_comp2_example()}},
+\code{\link[=load_trunc_comp2_adjusted_example]{load_trunc_comp2_adjusted_example()}}
 }
 \keyword{internal}

@@ -11,8 +11,8 @@ fast_delta_example <- function() {
 test_that("unadjusted fits expose Delta and compute Delta intervals on demand", {
   example_data <- fast_delta_example()
 
-  fit_lrt <- truncComp(Y ~ R, atom = 0, data = example_data, method = "LRT")
-  fit_splrt <- truncComp(Y ~ R, atom = 0, data = example_data, method = "SPLRT")
+  fit_lrt <- trunc_comp(Y ~ R, atom = 0, data = example_data, method = "lrt")
+  fit_splrt <- trunc_comp(Y ~ R, atom = 0, data = example_data, method = "splrt")
   empirical_delta <- mean(example_data$Y[example_data$R == 1]) -
     mean(example_data$Y[example_data$R == 0])
   welch_intervals <- list()
@@ -48,16 +48,16 @@ test_that("unadjusted fits expose Delta and compute Delta intervals on demand", 
 test_that("grid-based DeltaProjectedCI agrees with high-resolution surface projection", {
   example_data <- fast_delta_example()
 
-  for(method in c("LRT", "SPLRT")) {
-    fit <- truncComp(Y ~ R, atom = 0, data = example_data, method = method)
+  for(method in c("lrt", "splrt")) {
+    fit <- trunc_comp(Y ~ R, atom = 0, data = example_data, method = method)
     surface_data <- TruncComp2:::delta_surface_for_inference(
       fit,
-      conf.level = fit$conf_level,
+      conf.level = fit$conf.level,
       resolution = 41
     )
     grid_reference <- TruncComp2:::delta_interval_from_surface(
       surface_data,
-      stats::qchisq(fit$conf_level, 2)
+      stats::qchisq(fit$conf.level, 2)
     )
 
     capture.output(projected <- confint(
@@ -78,16 +78,16 @@ test_that("grid-based DeltaProjectedCI agrees with high-resolution surface proje
 test_that("grid-based DeltaProfileCI agrees with high-resolution surface profiling", {
   example_data <- fast_delta_example()
 
-  for(method in c("LRT", "SPLRT")) {
-    fit <- truncComp(Y ~ R, atom = 0, data = example_data, method = method)
+  for(method in c("lrt", "splrt")) {
+    fit <- trunc_comp(Y ~ R, atom = 0, data = example_data, method = method)
     surface_data <- TruncComp2:::delta_surface_for_inference(
       fit,
-      conf.level = fit$conf_level,
+      conf.level = fit$conf.level,
       resolution = 41
     )
     grid_reference <- TruncComp2:::delta_interval_from_surface(
       surface_data,
-      stats::qchisq(fit$conf_level, 1)
+      stats::qchisq(fit$conf.level, 1)
     )
 
     capture.output(profiled <- confint(
@@ -106,13 +106,13 @@ test_that("grid-based DeltaProfileCI agrees with high-resolution surface profili
 })
 
 test_that("optimizer-backed Delta profiling remains available for fast parametric smoke checks", {
-  for(method in c("LRT", "SPLRT")) {
-    fit <- truncComp(Y ~ R, atom = 0, data = fast_delta_example(), method = method)
+  for(method in c("lrt", "splrt")) {
+    fit <- trunc_comp(Y ~ R, atom = 0, data = fast_delta_example(), method = method)
     profile_fun <- TruncComp2:::delta_profile_factory(fit)
     expect_equal(profile_fun(fit$delta)$statistic, 0, tolerance = 1e-8)
   }
 
-  fit <- truncComp(Y ~ R, atom = 0, data = fast_delta_example(), method = "LRT")
+  fit <- trunc_comp(Y ~ R, atom = 0, data = fast_delta_example(), method = "lrt")
   capture.output(profiled <- confint(
     fit,
     parameter = "delta",
@@ -128,11 +128,11 @@ test_that("optimizer-backed Delta profiling remains available for fast parametri
 test_that("default grid-based Delta profile confint matches the direct helper", {
   example_data <- fast_delta_example()
 
-  for(method in c("LRT", "SPLRT")) {
-    fit <- truncComp(Y ~ R, atom = 0, data = example_data, method = method)
+  for(method in c("lrt", "splrt")) {
+    fit <- trunc_comp(Y ~ R, atom = 0, data = example_data, method = method)
     reference <- TruncComp2:::delta_profile_interval.grid(
       fit,
-      conf.level = fit$conf_level,
+      conf.level = fit$conf.level,
       resolution = 35
     )
     capture.output(profiled <- confint(
@@ -158,9 +158,9 @@ test_that("default interface stores and infers the atom value", {
     atom = -5
   )
 
-  fit_formula <- truncComp(Y ~ R, atom = -5, data = simulated[, c("Y", "R")], method = "LRT")
-  fit_default_explicit <- truncComp(simulated$Y, simulated$A, simulated$R, method = "LRT", atom = -5)
-  fit_default_inferred <- truncComp(simulated$Y, simulated$A, simulated$R, method = "LRT")
+  fit_formula <- trunc_comp(Y ~ R, atom = -5, data = simulated[, c("Y", "R")], method = "lrt")
+  fit_default_explicit <- trunc_comp(simulated$Y, simulated$A, simulated$R, method = "lrt", atom = -5)
+  fit_default_inferred <- trunc_comp(simulated$Y, simulated$A, simulated$R, method = "lrt")
 
   for(fit in list(fit_formula, fit_default_explicit, fit_default_inferred)) {
     expect_true(fit$success)
@@ -176,7 +176,7 @@ test_that("default interface stores and infers the atom value", {
   first_atom <- which(simulated$A == 0)[1]
   ambiguous_y[first_atom] <- -4
   expect_error(
-    truncComp(ambiguous_y, simulated$A, simulated$R, method = "LRT"),
+    trunc_comp(ambiguous_y, simulated$A, simulated$R, method = "lrt"),
     "atom must be supplied"
   )
 })

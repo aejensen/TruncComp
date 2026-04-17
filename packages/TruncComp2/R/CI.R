@@ -219,7 +219,7 @@ buildComponentCIMatrix <- function(object, parameter) {
   rows <- lapply(parameter, function(name) info[[name]]$interval)
   cMat <- do.call(rbind, rows)
   rownames(cMat) <- unname(vapply(parameter, function(name) info[[name]]$label, character(1)))
-  colnames(cMat) <- ciColumnLabels(object$conf_level)
+  colnames(cMat) <- ciColumnLabels(object$conf.level)
   cMat
 }
 
@@ -245,7 +245,7 @@ buildSingleIntervalMatrix <- function(interval, label, conf.level) {
 #' Computes component confidence intervals, joint confidence-region surfaces,
 #' and on-demand `delta` intervals for a fitted `"trunc_comp_fit"` object.
 #'
-#' @param object A `"trunc_comp_fit"` object returned by [truncComp()].
+#' @param object A `"trunc_comp_fit"` object returned by [trunc_comp()].
 #' @param parameter Parameter selection for the requested interval. Use
 #'   `"mu_delta"` and/or `"alpha_delta"` for the stored component intervals,
 #'   `"delta"` for the derived combined-outcome contrast, or `"joint"` for the
@@ -256,7 +256,7 @@ buildSingleIntervalMatrix <- function(interval, label, conf.level) {
 #'   `parameter = "joint"`.
 #' @param log_or_delta Optional grid values for the log-odds-ratio axis when
 #'   `parameter = "joint"`.
-#' @param conf_level Confidence level for the interval or contour threshold.
+#' @param conf.level Confidence level for the interval or contour threshold.
 #' @param plot Logical; if `TRUE`, plot the joint confidence surface.
 #' @param offset Optional simultaneous-grid expansion. If omitted, a
 #'   data-adaptive default is derived from the fitted marginal intervals or from
@@ -274,11 +274,11 @@ buildSingleIntervalMatrix <- function(interval, label, conf.level) {
 #' @details
 #' Adjusted fits support only the stored component confidence intervals.
 #' Joint regions and `delta` intervals are available only for successful
-#' unadjusted `LRT` and `SPLRT` fits.
+#' unadjusted `lrt` and `splrt` fits.
 #' @examples
 #' library(TruncComp2)
-#' d <- load_trunc_comp2_example()
-#' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+#' data("trunc_comp_example", package = "TruncComp2")
+#' fit <- trunc_comp(Y ~ R, atom = 0, data = trunc_comp_example, method = "lrt")
 #' confint(fit)
 #' confint(fit, parameter = "joint", plot = FALSE, resolution = 10)
 #' confint(fit, parameter = "delta", method = "profile")
@@ -286,7 +286,7 @@ buildSingleIntervalMatrix <- function(interval, label, conf.level) {
 #' @export
 confint.trunc_comp_fit <- function(object, parameter = c("mu_delta", "alpha_delta"),
                                    method = "welch", mu_delta = NULL, log_or_delta = NULL,
-                                   conf_level = object$conf_level, plot = TRUE,
+                                   conf.level = object$conf.level, plot = TRUE,
                                    offset = NULL, resolution = 35,
                                    algorithm = c("grid", "optimize"), ...) {
   parameter <- unique(gsub("^muDelta$", "mu_delta", parameter))
@@ -297,7 +297,7 @@ confint.trunc_comp_fit <- function(object, parameter = c("mu_delta", "alpha_delt
     choices = c("mu_delta", "alpha_delta", "delta", "joint"),
     several.ok = TRUE
   ))
-  conf.level <- validateConfidenceLevel(conf_level)
+  conf.level <- validateConfidenceLevel(conf.level)
 
   if(!isTRUE(object$success)) {
     stop("Estimation failed. Cannot display confidence intervals.")
@@ -313,7 +313,7 @@ confint.trunc_comp_fit <- function(object, parameter = c("mu_delta", "alpha_delt
     }
 
     message("Calculating joint likelihood surface.\nThis may take some time depending on the resolution.")
-    joint <- joint_contrast_ci(object, mu_delta, log_or_delta, conf.level, plot, offset, resolution)
+    joint <- joint_contrast_surface(object, mu_delta, log_or_delta, conf.level, plot, offset, resolution)
     return(invisible(joint))
   }
 
@@ -348,10 +348,10 @@ confint.trunc_comp_fit <- function(object, parameter = c("mu_delta", "alpha_delt
     return(invisible(interval_mat))
   }
 
-  if(!isTRUE(all.equal(conf.level, object$conf_level, tolerance = sqrt(.Machine$double.eps)))) {
+  if(!isTRUE(all.equal(conf.level, object$conf.level, tolerance = sqrt(.Machine$double.eps)))) {
     stop(paste0("Component confidence intervals are stored at the fitted confidence level (",
-                format(object$conf_level),
-                "). Refit the model with the desired conf_level to change them."))
+                format(object$conf.level),
+                "). Refit the model with the desired conf.level to change them."))
   }
 
   cMat <- buildComponentCIMatrix(object, parameter)
@@ -395,7 +395,7 @@ jointContrastLRT <- function(data, muDelta, logORdelta) {
 }
 
 jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
-                                     conf.level = m$conf_level,
+                                     conf.level = m$conf.level,
                                      plot = TRUE, offset = NULL, resolution = 35,
                                      include_delta = FALSE) {
   if(!inherits(m, "trunc_comp_fit")) {
@@ -408,8 +408,7 @@ jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
     stop("Estimation failed. Cannot calculate simultaneous confidence regions.")
   }
 
-  if(!(identical(m$method, "Semi-empirical Likelihood Ratio Test") ||
-       identical(m$method, "Parametric Likelihood Ratio Test"))) {
+  if(!(identical(m$method, "splrt") || identical(m$method, "lrt"))) {
     stop("Simultaneous confidence regions are only implemented for the parametric and semi-parametric likelihood ratio models.")
   }
 
@@ -432,7 +431,7 @@ jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
 
   matOut <- matrix(NA, length(muDelta), length(logORdelta))
   deltaOut <- if(isTRUE(include_delta)) matrix(NA, length(muDelta), length(logORdelta)) else NULL
-  if(identical(m$method, "Semi-empirical Likelihood Ratio Test")) {
+  if(identical(m$method, "splrt")) {
     splrtReference <- prepareSPLRTJointReference(m$data, atom = m$atom)
 
     for(a in seq_along(muDelta)) {
@@ -468,13 +467,10 @@ jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
   out <- list(
     mu_delta = muDelta,
     log_or_delta = logORdelta,
-    muDelta = muDelta,
-    logORdelta = logORdelta,
     surface = matOut
   )
   if(isTRUE(include_delta)) {
     out$delta_surface <- deltaOut
-    out$deltaSurface <- deltaOut
   }
   out
 }
@@ -482,15 +478,15 @@ jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
 #' Joint confidence-region surface for an unadjusted fit
 #'
 #' Evaluates the simultaneous confidence-region surface for a fitted
-#' `"TruncComp2"` object from the unadjusted parametric or semi-parametric
+#' `"trunc_comp_fit"` object from the unadjusted parametric or semi-parametric
 #' likelihood-ratio method.
 #'
 #' @param m A successful unadjusted `"trunc_comp_fit"` object fitted with
-#'   `method = "LRT"` or `method = "SPLRT"`.
+#'   `method = "lrt"` or `method = "splrt"`.
 #' @param mu_delta Optional grid values for the mean-difference axis.
 #' @param log_or_delta Optional grid values for the log-odds-ratio axis.
-#' @param conf_level Confidence level used for the plotted contour. Defaults to
-#'   `m$conf_level`.
+#' @param conf.level Confidence level used for the plotted contour. Defaults to
+#'   `m$conf.level`.
 #' @param plot Logical; if `TRUE`, plot the surface and contour.
 #' @param offset Optional grid expansion. If omitted, a data-adaptive default is
 #'   derived from the fitted marginal intervals or fallback data scales. A
@@ -505,32 +501,43 @@ jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
 #' thin wrapper around [jointContrastSurfaceData()] with `include_delta = FALSE`.
 #' @examples
 #' library(TruncComp2)
-#' d <- load_trunc_comp2_example()
-#' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
-#' surface <- joint_contrast_ci(fit, plot = FALSE, resolution = 10)
+#' data("trunc_comp_example", package = "TruncComp2")
+#' fit <- trunc_comp(Y ~ R, atom = 0, data = trunc_comp_example, method = "splrt")
+#' surface <- joint_contrast_surface(fit, plot = FALSE, resolution = 10)
 #' str(surface)
 #' @export
-joint_contrast_ci <- function(m, mu_delta = NULL, log_or_delta = NULL,
-                              conf_level = m$conf_level, plot = TRUE,
-                              offset = NULL, resolution = 35) {
-  surface <- jointContrastSurfaceData(
+joint_contrast_surface <- function(m, mu_delta = NULL, log_or_delta = NULL,
+                                   conf.level = m$conf.level, plot = TRUE,
+                                   offset = NULL, resolution = 35) {
+  jointContrastSurfaceData(
     m,
     muDelta = mu_delta,
     logORdelta = log_or_delta,
-    conf.level = conf_level,
+    conf.level = conf.level,
     plot = plot,
     offset = offset,
     resolution = resolution,
     include_delta = FALSE
   )
+}
 
-  list(
-    mu_delta = surface$mu_delta,
-    log_or_delta = surface$log_or_delta,
-    muDelta = surface$mu_delta,
-    logORdelta = surface$log_or_delta,
-    surface = surface$surface
+#' Deprecated compatibility wrapper for [joint_contrast_surface()]
+#'
+#' @inheritParams joint_contrast_surface
+#' @export
+joint_contrast_ci <- function(m, mu_delta = NULL, log_or_delta = NULL,
+                              conf.level = m$conf.level, plot = TRUE,
+                              offset = NULL, resolution = 35) {
+  .Deprecated("joint_contrast_surface")
+  joint_contrast_surface(
+    m = m,
+    mu_delta = mu_delta,
+    log_or_delta = log_or_delta,
+    conf.level = conf.level,
+    plot = plot,
+    offset = offset,
+    resolution = resolution
   )
 }
 
-jointContrastCI <- joint_contrast_ci
+jointContrastCI <- joint_contrast_surface

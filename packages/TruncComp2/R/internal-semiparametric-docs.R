@@ -1,7 +1,7 @@
 #' Internal semi-parametric likelihood-ratio helpers
 #'
 #' Developer-facing documentation for the high-level semi-parametric fitting
-#' wrappers used by `method = "SPLRT"`.
+#' wrappers used by `method = "splrt"`.
 #'
 #' @name trunccomp2-splrt-helpers
 #' @title Internal semi-parametric likelihood-ratio helpers
@@ -13,32 +13,37 @@
 #' @aliases SPLRT
 #' @usage
 #' adjusted_SPLRT(
-#'   data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, atom = NULL
+#'   data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, atom = NULL,
+#'   call = NULL
 #' )
-#' SPLRT(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, atom = NULL)
+#' SPLRT(
+#'   data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL, atom = NULL,
+#'   call = NULL
+#' )
 #' @details
 #' ### `adjusted_SPLRT(data, conf.level = 0.95, adjust = NULL,
-#' adjust_spec = NULL, atom = NULL)`
+#' adjust_spec = NULL, atom = NULL, call = NULL)`
 #'
 #' Fits the adjusted semi-parametric procedure. `data` is the standardized
 #' analysis frame, `conf.level` controls the marginal intervals, `adjust` is the
 #' additive baseline-covariate formula, `adjust_spec` is the printable metadata
-#' string stored on the result, and `atom` is carried through for consistency.
-#' The helper returns a successful or failed `"TruncComp2"` object. It rejects
+#' string stored on the result, `atom` is carried through for consistency, and
+#' `call` stores the matched public call when available. The helper returns a
+#' successful or failed `"trunc_comp_fit"` object. It rejects
 #' irregular adjusted logistic fits using the parametric regularity checks and
 #' delegates the observed-outcome component to `el_regression_fit()`. Its role
 #' is to keep the adjusted `SPLRT` logic separate from the simpler unadjusted
 #' empirical-likelihood path while preserving the same result structure.
 #'
 #' ### `SPLRT(data, conf.level = 0.95, adjust = NULL, adjust_spec = NULL,
-#' atom = NULL)`
+#' atom = NULL, call = NULL)`
 #'
-#' Main semi-parametric estimator called by `truncComp_core()`. In the
+#' Main semi-parametric estimator called by `trunc_comp_core()`. In the
 #' unadjusted case it extracts the observed outcomes by arm, runs the
 #' two-sample empirical-likelihood test with `el_mean_diff_fit()`, fits the
 #' logistic observation models with `glm()`, and adds the two component
 #' likelihood-ratio statistics. When `adjust` is non-`NULL`, it delegates to
-#' `adjusted_SPLRT()`. The helper returns a `"TruncComp2"` object and, on
+#' `adjusted_SPLRT()`. The helper returns a `"trunc_comp_fit"` object and, on
 #' success, passes it through `augmentDeltaInference()` so unadjusted fits gain
 #' the derived `Delta` point estimate. Its role is to expose a single
 #' semi-parametric implementation point to the rest of the package.
@@ -320,6 +325,6 @@ NULL
 #' and the profile object at the unrestricted estimate. Its role is to expose a
 #' single adjusted empirical-likelihood API to the `SPLRT` wrapper.
 #'
-#' @seealso [SPLRT()], [adjusted_SPLRT()], [jointContrastCI()]
+#' @seealso [SPLRT()], [adjusted_SPLRT()], [joint_contrast_surface()]
 #' @keywords internal
 NULL

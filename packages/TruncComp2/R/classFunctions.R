@@ -3,7 +3,7 @@
 #' Prints the estimated treatment contrasts, their confidence intervals, and the
 #' joint likelihood-ratio result for a fitted `"trunc_comp_fit"` object.
 #'
-#' @param object A `"trunc_comp_fit"` object returned by [truncComp()].
+#' @param object A `"trunc_comp_fit"` object returned by [trunc_comp()].
 #' @param ... Unused additional arguments.
 #' @return The input object, returned invisibly.
 #' @details
@@ -15,13 +15,19 @@
 #' f0 <- function(n) stats::rnorm(n, 3, 1)
 #' f1 <- function(n) stats::rnorm(n, 3.5, 1)
 #' d <- simulate_truncated_data(n = 40, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
-#' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+#' fit <- trunc_comp(Y ~ R, atom = 0, data = d, method = "splrt")
 #' summary(fit)
 #' @rdname summary
 #' @export
 summary.trunc_comp_fit <- function(object, ...) {
-  cat("Method:", object$method, "\n")
-  cat("Confidence level = ", object$conf_level * 100, "%\n\n", sep = "")
+  if(!is.null(object$call)) {
+    cat("Call:\n")
+    print(object$call)
+    cat("\n")
+  }
+
+  cat("Method:", trunc_comp_method_label(object$method), "\n")
+  cat("Confidence level = ", object$conf.level * 100, "%\n\n", sep = "")
   if(!is.null(object$adjust)) {
     cat("Adjusted for:", object$adjust, "\n\n")
   }
@@ -49,7 +55,7 @@ summary.trunc_comp_fit <- function(object, ...) {
     cat("Treatment contrasts\n")
     print.default(estimates)
     cat("\nJoint test statistic:", object$statistic)
-    cat("\np-value:", object$p, "\n")
+    cat("\np-value:", object$p.value, "\n")
   } else {
     cat("The estimation procedure failed.\n")
     cat("The error message was:", object$error, "\n")
@@ -63,7 +69,7 @@ summary.trunc_comp_fit <- function(object, ...) {
 #'
 #' Prints a concise overview of a fitted `"trunc_comp_fit"` object.
 #'
-#' @param x A `"trunc_comp_fit"` object returned by [truncComp()].
+#' @param x A `"trunc_comp_fit"` object returned by [trunc_comp()].
 #' @param ... Unused additional arguments.
 #' @return The input object, returned invisibly.
 #' @examples
@@ -71,18 +77,22 @@ summary.trunc_comp_fit <- function(object, ...) {
 #' f0 <- function(n) stats::rnorm(n, 3, 1)
 #' f1 <- function(n) stats::rnorm(n, 3.5, 1)
 #' d <- simulate_truncated_data(n = 40, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
-#' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+#' fit <- trunc_comp(Y ~ R, atom = 0, data = d, method = "lrt")
 #' print(fit)
 #' @rdname print
 #' @export
 print.trunc_comp_fit <- function(x, ...) {
   cat("<trunc_comp_fit>\n")
-  cat("Method:", x$method, "\n")
+  if(!is.null(x$call)) {
+    cat("Call:\n")
+    print(x$call)
+  }
+  cat("Method:", trunc_comp_method_label(x$method), "\n")
   cat("Success:", isTRUE(x$success), "\n")
 
   if(isTRUE(x$success)) {
     estimates <- stats::setNames(
-      c(x$mu_delta, x$alpha_delta, x$delta),
+      c(numeric_or_na(x$mu_delta), numeric_or_na(x$alpha_delta), numeric_or_na(x$delta)),
       c("mu_delta", "alpha_delta", "delta")
     )
     print.default(estimates)
@@ -99,19 +109,21 @@ print.trunc_comp_fit <- function(x, ...) {
 #' Returns the primary fitted treatment-effect estimates from a
 #' `"trunc_comp_fit"` object.
 #'
-#' @param object A `"trunc_comp_fit"` object returned by [truncComp()].
+#' @param object A `"trunc_comp_fit"` object returned by [trunc_comp()].
 #' @param ... Unused additional arguments.
 #' @return A named numeric vector with entries `mu_delta`, `alpha_delta`, and
 #'   `delta`.
 #' @examples
 #' library(TruncComp2)
-#' d <- load_trunc_comp2_example()
-#' fit <- truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+#' data("trunc_comp_example", package = "TruncComp2")
+#' fit <- trunc_comp(Y ~ R, atom = 0, data = trunc_comp_example, method = "lrt")
 #' coef(fit)
 #' @export
 coef.trunc_comp_fit <- function(object, ...) {
   stats::setNames(
-    c(object$mu_delta, object$alpha_delta, object$delta),
+    c(numeric_or_na(object$mu_delta),
+      numeric_or_na(object$alpha_delta),
+      numeric_or_na(object$delta)),
     c("mu_delta", "alpha_delta", "delta")
   )
 }

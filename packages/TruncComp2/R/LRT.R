@@ -386,11 +386,6 @@ parametric_adjusted_lrt_fit <- function(data, adjust, conf.level = 0.95,
 
   list(
     success = TRUE,
-    muDelta = mu_delta,
-    muDeltaCI = mu_delta_ci,
-    alphaDelta = exp(log_alpha_delta),
-    alphaDeltaCI = alpha_delta_ci,
-    Delta = NA_real_,
     mu_delta = mu_delta,
     mu_delta_ci = mu_delta_ci,
     alpha_delta = exp(log_alpha_delta),
@@ -402,7 +397,7 @@ parametric_adjusted_lrt_fit <- function(data, adjust, conf.level = 0.95,
     statistic_A = W_A,
     statistic_Y = W_Y,
     statistic = W,
-    p = stats::pchisq(W, df = 2, lower.tail = FALSE),
+    p.value = stats::pchisq(W, df = 2, lower.tail = FALSE),
     bernoulli = list(
       fit_null = fits$bernoulli_null,
       fit_alt = fits$bernoulli_alt,
@@ -441,11 +436,6 @@ parametric_lrt_fit <- function(data, conf.level = 0.95, adjust = NULL,
 
   list(
     success = TRUE,
-    muDelta = normal$muDelta,
-    muDeltaCI = normal$muDeltaCI,
-    alphaDelta = bernoulli$alphaDelta,
-    alphaDeltaCI = bernoulli$alphaDeltaCI,
-    Delta = NA_real_,
     mu_delta = normal$muDelta,
     mu_delta_ci = normal$muDeltaCI,
     alpha_delta = bernoulli$alphaDelta,
@@ -457,14 +447,14 @@ parametric_lrt_fit <- function(data, conf.level = 0.95, adjust = NULL,
     statistic_A = bernoulli$W,
     statistic_Y = normal$W,
     statistic = W,
-    p = stats::pchisq(W, df = 2, lower.tail = FALSE),
+    p.value = stats::pchisq(W, df = 2, lower.tail = FALSE),
     bernoulli = bernoulli,
     normal = normal
   )
 }
 
 LRT <- function(data, init = NULL, conf.level = 0.95, adjust = NULL, adjust_spec = NULL,
-                atom = NULL) {
+                atom = NULL, call = NULL) {
   if(is.null(adjust_spec)) {
     adjust_spec <- adjustmentSpecification(adjust)
   }
@@ -472,29 +462,35 @@ LRT <- function(data, init = NULL, conf.level = 0.95, adjust = NULL, adjust_spec
   fit <- parametric_lrt_fit(data, conf.level = conf.level, adjust = adjust)
 
   if(!isTRUE(fit$success)) {
-    return(returnErrorData(fit$error,
-                           method = "LRT",
-                           conf.level = conf.level,
-                           init = init,
-                           data = data,
-                           adjust = adjust_spec,
-                           atom = atom))
+    return(new_failed_trunc_comp_fit(
+      fit$error,
+      method = "lrt",
+      conf.level = conf.level,
+      init = init,
+      data = data,
+      adjust = adjust_spec,
+      atom = atom,
+      call = call
+    ))
   }
 
-  out <- newTruncComp2(muDelta = fit$muDelta,
-                       muDeltaCI = fit$muDeltaCI,
-                       alphaDelta = fit$alphaDelta,
-                       alphaDeltaCI = fit$alphaDeltaCI,
-                       Delta = fit$Delta,
-                       W = fit$W,
-                       p = fit$p,
-                       method = "LRT",
-                       conf.level = conf.level,
-                       success = TRUE,
-                       init = init,
-                       data = data,
-                       adjust = adjust_spec,
-                       atom = atom)
+  out <- new_trunc_comp_fit(
+    mu_delta = fit$mu_delta,
+    mu_delta_ci = fit$mu_delta_ci,
+    alpha_delta = fit$alpha_delta,
+    alpha_delta_ci = fit$alpha_delta_ci,
+    delta = fit$delta,
+    statistic = fit$statistic,
+    p.value = fit$p.value,
+    method = "lrt",
+    conf.level = conf.level,
+    success = TRUE,
+    init = init,
+    data = data,
+    adjust = adjust_spec,
+    atom = atom,
+    call = call
+  )
 
   augmentDeltaInference(out)
 }

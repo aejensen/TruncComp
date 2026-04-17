@@ -7,7 +7,7 @@
 \method{summary}{trunc_comp_fit}(object, ...)
 }
 \arguments{
-\item{object}{A \code{"trunc_comp_fit"} object returned by \code{\link[=truncComp]{truncComp()}}.}
+\item{object}{A \code{"trunc_comp_fit"} object returned by \code{\link[=trunc_comp]{trunc_comp()}}.}
 
 \item{...}{Unused additional arguments.}
 }
@@ -28,6 +28,6 @@ library(TruncComp2)
 f0 <- function(n) stats::rnorm(n, 3, 1)
 f1 <- function(n) stats::rnorm(n, 3.5, 1)
 d <- simulate_truncated_data(n = 40, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
-fit <- truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+fit <- trunc_comp(Y ~ R, atom = 0, data = d, method = "splrt")
 summary(fit)
 }

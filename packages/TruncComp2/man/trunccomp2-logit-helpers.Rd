@@ -139,6 +139,6 @@ component of the semi-parametric simultaneous region and the optimizer-based
 }
 }
 \seealso{
-\code{\link[=logit.prepare]{logit.prepare()}}, \code{\link[=jointContrastCI]{jointContrastCI()}}, \code{\link[=delta_profile_factory]{delta_profile_factory()}}
+\code{\link[=logit.prepare]{logit.prepare()}}, \code{\link[=joint_contrast_surface]{joint_contrast_surface()}}, \code{\link[=delta_profile_factory]{delta_profile_factory()}}
 }
 \keyword{internal}

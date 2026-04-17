@@ -2,24 +2,17 @@
 % Please edit documentation in R/exampleData.R
 \name{load_trunc_comp2_adjusted_example}
 \alias{load_trunc_comp2_adjusted_example}
-\title{Load the packaged adjusted TruncComp2 example data}
+\title{Deprecated compatibility wrapper for \code{trunc_comp_adjusted_example}}
 \usage{
 load_trunc_comp2_adjusted_example()
 }
 \value{
-A data frame with 50 observations and 3 variables: \code{R}, the binary
-treatment indicator; \code{L}, a three-level categorical baseline covariate with
-levels \code{low}, \code{mid}, and \code{high}; and \code{Y}, the combined outcome where the
-atom value \code{0} denotes an unobserved or undefined continuous outcome.
+A data frame identical to the \code{trunc_comp_adjusted_example} dataset.
 }
 \description{
-Loads the fixed example data used to illustrate additive covariate adjustment
-in both the parametric and semi-parametric procedures.
-}
-\details{
-The example is stored as an \code{.rds} file under
-\code{inst/extdata/TruncComp2AdjustedExample.rds}. This helper provides a stable
-public loading mechanism without relying on \code{data()}.
+Returns the packaged adjusted example dataset formerly exposed through a
+dedicated loader function. Use
+\code{data("trunc_comp_adjusted_example", package = "TruncComp2")} instead.
 }
 \examples{
 d <- load_trunc_comp2_adjusted_example()

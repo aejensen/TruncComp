@@ -149,7 +149,7 @@ direct \code{Delta} profile interval.
 
 Creates the memoized profile function \verb{targetDelta -> best candidate} for a
 fitted object. The returned closure caches results by target \code{Delta}, returns
-the fitted point with statistic zero when the target matches \code{object$Delta},
+the fitted point with statistic zero when the target matches \code{object$delta},
 and otherwise delegates to \code{delta_profile_optimize_logor()}. Its role is to
 expose a reusable profile function for interval inversion.
 }
@@ -217,11 +217,12 @@ Final augmentation step applied to successful fits. For unadjusted fits with
 a known atom it computes the derived \code{Delta} point estimate. For failed,
 adjusted, or atom-less fits it leaves \code{Delta} as the existing value or sets
 it to \code{NA_real_}. Any interval for \code{Delta} is computed later, on demand,
-through \code{\link[=confint.TruncComp2]{confint.TruncComp2()}}. Its role is to attach the derived
+through \code{\link[=confint.trunc_comp_fit]{confint.trunc_comp_fit()}}. Its role is to attach the derived
 combined-outcome point estimate only when it is methodologically meaningful.
 }
 }
 \seealso{
-\code{\link[=confint.TruncComp2]{confint.TruncComp2()}}, \code{\link[=jointContrastCI]{jointContrastCI()}}, \code{\link[=delta_projected_interval]{delta_projected_interval()}}
+\code{\link[=confint.trunc_comp_fit]{confint.trunc_comp_fit()}}, \code{\link[=joint_contrast_surface]{joint_contrast_surface()}},
+\code{\link[=delta_projected_interval]{delta_projected_interval()}}
 }
 \keyword{internal}

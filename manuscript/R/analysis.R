@@ -1,6 +1,6 @@
 compute_example_results <- function(repo_root) {
   d <- load_example_data(repo_root)
-  model <- TruncComp::truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+  model <- TruncComp2::truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
 
   list(
     data = d,
@@ -73,14 +73,15 @@ analyze_application_data <- function(application_data) {
   d <- application_data$data
   metadata <- application_data$metadata
 
-  model_lrt <- TruncComp::truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
-  model_splrt <- TruncComp::truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
-  surface <- suppressMessages(stats::confint(
-    model_splrt,
-    type = "simultaneous",
-    resolution = metadata$surface_resolution,
-    plot = FALSE
-  ))
+  model_lrt <- TruncComp2::truncComp(Y ~ R, atom = 0, data = d, method = "LRT")
+  model_splrt <- TruncComp2::truncComp(Y ~ R, atom = 0, data = d, method = "SPLRT")
+  surface <- suppressMessages(
+    TruncComp2::jointContrastCI(
+      model_splrt,
+      resolution = metadata$surface_resolution,
+      plot = FALSE
+    )
+  )
   ttest_p <- stats::t.test(Y ~ R, data = d)$p.value
   wilcox_p <- suppressWarnings(stats::wilcox.test(Y ~ R, data = d)$p.value)
 
@@ -102,21 +103,19 @@ analyze_application_data <- function(application_data) {
 }
 
 compute_application_results <- function(manuscript_dir) {
-  dryad_data <- load_local_dryad_application_data(manuscript_dir)
-  if (!is.null(dryad_data)) {
-    dryad_results <- analyze_application_data(dryad_data)
+  local_data <- load_application_data(manuscript_dir)
+  if (!is.null(local_data)) {
+    local_results <- analyze_application_data(local_data)
     if (application_has_desired_contrast(
-      dryad_results$ttest_p,
-      dryad_results$wilcox_p,
-      dryad_results$model_lrt$p,
-      dryad_results$model_splrt$p
+      local_results$ttest_p,
+      local_results$wilcox_p,
+      local_results$model_lrt$p,
+      local_results$model_splrt$p
     )) {
-      return(dryad_results)
+      return(local_results)
     }
 
-    message("Dryad ARDS data did not yield a different-conclusion case; using the RAND HIE fallback dataset.")
-  } else {
-    message("Local Dryad application data not found; using the RAND HIE fallback dataset.")
+    message("Local application data did not yield a different-conclusion case; using the RAND HIE fallback dataset.")
   }
 
   analyze_application_data(.load_randhealth_application_data())

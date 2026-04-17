@@ -1,10 +1,10 @@
-load_local_trunccomp <- function(repo_root) {
+load_local_trunccomp2 <- function(repo_root) {
   if (!requireNamespace("pkgload", quietly = TRUE)) {
-    stop("The pkgload package is required to load the local TruncComp package.", call. = FALSE)
+    stop("The pkgload package is required to load the local TruncComp2 package.", call. = FALSE)
   }
 
   pkgload::load_all(
-    file.path(repo_root, "packages", "TruncComp"),
+    file.path(repo_root, "packages", "TruncComp2"),
     quiet = TRUE,
     export_all = FALSE,
     helpers = FALSE,
@@ -15,13 +15,20 @@ load_local_trunccomp <- function(repo_root) {
 }
 
 load_example_data <- function(repo_root) {
-  data_env <- new.env(parent = emptyenv())
-  load(file.path(repo_root, "packages", "TruncComp", "data", "TruncCompExample.RData"), envir = data_env)
-  data_env$TruncCompExample
+  TruncComp2::loadTruncComp2Example()
 }
 
 .application_data_dir <- function(manuscript_dir) {
   ensure_dir(file.path(manuscript_dir, "application-data"))
+}
+
+.application_covid_path <- function(manuscript_dir) {
+  path <- file.path(manuscript_dir, "covidData.csv")
+  if (file.exists(path)) {
+    return(path)
+  }
+
+  NULL
 }
 
 .application_dryad_standardized_path <- function(manuscript_dir) {
@@ -154,6 +161,30 @@ load_example_data <- function(repo_root) {
   )
 }
 
+.application_metadata_covid <- function() {
+  list(
+    dataset_key = "covid-steroid-2-imv",
+    dataset_name = "the COVID-STEROID 2 invasive mechanical ventilation subgroup",
+    dataset_description = paste(
+      "the COVID-STEROID 2 subgroup of patients receiving",
+      "invasive mechanical ventilation at baseline"
+    ),
+    group_labels = c(
+      "Low dose dexamethasone (6 mg)",
+      "High dose dexamethasone (12 mg)"
+    ),
+    outcome_label = "Days alive without life support at day 28",
+    outcome_short = "days alive without life support",
+    atom_meaning = "no days alive without life support",
+    observed_event_label = "having positive days alive without life support",
+    display_x_label = "Days alive without life support",
+    histogram_breaks = seq(-0.5, 28.5, by = 1),
+    histogram_xlim = c(0, 28),
+    histogram_cap = NULL,
+    surface_resolution = 100
+  )
+}
+
 .application_metadata_randhealth <- function() {
   list(
     dataset_key = "randhealth-inpdol-0-vs-50",
@@ -169,6 +200,22 @@ load_example_data <- function(repo_root) {
     histogram_xlim = c(0, 3000),
     histogram_cap = 3000,
     surface_resolution = 60
+  )
+}
+
+.load_covid_application_data <- function(path) {
+  raw <- utils::read.csv(path, sep = ";", stringsAsFactors = FALSE)
+  data <- .validate_application_data(
+    data.frame(
+      Y = as.numeric(raw$dawols28),
+      R = as.integer(!as.logical(raw$allocation))
+    ),
+    "The local COVID-STEROID 2 application CSV"
+  )
+
+  list(
+    data = data,
+    metadata = .application_metadata_covid()
   )
 }
 
@@ -280,6 +327,12 @@ load_local_dryad_application_data <- function(manuscript_dir) {
 }
 
 load_application_data <- function(manuscript_dir) {
+  covid_path <- .application_covid_path(manuscript_dir)
+  if (!is.null(covid_path)) {
+    message("Using local COVID-STEROID 2 application data.")
+    return(.load_covid_application_data(covid_path))
+  }
+
   dryad <- load_local_dryad_application_data(manuscript_dir)
   if (!is.null(dryad)) {
     return(dryad)

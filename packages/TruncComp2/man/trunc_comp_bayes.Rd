@@ -15,6 +15,8 @@ trunc_comp_bayes(formula, ...)
   conf.level = 0.95,
   continuous_support = c("real_line", "positive_real"),
   mixture_components = 10,
+  auto_select_mixture_components = TRUE,
+  mixture_components_max = NULL,
   chains = 4,
   iter_warmup = 1000,
   iter_sampling = 1000,
@@ -33,6 +35,8 @@ trunc_comp_bayes(formula, ...)
   conf.level = 0.95,
   continuous_support = c("real_line", "positive_real"),
   mixture_components = 10,
+  auto_select_mixture_components = TRUE,
+  mixture_components_max = NULL,
   chains = 4,
   iter_warmup = 1000,
   iter_sampling = 1000,
@@ -66,8 +70,18 @@ while \code{"positive_real"} fits a Gamma-mixture model on the positive real
 line and therefore requires all non-atom outcomes to be strictly
 positive.}
 
-\item{mixture_components}{Truncation level for the arm-specific stick-breaking
-mixtures. Must be at least \code{2}.}
+\item{mixture_components}{Initial truncation level for the arm-specific
+stick-breaking mixtures. Must be at least \code{2}. The default initial level
+remains \code{10}.}
+
+\item{auto_select_mixture_components}{Logical flag indicating whether the
+Bayesian fit should automatically increase the truncation level by
+doubling it until the omitted-tail diagnostic is acceptable or the maximum
+level is reached.}
+
+\item{mixture_components_max}{Optional maximum truncation level used when
+\code{auto_select_mixture_components = TRUE}. If left \code{NULL}, the effective
+maximum is \code{max(40, mixture_components)}.}
 
 \item{chains}{Number of Stan chains.}
 
@@ -97,8 +111,9 @@ the default interface.}
 \value{
 An object of class \code{"trunc_comp_bayes_fit"} containing the fitted
 \code{stanfit}, posterior draws, stored posterior summaries, sampler diagnostics,
-the standardized analysis data, and the matched call. Failed fits return
-the same class with \code{success = FALSE} and an error message.
+truncation-selection settings and history, the standardized analysis data,
+and the matched call. Failed fits return the same class with
+\code{success = FALSE} and an error message.
 }
 \description{
 Fits an explicit two-part Bayesian model for a binary treatment comparison
@@ -116,6 +131,17 @@ on the positive real line. Likelihood-ratio statistics are not reported, but
 discrepancy-based posterior predictive p-values are available through
 \code{\link[=posterior_predictive_pvalues]{posterior_predictive_pvalues()}} and \code{\link[=posterior_predictive_check]{posterior_predictive_check()}} for model
 checking.
+
+The \code{mixture_components} argument now controls the initial finite
+stick-breaking approximation level. When
+\code{auto_select_mixture_components = TRUE}, the package fits the requested
+initial level, computes an omitted-tail diagnostic based on the posterior
+draws of the final retained stick weight and the concentration parameter in
+each arm, and accepts the current level only when those omitted-tail draws
+are sufficiently small and the usual sampler diagnostics also pass. If not,
+the truncation level is doubled and the model is refit until an acceptable
+level is found or \code{mixture_components_max} is reached. The smallest accepted
+level is retained as the final fit.
 
 In the stored posterior draws and summaries:
 \itemize{

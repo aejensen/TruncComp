@@ -63,6 +63,17 @@ summary.trunc_comp_bayes_fit <- function(object, ...) {
   if(!is.null(object$settings$continuous_support)) {
     cat("Continuous support =", object$settings$continuous_support, "\n")
   }
+  if(!is.null(object$settings$mixture_components_initial)) {
+    cat("Mixture components: initial =", object$settings$mixture_components_initial)
+    if(!is.null(object$settings$mixture_components_final)) {
+      cat(", final =", object$settings$mixture_components_final)
+    }
+    cat("\n")
+  }
+  if(!is.null(object$settings$auto_select_mixture_components)) {
+    cat("Automatic truncation selection =",
+        isTRUE(object$settings$auto_select_mixture_components), "\n")
+  }
   cat("\n")
 
   ppc_table <- NULL
@@ -133,10 +144,28 @@ summary.trunc_comp_bayes_fit <- function(object, ...) {
   cat("  Max Rhat:", format(diagnostics$max_rhat, digits = 4), "\n")
   cat("  Min bulk ESS:", format(diagnostics$min_bulk_ess, digits = 6), "\n")
   cat("  Min tail ESS:", format(diagnostics$min_tail_ess, digits = 6), "\n")
+  cat("  Core OK:", isTRUE(diagnostics$core_ok), "\n")
+  if(!is.null(diagnostics$truncation)) {
+    cat("  Truncation OK:", isTRUE(diagnostics$truncation_ok), "\n")
+    cat("  Omitted-tail q95:",
+        format(diagnostics$truncation$q95[["q95_tail_0"]], digits = 4),
+        "(control),",
+        format(diagnostics$truncation$q95[["q95_tail_1"]], digits = 4),
+        "(treatment)\n")
+    cat("  Omitted-tail threshold:",
+        format(diagnostics$truncation$thresholds[["threshold_0"]], digits = 4),
+        "(control),",
+        format(diagnostics$truncation$thresholds[["threshold_1"]], digits = 4),
+        "(treatment)\n")
+  }
   cat("  Diagnostic OK:", isTRUE(diagnostics$diagnostic_ok), "\n\n")
 
   if(!isTRUE(diagnostics$diagnostic_ok)) {
     cat("Sampler diagnostics indicate potential issues. Interpret posterior summaries with caution.\n\n")
+  }
+
+  if(!is.null(object$settings$mixture_selection_note)) {
+    cat(object$settings$mixture_selection_note, "\n\n")
   }
 
   invisible(summary_object)

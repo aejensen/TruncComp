@@ -35,6 +35,7 @@ test_that("Bayesian methods behave on failed fits", {
     atom = 0,
     data = bad_data,
     mixture_components = 3,
+    auto_select_mixture_components = FALSE,
     chains = 2,
     iter_warmup = 20,
     iter_sampling = 20,

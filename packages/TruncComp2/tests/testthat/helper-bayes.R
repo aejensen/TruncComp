@@ -47,6 +47,7 @@ bayes_test_fit_args <- function(seed = 42L) {
   list(
     atom = 0,
     mixture_components = 3,
+    auto_select_mixture_components = FALSE,
     chains = 2,
     iter_warmup = 60,
     iter_sampling = 60,

@@ -11,6 +11,20 @@ test_that("Successful Bayesian fits return the expected object shape", {
     "settings", "conf.level", "success", "error", "data", "atom", "call"
   ) %in% names(fit)))
 
+  expect_true(all(c(
+    "auto_select_mixture_components",
+    "mixture_components_initial",
+    "mixture_components_final",
+    "mixture_components_max",
+    "mixture_component_path",
+    "mixture_selection_history"
+  ) %in% names(fit$settings)))
+  expect_false(fit$settings$auto_select_mixture_components)
+  expect_equal(fit$settings$mixture_components_initial, 3L)
+  expect_equal(fit$settings$mixture_components_final, 3L)
+  expect_equal(fit$settings$mixture_component_path, 3L)
+  expect_s3_class(fit$settings$mixture_selection_history, "data.frame")
+
   expect_true(all(TruncComp2:::bayes_parameter_names("all") %in% names(fit$draws)))
   expect_gt(nrow(fit$draws), 0)
 
@@ -21,6 +35,8 @@ test_that("Successful Bayesian fits return the expected object shape", {
   expect_true(all(is.finite(arm_estimates)))
   expect_equal(rownames(fit$ppc_table), c("atom", "continuous"))
   expect_true(all(is.finite(fit$ppc_table$p_value)))
+  expect_true(all(c("core_ok", "truncation_ok", "truncation", "parameter_table") %in% names(fit$diagnostics)))
+  expect_s3_class(fit$diagnostics$truncation$parameter_table, "data.frame")
 })
 
 test_that("Positive-support Bayesian fits return the expected object shape", {
@@ -39,4 +55,5 @@ test_that("Positive-support Bayesian fits return the expected object shape", {
   expect_true(all(is.finite(arm_estimates)))
   expect_equal(rownames(fit$ppc_table), c("atom", "continuous"))
   expect_true(all(is.finite(fit$ppc_table$p_value)))
+  expect_true(all(c("core_ok", "truncation_ok", "truncation", "parameter_table") %in% names(fit$diagnostics)))
 })

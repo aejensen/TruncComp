@@ -18,6 +18,7 @@ test_that("Bayesian default interface infers the atom when omitted", {
     data$A,
     data$R,
     mixture_components = 3,
+    auto_select_mixture_components = FALSE,
     chains = 2,
     iter_warmup = 60,
     iter_sampling = 60,
@@ -62,6 +63,17 @@ test_that("Bayesian interface rejects unsupported inputs and invalid arguments",
   expect_error(
     trunc_comp_bayes(Y ~ R, atom = 0, data = data, mixture_components = 1),
     "mixture_components"
+  )
+
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = 0,
+      data = data,
+      mixture_components = 3,
+      mixture_components_max = 2
+    ),
+    "mixture_components_max"
   )
 
   expect_error(

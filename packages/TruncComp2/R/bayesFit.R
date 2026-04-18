@@ -298,6 +298,83 @@ validate_bayes_support_data <- function(data,
   invisible(TRUE)
 }
 
+validate_bayes_flag <- function(x, name) {
+  if(!(length(x) == 1L && is.logical(x) && !is.na(x))) {
+    stop(name, " must be TRUE or FALSE.")
+  }
+
+  isTRUE(x)
+}
+
+normalize_bayes_mixture_components_max <- function(mixture_components_max,
+                                                   mixture_components,
+                                                   auto_select_mixture_components = TRUE) {
+  auto_select_mixture_components <- validate_bayes_flag(
+    auto_select_mixture_components,
+    "auto_select_mixture_components"
+  )
+
+  if(is.null(mixture_components_max)) {
+    if(auto_select_mixture_components) {
+      return(as.integer(max(40L, mixture_components)))
+    }
+
+    return(as.integer(mixture_components))
+  }
+
+  mixture_components_max <- validate_bayes_positive_integer(
+    mixture_components_max,
+    "mixture_components_max",
+    min_value = mixture_components
+  )
+
+  if(mixture_components_max < mixture_components) {
+    stop("mixture_components_max must be >= mixture_components.")
+  }
+
+  mixture_components_max
+}
+
+bayes_mixture_component_ladder <- function(mixture_components,
+                                           mixture_components_max = mixture_components) {
+  mixture_components <- validate_bayes_positive_integer(
+    mixture_components,
+    "mixture_components",
+    min_value = 2L
+  )
+  mixture_components_max <- validate_bayes_positive_integer(
+    mixture_components_max,
+    "mixture_components_max",
+    min_value = mixture_components
+  )
+
+  ladder <- integer(0)
+  current <- mixture_components
+
+  while(current <= mixture_components_max) {
+    ladder <- c(ladder, current)
+    current <- current * 2L
+  }
+
+  as.integer(unique(ladder))
+}
+
+bayes_truncation_thresholds <- function(data) {
+  n_obs <- c(
+    as.integer(sum(data$A == 1L & data$R == 0L)),
+    as.integer(sum(data$A == 1L & data$R == 1L))
+  )
+
+  thresholds <- pmin(0.02, 1 / n_obs)
+  names(n_obs) <- c("n_obs_0", "n_obs_1")
+  names(thresholds) <- c("threshold_0", "threshold_1")
+
+  list(
+    n_obs = n_obs,
+    thresholds = thresholds
+  )
+}
+
 build_bayes_standata <- function(data, atom, mixture_components, prior,
                                  continuous_support = c("real_line", "positive_real")) {
   continuous_support <- bayes_continuous_support(continuous_support)
@@ -432,7 +509,65 @@ bayes_select_draws <- function(draws, variables) {
   draws[, c(metadata, variables), drop = FALSE]
 }
 
-bayes_diagnostics <- function(fit, draws, parameters = bayes_parameter_names("contrast")) {
+bayes_extract_truncation_draws <- function(fit, mixture_components) {
+  mixture_components <- validate_bayes_positive_integer(
+    mixture_components,
+    "mixture_components",
+    min_value = 2L
+  )
+
+  draws_array <- rstan::extract(
+    fit,
+    pars = c("alpha", "w"),
+    permuted = FALSE,
+    inc_warmup = FALSE
+  )
+
+  draws <- posterior::as_draws_df(draws_array)
+  bayes_compute_omitted_tail_draws(
+    draws = draws,
+    mixture_components = mixture_components
+  )
+}
+
+bayes_compute_omitted_tail_draws <- function(draws, mixture_components) {
+  mixture_components <- validate_bayes_positive_integer(
+    mixture_components,
+    "mixture_components",
+    min_value = 2L
+  )
+
+  required <- c(
+    "alpha[1]",
+    "alpha[2]",
+    sprintf("w[1,%d]", mixture_components),
+    sprintf("w[2,%d]", mixture_components)
+  )
+  missing <- setdiff(required, names(draws))
+
+  if(length(missing) > 0L) {
+    stop("Posterior draws are missing required truncation variables: ",
+         paste(missing, collapse = ", "), ".")
+  }
+
+  draws$omitted_tail_mass_0 <- draws[[sprintf("w[1,%d]", mixture_components)]] *
+    draws[["alpha[1]"]] / (1 + draws[["alpha[1]"]])
+  draws$omitted_tail_mass_1 <- draws[[sprintf("w[2,%d]", mixture_components)]] *
+    draws[["alpha[2]"]] / (1 + draws[["alpha[2]"]])
+
+  draws
+}
+
+bayes_convergence_ok <- function(max_rhat, min_bulk_ess, min_tail_ess) {
+  is.finite(max_rhat) &&
+    max_rhat <= 1.01 &&
+    is.finite(min_bulk_ess) &&
+    min_bulk_ess >= 400 &&
+    is.finite(min_tail_ess) &&
+    min_tail_ess >= 400
+}
+
+bayes_convergence_summary <- function(draws, parameters) {
   diagnostic_draws <- bayes_select_draws(draws, parameters)
   convergence <- posterior::summarise_draws(
     diagnostic_draws,
@@ -443,30 +578,144 @@ bayes_diagnostics <- function(fit, draws, parameters = bayes_parameter_names("co
   convergence <- as.data.frame(convergence)
   rownames(convergence) <- convergence$variable
 
-  sampler_params <- rstan::get_sampler_params(fit, inc_warmup = FALSE)
-  divergences <- sum(vapply(
-    sampler_params,
-    function(x) sum(x[, "divergent__"]),
-    numeric(1)
-  ))
-
   max_rhat <- max(convergence$rhat, na.rm = TRUE)
   min_bulk_ess <- min(convergence$ess_bulk, na.rm = TRUE)
   min_tail_ess <- min(convergence$ess_tail, na.rm = TRUE)
 
   list(
-    divergences = as.integer(divergences),
     max_rhat = as.numeric(max_rhat),
     min_bulk_ess = as.numeric(min_bulk_ess),
     min_tail_ess = as.numeric(min_tail_ess),
-    diagnostic_ok = isTRUE(divergences == 0) &&
-      is.finite(max_rhat) &&
-      max_rhat <= 1.01 &&
-      is.finite(min_bulk_ess) &&
-      min_bulk_ess >= 400 &&
-      is.finite(min_tail_ess) &&
-      min_tail_ess >= 400,
+    convergence_ok = bayes_convergence_ok(max_rhat, min_bulk_ess, min_tail_ess),
     parameter_table = convergence
+  )
+}
+
+bayes_truncation_ok <- function(q95, thresholds, convergence_ok, divergences = 0L) {
+  isTRUE(divergences == 0L) &&
+    isTRUE(convergence_ok) &&
+    all(is.finite(q95)) &&
+    all(is.finite(thresholds)) &&
+    all(q95 < thresholds)
+}
+
+bayes_truncation_diagnostics <- function(truncation_draws, data, divergences = 0L) {
+  threshold_info <- bayes_truncation_thresholds(data)
+  tail_summary <- bayes_convergence_summary(
+    truncation_draws,
+    c("omitted_tail_mass_0", "omitted_tail_mass_1")
+  )
+  q95 <- c(
+    stats::quantile(truncation_draws$omitted_tail_mass_0, probs = 0.95, names = FALSE),
+    stats::quantile(truncation_draws$omitted_tail_mass_1, probs = 0.95, names = FALSE)
+  )
+  names(q95) <- c("q95_tail_0", "q95_tail_1")
+
+  list(
+    n_obs = threshold_info$n_obs,
+    thresholds = threshold_info$thresholds,
+    q95 = q95,
+    parameter_table = tail_summary$parameter_table,
+    max_rhat = tail_summary$max_rhat,
+    min_bulk_ess = tail_summary$min_bulk_ess,
+    min_tail_ess = tail_summary$min_tail_ess,
+    convergence_ok = tail_summary$convergence_ok,
+    truncation_ok = bayes_truncation_ok(
+      q95 = q95,
+      thresholds = threshold_info$thresholds,
+      convergence_ok = tail_summary$convergence_ok,
+      divergences = divergences
+    )
+  )
+}
+
+bayes_sampler_divergences <- function(fit) {
+  sampler_params <- rstan::get_sampler_params(fit, inc_warmup = FALSE)
+  as.integer(sum(vapply(
+    sampler_params,
+    function(x) sum(x[, "divergent__"]),
+    numeric(1)
+  )))
+}
+
+bayes_diagnostics <- function(fit, draws, truncation_draws, data,
+                              parameters = bayes_parameter_names("contrast")) {
+  divergences <- bayes_sampler_divergences(fit)
+  core_summary <- bayes_convergence_summary(draws, parameters)
+  truncation_summary <- bayes_truncation_diagnostics(
+    truncation_draws = truncation_draws,
+    data = data,
+    divergences = divergences
+  )
+  core_ok <- isTRUE(divergences == 0L) && isTRUE(core_summary$convergence_ok)
+  truncation_ok <- isTRUE(truncation_summary$truncation_ok)
+
+  list(
+    divergences = divergences,
+    max_rhat = core_summary$max_rhat,
+    min_bulk_ess = core_summary$min_bulk_ess,
+    min_tail_ess = core_summary$min_tail_ess,
+    parameter_table = core_summary$parameter_table,
+    core_parameter_table = core_summary$parameter_table,
+    core_ok = core_ok,
+    truncation = truncation_summary,
+    truncation_ok = truncation_ok,
+    diagnostic_ok = isTRUE(core_ok) && isTRUE(truncation_ok)
+  )
+}
+
+bayes_mixture_selection_history_row <- function(mixture_components,
+                                                diagnostics = NULL,
+                                                accepted = FALSE,
+                                                error = NA_character_) {
+  if(is.null(diagnostics)) {
+    return(data.frame(
+      mixture_components = as.integer(mixture_components),
+      n_obs_0 = NA_integer_,
+      n_obs_1 = NA_integer_,
+      threshold_0 = NA_real_,
+      threshold_1 = NA_real_,
+      q95_tail_0 = NA_real_,
+      q95_tail_1 = NA_real_,
+      core_ok = NA,
+      truncation_ok = FALSE,
+      diagnostic_ok = FALSE,
+      accepted = isTRUE(accepted),
+      divergences = NA_integer_,
+      max_rhat_core = NA_real_,
+      min_bulk_ess_core = NA_real_,
+      min_tail_ess_core = NA_real_,
+      max_rhat_tail = NA_real_,
+      min_bulk_ess_tail = NA_real_,
+      min_tail_ess_tail = NA_real_,
+      fit_failed = TRUE,
+      error = as.character(error),
+      row.names = NULL
+    ))
+  }
+
+  data.frame(
+    mixture_components = as.integer(mixture_components),
+    n_obs_0 = as.integer(diagnostics$truncation$n_obs[[1]]),
+    n_obs_1 = as.integer(diagnostics$truncation$n_obs[[2]]),
+    threshold_0 = as.numeric(diagnostics$truncation$thresholds[[1]]),
+    threshold_1 = as.numeric(diagnostics$truncation$thresholds[[2]]),
+    q95_tail_0 = as.numeric(diagnostics$truncation$q95[[1]]),
+    q95_tail_1 = as.numeric(diagnostics$truncation$q95[[2]]),
+    core_ok = isTRUE(diagnostics$core_ok),
+    truncation_ok = isTRUE(diagnostics$truncation_ok),
+    diagnostic_ok = isTRUE(diagnostics$diagnostic_ok),
+    accepted = isTRUE(accepted),
+    divergences = as.integer(diagnostics$divergences),
+    max_rhat_core = as.numeric(diagnostics$max_rhat),
+    min_bulk_ess_core = as.numeric(diagnostics$min_bulk_ess),
+    min_tail_ess_core = as.numeric(diagnostics$min_tail_ess),
+    max_rhat_tail = as.numeric(diagnostics$truncation$max_rhat),
+    min_bulk_ess_tail = as.numeric(diagnostics$truncation$min_bulk_ess),
+    min_tail_ess_tail = as.numeric(diagnostics$truncation$min_tail_ess),
+    fit_failed = FALSE,
+    error = as.character(error),
+    row.names = NULL
   )
 }
 
@@ -511,89 +760,39 @@ new_failed_trunc_comp_bayes_fit <- function(error, conf.level,
   )
 }
 
-fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
-                                 continuous_support = c("real_line", "positive_real"),
-                                 mixture_components = 10,
-                                 chains = 4, iter_warmup = 1000,
-                                 iter_sampling = 1000, seed = NULL,
-                                 refresh = 0, control = list(adapt_delta = 0.95, max_treedepth = 12),
-                                 prior = NULL, call = NULL,
-                                 extra_args = list()) {
-  conf.level <- validateConfidenceLevel(conf.level)
-  continuous_support <- bayes_continuous_support(continuous_support)
-  mixture_components <- validate_bayes_positive_integer(
-    mixture_components,
-    "mixture_components",
-    min_value = 2L
-  )
-  chains <- validate_bayes_positive_integer(chains, "chains", min_value = 1L)
-  iter_warmup <- validate_bayes_positive_integer(iter_warmup, "iter_warmup", min_value = 1L)
-  iter_sampling <- validate_bayes_positive_integer(iter_sampling, "iter_sampling", min_value = 1L)
-  seed <- validate_bayes_seed(seed)
-  refresh <- validate_bayes_refresh(refresh)
-  control <- validate_bayes_control(control)
-  prior <- normalize_bayes_prior(prior, continuous_support = continuous_support)
-  extra_args <- normalize_bayes_sampling_args(extra_args)
-  model_name <- bayes_model_name(continuous_support)
-
-  settings <- list(
-    continuous_support = continuous_support,
-    model_name = model_name,
-    mixture_components = mixture_components,
-    chains = chains,
-    iter_warmup = iter_warmup,
-    iter_sampling = iter_sampling,
-    seed = seed,
-    refresh = refresh,
-    control = control,
-    prior = prior,
-    experimental = TRUE
-  )
-
-  if(!isDataOkay(data)) {
-    return(new_failed_trunc_comp_bayes_fit(
-      "Estimation failed due to data error.",
-      conf.level = conf.level,
-      data = data,
-      atom = atom,
-      call = call,
-      settings = settings
-    ))
-  }
-
-  validate_bayes_support_data(data, continuous_support = continuous_support)
-
+bayes_package_stanmodel <- function(model_name) {
   if(!exists("stanmodels", inherits = TRUE)) {
-    return(new_failed_trunc_comp_bayes_fit(
-      paste0(
-        "The packaged Stan model '",
-        model_name,
-        "' is not available. Reinstall TruncComp2 after generating Stan exports."
-      ),
-      conf.level = conf.level,
-      data = data,
-      atom = atom,
-      call = call,
-      settings = settings
-    ))
+    return(NULL)
   }
 
   package_stanmodels <- get("stanmodels", inherits = TRUE)
-  if(is.null(package_stanmodels[[model_name]])) {
-    return(new_failed_trunc_comp_bayes_fit(
-      paste0(
-        "The packaged Stan model '",
-        model_name,
-        "' is not available. Reinstall TruncComp2 after generating Stan exports."
-      ),
-      conf.level = conf.level,
-      data = data,
-      atom = atom,
-      call = call,
-      settings = settings
-    ))
+  package_stanmodels[[model_name]]
+}
+
+bayes_finalize_trunc_comp_bayes_fit <- function(fit_object) {
+  default_ppc <- tryCatch(
+    bayes_ppc_summary(fit_object),
+    error = identity
+  )
+
+  if(!inherits(default_ppc, "error")) {
+    fit_object$ppc_table <- default_ppc$table
+    fit_object$ppc_settings <- default_ppc$settings
   }
 
+  fit_object
+}
+
+fit_trunc_comp_bayes_once <- function(data, atom, conf.level = 0.95,
+                                      continuous_support = c("real_line", "positive_real"),
+                                      mixture_components = 10,
+                                      chains = 4, iter_warmup = 1000,
+                                      iter_sampling = 1000, seed = NULL,
+                                      refresh = 0, control = list(adapt_delta = 0.95, max_treedepth = 12),
+                                      prior = NULL, call = NULL,
+                                      extra_args = list(),
+                                      model_object = NULL,
+                                      settings = NULL) {
   standata <- build_bayes_standata(
     data,
     atom,
@@ -601,12 +800,14 @@ fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
     prior,
     continuous_support = continuous_support
   )
+
+  settings$mixture_components <- as.integer(mixture_components)
   settings$y_center <- standata$scaling$center
   settings$y_scale <- standata$scaling$scale
 
   sampling_args <- c(
     list(
-      object = package_stanmodels[[standata$model_name]],
+      object = model_object,
       data = standata$stan_data,
       chains = chains,
       iter = iter_warmup + iter_sampling,
@@ -646,11 +847,31 @@ fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
     ))
   }
 
+  truncation_draws <- tryCatch(
+    bayes_extract_truncation_draws(fit, mixture_components = mixture_components),
+    error = identity
+  )
+  if(inherits(truncation_draws, "error") || nrow(truncation_draws) == 0L) {
+    return(new_failed_trunc_comp_bayes_fit(
+      "Stan sampling completed but the truncation diagnostics could not be extracted.",
+      conf.level = conf.level,
+      data = data,
+      atom = atom,
+      call = call,
+      settings = settings
+    ))
+  }
+
   summary_table <- bayes_summary_table(draws, conf.level)
   arm_table <- bayes_arm_table(draws, conf.level)
-  diagnostics <- bayes_diagnostics(fit, draws)
+  diagnostics <- bayes_diagnostics(
+    fit = fit,
+    draws = draws,
+    truncation_draws = truncation_draws,
+    data = data
+  )
 
-  fit_object <- new_trunc_comp_bayes_fit(
+  new_trunc_comp_bayes_fit(
     fit = fit,
     draws = draws,
     summary_table = summary_table,
@@ -663,16 +884,217 @@ fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
     atom = atom,
     call = call
   )
+}
 
-  default_ppc <- tryCatch(
-    bayes_ppc_summary(fit_object),
-    error = identity
+fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
+                                 continuous_support = c("real_line", "positive_real"),
+                                 mixture_components = 10,
+                                 auto_select_mixture_components = TRUE,
+                                 mixture_components_max = NULL,
+                                 chains = 4, iter_warmup = 1000,
+                                 iter_sampling = 1000, seed = NULL,
+                                 refresh = 0, control = list(adapt_delta = 0.95, max_treedepth = 12),
+                                 prior = NULL, call = NULL,
+                                 extra_args = list()) {
+  conf.level <- validateConfidenceLevel(conf.level)
+  continuous_support <- bayes_continuous_support(continuous_support)
+  mixture_components <- validate_bayes_positive_integer(
+    mixture_components,
+    "mixture_components",
+    min_value = 2L
+  )
+  auto_select_mixture_components <- validate_bayes_flag(
+    auto_select_mixture_components,
+    "auto_select_mixture_components"
+  )
+  mixture_components_max <- normalize_bayes_mixture_components_max(
+    mixture_components_max = mixture_components_max,
+    mixture_components = mixture_components,
+    auto_select_mixture_components = auto_select_mixture_components
+  )
+  chains <- validate_bayes_positive_integer(chains, "chains", min_value = 1L)
+  iter_warmup <- validate_bayes_positive_integer(iter_warmup, "iter_warmup", min_value = 1L)
+  iter_sampling <- validate_bayes_positive_integer(iter_sampling, "iter_sampling", min_value = 1L)
+  seed <- validate_bayes_seed(seed)
+  refresh <- validate_bayes_refresh(refresh)
+  control <- validate_bayes_control(control)
+  prior <- normalize_bayes_prior(prior, continuous_support = continuous_support)
+  extra_args <- normalize_bayes_sampling_args(extra_args)
+  model_name <- bayes_model_name(continuous_support)
+
+  settings <- list(
+    continuous_support = continuous_support,
+    model_name = model_name,
+    mixture_components = mixture_components,
+    auto_select_mixture_components = auto_select_mixture_components,
+    mixture_components_initial = mixture_components,
+    mixture_components_final = mixture_components,
+    mixture_components_max = mixture_components_max,
+    mixture_component_path = bayes_mixture_component_ladder(
+      mixture_components = mixture_components,
+      mixture_components_max = mixture_components_max
+    ),
+    mixture_selection_history = NULL,
+    chains = chains,
+    iter_warmup = iter_warmup,
+    iter_sampling = iter_sampling,
+    seed = seed,
+    refresh = refresh,
+    control = control,
+    prior = prior,
+    experimental = TRUE
   )
 
-  if(!inherits(default_ppc, "error")) {
-    fit_object$ppc_table <- default_ppc$table
-    fit_object$ppc_settings <- default_ppc$settings
+  if(!isDataOkay(data)) {
+    return(new_failed_trunc_comp_bayes_fit(
+      "Estimation failed due to data error.",
+      conf.level = conf.level,
+      data = data,
+      atom = atom,
+      call = call,
+      settings = settings
+    ))
   }
 
-  fit_object
+  validate_bayes_support_data(data, continuous_support = continuous_support)
+
+  model_object <- bayes_package_stanmodel(model_name)
+  if(is.null(model_object)) {
+    return(new_failed_trunc_comp_bayes_fit(
+      paste0(
+        "The packaged Stan model '",
+        model_name,
+        "' is not available. Reinstall TruncComp2 after generating Stan exports."
+      ),
+      conf.level = conf.level,
+      data = data,
+      atom = atom,
+      call = call,
+      settings = settings
+    ))
+  }
+
+  candidate_path <- if(auto_select_mixture_components) {
+    settings$mixture_component_path
+  } else {
+    as.integer(mixture_components)
+  }
+  history_rows <- vector("list", length(candidate_path))
+  successful_fits <- list()
+  selected_fit <- NULL
+  selection_note <- NULL
+
+  for(index in seq_along(candidate_path)) {
+    candidate_H <- candidate_path[[index]]
+    candidate_settings <- settings
+    candidate_settings$mixture_components <- as.integer(candidate_H)
+
+    candidate_fit <- fit_trunc_comp_bayes_once(
+      data = data,
+      atom = atom,
+      conf.level = conf.level,
+      continuous_support = continuous_support,
+      mixture_components = candidate_H,
+      chains = chains,
+      iter_warmup = iter_warmup,
+      iter_sampling = iter_sampling,
+      seed = seed,
+      refresh = refresh,
+      control = control,
+      prior = prior,
+      call = call,
+      extra_args = extra_args,
+      model_object = model_object,
+      settings = candidate_settings
+    )
+
+    if(!isTRUE(candidate_fit$success)) {
+      history_rows[[index]] <- bayes_mixture_selection_history_row(
+        mixture_components = candidate_H,
+        diagnostics = NULL,
+        accepted = FALSE,
+        error = candidate_fit$error
+      )
+
+      if(index == 1L) {
+        candidate_fit$settings$mixture_selection_history <- do.call(
+          rbind,
+          history_rows[seq_len(index)]
+        )
+        candidate_fit$settings$mixture_component_path <- as.integer(
+          candidate_fit$settings$mixture_selection_history$mixture_components
+        )
+        candidate_fit$settings$mixture_selection_note <- if(auto_select_mixture_components) {
+          paste0(
+            "The initial Bayesian fit at H = ",
+            candidate_H,
+            " failed before automatic truncation selection could proceed."
+          )
+        } else {
+          paste0(
+            "The Bayesian fit at H = ",
+            candidate_H,
+            " failed."
+          )
+        }
+        return(candidate_fit)
+      }
+
+      selected_fit <- successful_fits[[length(successful_fits)]]
+      selection_note <- paste0(
+        "Automatic mixture-component selection stopped after a failed refit at H = ",
+        candidate_H,
+        ". Returning the last successful fit at H = ",
+        selected_fit$settings$mixture_components,
+        "."
+      )
+      selected_fit$diagnostics$truncation_ok <- FALSE
+      selected_fit$diagnostics$diagnostic_ok <- FALSE
+      selected_fit$diagnostics$truncation$truncation_ok <- FALSE
+      break
+    }
+
+    successful_fits[[length(successful_fits) + 1L]] <- candidate_fit
+    accepted <- isTRUE(candidate_fit$diagnostics$diagnostic_ok)
+    history_rows[[index]] <- bayes_mixture_selection_history_row(
+      mixture_components = candidate_H,
+      diagnostics = candidate_fit$diagnostics,
+      accepted = accepted
+    )
+
+    if(!auto_select_mixture_components || accepted) {
+      selected_fit <- candidate_fit
+      break
+    }
+  }
+
+  if(is.null(selected_fit)) {
+    selected_fit <- successful_fits[[length(successful_fits)]]
+    selection_note <- paste0(
+      "No candidate H up to ",
+      mixture_components_max,
+      " satisfied the truncation diagnostics. Returning the largest successful fit at H = ",
+      selected_fit$settings$mixture_components,
+      "."
+    )
+    selected_fit$diagnostics$truncation_ok <- FALSE
+    selected_fit$diagnostics$diagnostic_ok <- FALSE
+    selected_fit$diagnostics$truncation$truncation_ok <- FALSE
+  }
+
+  selection_history <- do.call(
+    rbind,
+    history_rows[!vapply(history_rows, is.null, logical(1))]
+  )
+
+  selected_fit$settings$auto_select_mixture_components <- auto_select_mixture_components
+  selected_fit$settings$mixture_components <- as.integer(selected_fit$settings$mixture_components)
+  selected_fit$settings$mixture_components_initial <- as.integer(mixture_components)
+  selected_fit$settings$mixture_components_final <- as.integer(selected_fit$settings$mixture_components)
+  selected_fit$settings$mixture_components_max <- as.integer(mixture_components_max)
+  selected_fit$settings$mixture_component_path <- as.integer(selection_history$mixture_components)
+  selected_fit$settings$mixture_selection_history <- selection_history
+  selected_fit$settings$mixture_selection_note <- selection_note
+
+  bayes_finalize_trunc_comp_bayes_fit(selected_fit)
 }

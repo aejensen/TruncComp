@@ -32,6 +32,8 @@
 #'   densities implied by the Bayesian fit.
 #' - [posterior_predictive_check()] for `bayesplot`-based posterior predictive
 #'   checks of the Bayesian fit.
+#' - [posterior_predictive_pvalues()] for discrepancy-based posterior
+#'   predictive p-values from the Bayesian fit.
 #' - [summary.trunc_comp_fit()] and [print.trunc_comp_fit()] for displaying results.
 #' - [summary.trunc_comp_bayes_fit()] and [print.trunc_comp_bayes_fit()] for
 #'   Bayesian posterior summaries.

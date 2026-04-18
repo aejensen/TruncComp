@@ -27,6 +27,55 @@ bayes_with_seed <- function(seed, fn) {
   fn()
 }
 
+bayes_validate_ppc_object <- function(object) {
+  if(!inherits(object, "trunc_comp_bayes_fit")) {
+    stop("object must be a trunc_comp_bayes_fit returned by trunc_comp_bayes().")
+  }
+
+  if(!isTRUE(object$success)) {
+    stop("Estimation failed. Cannot compute posterior predictive checks.")
+  }
+
+  if(is.null(object$fit)) {
+    stop("Raw Stan mixture parameters are not available.")
+  }
+
+  invisible(TRUE)
+}
+
+bayes_ppc_default_settings <- function(object) {
+  list(
+    ndraws = as.integer(min(200L, nrow(object$draws))),
+    seed = validate_bayes_seed(object$settings$seed)
+  )
+}
+
+bayes_ppc_resolve_settings <- function(object, ndraws = NULL, seed = NULL) {
+  defaults <- bayes_ppc_default_settings(object)
+  n_available <- validate_bayes_positive_integer(
+    nrow(object$draws),
+    "n_available",
+    min_value = 1L
+  )
+
+  resolved_ndraws <- if(is.null(ndraws)) defaults$ndraws else {
+    min(
+      n_available,
+      validate_bayes_positive_integer(ndraws, "ndraws", min_value = 1L)
+    )
+  }
+
+  list(
+    ndraws = as.integer(resolved_ndraws),
+    seed = if(is.null(seed)) defaults$seed else validate_bayes_seed(seed)
+  )
+}
+
+bayes_ppc_same_settings <- function(x, y) {
+  identical(as.integer(x$ndraws), as.integer(y$ndraws)) &&
+    identical(validate_bayes_seed(x$seed), validate_bayes_seed(y$seed))
+}
+
 bayes_ppc_draw_indices <- function(n_available, ndraws, seed = NULL) {
   n_available <- validate_bayes_positive_integer(n_available, "n_available", min_value = 1L)
   ndraws <- validate_bayes_positive_integer(ndraws, "ndraws", min_value = 1L)
@@ -111,20 +160,16 @@ bayes_ppc_continuous_matrix <- function(weights, means, arm_obs, draw_indices,
   yrep
 }
 
-bayes_ppc_data <- function(object, ndraws = 50L, seed = NULL) {
-  if(!inherits(object, "trunc_comp_bayes_fit")) {
-    stop("object must be a trunc_comp_bayes_fit returned by trunc_comp_bayes().")
-  }
-
-  if(!isTRUE(object$success)) {
-    stop("Estimation failed. Cannot compute posterior predictive checks.")
-  }
+bayes_ppc_data <- function(object, ndraws = 50L, seed = NULL, parameters = NULL) {
+  bayes_validate_ppc_object(object)
 
   ndraws <- validate_bayes_positive_integer(ndraws, "ndraws", min_value = 1L)
   seed <- validate_bayes_seed(seed)
 
   data <- object$data
-  parameters <- bayes_ppc_component_parameters(object)
+  if(is.null(parameters)) {
+    parameters <- bayes_ppc_component_parameters(object)
+  }
   arm_full <- as.integer(data$R) + 1L
   arm_obs <- arm_full[data$A == 1]
   arm_labels <- c("Control", "Treatment")
@@ -158,31 +203,307 @@ bayes_ppc_data <- function(object, ndraws = 50L, seed = NULL) {
       draw_indices = draw_indices,
       y_atom = y_atom,
       yrep_atom = yrep_atom,
+      arm_full = arm_full,
       group_atom = factor(arm_labels[arm_full], levels = arm_labels),
       y_cont = y_cont,
       yrep_cont = yrep_cont,
+      arm_obs = arm_obs,
       group_cont = factor(arm_labels[arm_obs], levels = arm_labels)
     )
   })
+}
+
+bayes_ppc_continuous_scale_label <- function(continuous_support = c("real_line", "positive_real")) {
+  continuous_support <- bayes_continuous_support(continuous_support)
+
+  if(identical(continuous_support, "positive_real")) {
+    return("log(Outcome)")
+  }
+
+  "Outcome"
+}
+
+bayes_ppc_continuous_transform <- function(x,
+                                           continuous_support = c("real_line", "positive_real")) {
+  continuous_support <- bayes_continuous_support(continuous_support)
+
+  if(identical(continuous_support, "positive_real")) {
+    return(log(pmax(x, .Machine$double.xmin)))
+  }
+
+  x
 }
 
 bayes_ppc_continuous_plot_inputs <- function(ppc_data,
                                              continuous_support = c("real_line", "positive_real")) {
   continuous_support <- bayes_continuous_support(continuous_support)
 
-  if(identical(continuous_support, "positive_real")) {
+  list(
+    y = bayes_ppc_continuous_transform(
+      ppc_data$y_cont,
+      continuous_support = continuous_support
+    ),
+    yrep = bayes_ppc_continuous_transform(
+      ppc_data$yrep_cont,
+      continuous_support = continuous_support
+    ),
+    x_label = bayes_ppc_continuous_scale_label(continuous_support)
+  )
+}
+
+bayes_ppc_atom_discrepancy <- function(y_atom, arm_full, rho_draw) {
+  arm_means <- vapply(
+    1:2,
+    function(arm) mean(y_atom[arm_full == arm]),
+    numeric(1)
+  )
+
+  max(abs(arm_means - rho_draw))
+}
+
+bayes_ppc_mixture_cdf <- function(x, weights, means,
+                                  continuous_support = c("real_line", "positive_real"),
+                                  sds = NULL, shapes = NULL) {
+  continuous_support <- bayes_continuous_support(continuous_support)
+
+  kernels <- vapply(
+    seq_along(weights),
+    function(h) {
+      if(identical(continuous_support, "real_line")) {
+        return(stats::pnorm(x, mean = means[h], sd = sds[h]))
+      }
+
+      stats::pgamma(
+        exp(x),
+        shape = shapes[h],
+        rate = shapes[h] / means[h]
+      )
+    },
+    numeric(length(x))
+  )
+
+  as.numeric(kernels %*% weights)
+}
+
+bayes_ppc_ks_discrepancy <- function(sample, fitted_cdf_values) {
+  n <- length(sample)
+  if(n == 0L) {
+    return(0)
+  }
+
+  i <- seq_len(n)
+  max(
+    max(i / n - fitted_cdf_values),
+    max(fitted_cdf_values - (i - 1) / n)
+  )
+}
+
+bayes_ppc_continuous_discrepancy <- function(y_cont, arm_obs, weights_draw, means_draw,
+                                             continuous_support = c("real_line", "positive_real"),
+                                             sds_draw = NULL, shapes_draw = NULL) {
+  continuous_support <- bayes_continuous_support(continuous_support)
+
+  max(vapply(
+    1:2,
+    function(arm) {
+      arm_sample <- y_cont[arm_obs == arm]
+      if(length(arm_sample) == 0L) {
+        return(0)
+      }
+
+      transformed_sample <- sort(bayes_ppc_continuous_transform(
+        arm_sample,
+        continuous_support = continuous_support
+      ))
+      fitted_cdf <- bayes_ppc_mixture_cdf(
+        x = transformed_sample,
+        weights = weights_draw[arm, ],
+        means = means_draw[arm, ],
+        continuous_support = continuous_support,
+        sds = if(identical(continuous_support, "real_line")) sds_draw[arm, ] else NULL,
+        shapes = if(identical(continuous_support, "positive_real")) shapes_draw[arm, ] else NULL
+      )
+
+      bayes_ppc_ks_discrepancy(transformed_sample, fitted_cdf)
+    },
+    numeric(1)
+  ))
+}
+
+bayes_ppc_table <- function(atom_obs_discrepancy,
+                            atom_rep_discrepancy,
+                            continuous_obs_discrepancy,
+                            continuous_rep_discrepancy,
+                            continuous_support = c("real_line", "positive_real")) {
+  continuous_support <- bayes_continuous_support(continuous_support)
+
+  out <- data.frame(
+    component = c("atom", "continuous"),
+    p_value = c(
+      mean(atom_rep_discrepancy >= atom_obs_discrepancy),
+      mean(continuous_rep_discrepancy >= continuous_obs_discrepancy)
+    ),
+    statistic = c(
+      "Maximum armwise absolute atom-rate deviation",
+      "Maximum armwise KS discrepancy"
+    ),
+    scale = c(
+      "Indicator for Y = atom",
+      bayes_ppc_continuous_scale_label(continuous_support)
+    ),
+    ndraws = c(
+      length(atom_obs_discrepancy),
+      length(continuous_obs_discrepancy)
+    ),
+    mean_observed_discrepancy = c(
+      mean(atom_obs_discrepancy),
+      mean(continuous_obs_discrepancy)
+    ),
+    mean_replicated_discrepancy = c(
+      mean(atom_rep_discrepancy),
+      mean(continuous_rep_discrepancy)
+    ),
+    row.names = NULL
+  )
+
+  rownames(out) <- out$component
+  out
+}
+
+bayes_ppc_summary <- function(object, ndraws = NULL, seed = NULL,
+                              ppc_data = NULL, parameters = NULL) {
+  bayes_validate_ppc_object(object)
+
+  settings <- bayes_ppc_resolve_settings(object, ndraws = ndraws, seed = seed)
+  cached_default <- is.null(ppc_data) &&
+    is.null(parameters) &&
+    !is.null(object$ppc_table) &&
+    !is.null(object$ppc_settings) &&
+    bayes_ppc_same_settings(object$ppc_settings, settings)
+
+  if(cached_default) {
     return(list(
-      y = log(pmax(ppc_data$y_cont, .Machine$double.xmin)),
-      yrep = log(pmax(ppc_data$yrep_cont, .Machine$double.xmin)),
-      x_label = "log(Outcome)"
+      table = object$ppc_table,
+      settings = object$ppc_settings
     ))
   }
 
+  if(is.null(parameters)) {
+    parameters <- bayes_ppc_component_parameters(object)
+  }
+
+  if(is.null(ppc_data)) {
+    ppc_data <- bayes_ppc_data(
+      object = object,
+      ndraws = settings$ndraws,
+      seed = settings$seed,
+      parameters = parameters
+    )
+  }
+
+  n_rep <- length(ppc_data$draw_indices)
+  atom_obs_discrepancy <- numeric(n_rep)
+  atom_rep_discrepancy <- numeric(n_rep)
+  continuous_obs_discrepancy <- numeric(n_rep)
+  continuous_rep_discrepancy <- numeric(n_rep)
+
+  for(s in seq_len(n_rep)) {
+    draw <- ppc_data$draw_indices[s]
+    rho_draw <- parameters$rho[draw, ]
+
+    atom_obs_discrepancy[s] <- bayes_ppc_atom_discrepancy(
+      y_atom = ppc_data$y_atom,
+      arm_full = ppc_data$arm_full,
+      rho_draw = rho_draw
+    )
+    atom_rep_discrepancy[s] <- bayes_ppc_atom_discrepancy(
+      y_atom = ppc_data$yrep_atom[s, ],
+      arm_full = ppc_data$arm_full,
+      rho_draw = rho_draw
+    )
+
+    continuous_obs_discrepancy[s] <- bayes_ppc_continuous_discrepancy(
+      y_cont = ppc_data$y_cont,
+      arm_obs = ppc_data$arm_obs,
+      weights_draw = parameters$weights[draw, , ],
+      means_draw = parameters$means[draw, , ],
+      continuous_support = parameters$support,
+      sds_draw = if(identical(parameters$support, "real_line")) parameters$sds[draw, , ] else NULL,
+      shapes_draw = if(identical(parameters$support, "positive_real")) parameters$shapes[draw, , ] else NULL
+    )
+    continuous_rep_discrepancy[s] <- bayes_ppc_continuous_discrepancy(
+      y_cont = ppc_data$yrep_cont[s, ],
+      arm_obs = ppc_data$arm_obs,
+      weights_draw = parameters$weights[draw, , ],
+      means_draw = parameters$means[draw, , ],
+      continuous_support = parameters$support,
+      sds_draw = if(identical(parameters$support, "real_line")) parameters$sds[draw, , ] else NULL,
+      shapes_draw = if(identical(parameters$support, "positive_real")) parameters$shapes[draw, , ] else NULL
+    )
+  }
+
   list(
-    y = ppc_data$y_cont,
-    yrep = ppc_data$yrep_cont,
-    x_label = "Outcome"
+    table = bayes_ppc_table(
+      atom_obs_discrepancy = atom_obs_discrepancy,
+      atom_rep_discrepancy = atom_rep_discrepancy,
+      continuous_obs_discrepancy = continuous_obs_discrepancy,
+      continuous_rep_discrepancy = continuous_rep_discrepancy,
+      continuous_support = parameters$support
+    ),
+    settings = list(
+      ndraws = as.integer(n_rep),
+      seed = settings$seed
+    ),
+    details = list(
+      atom_observed_discrepancy = atom_obs_discrepancy,
+      atom_replicated_discrepancy = atom_rep_discrepancy,
+      continuous_observed_discrepancy = continuous_obs_discrepancy,
+      continuous_replicated_discrepancy = continuous_rep_discrepancy
+    )
   )
+}
+
+#' Posterior predictive p-values for a Bayesian truncated-comparison fit
+#'
+#' Computes discrepancy-based posterior predictive p-values for the atom and
+#' continuous parts of a successful Bayesian two-part fit. The atom p-value is
+#' based on the maximum armwise absolute deviation between the observed atom
+#' rate and the fitted atom probability. The continuous p-value is based on the
+#' maximum armwise Kolmogorov-Smirnov discrepancy between the empirical CDF of
+#' the observed non-atom outcomes and the fitted continuous mixture CDF. These
+#' are posterior predictive model-checking summaries, not frequentist
+#' hypothesis-test p-values.
+#'
+#' @param object A successful `"trunc_comp_bayes_fit"` object returned by
+#'   [trunc_comp_bayes()].
+#' @param ndraws Optional number of posterior draws to use when simulating
+#'   predictive replications. If `NULL`, uses the cached default summary based
+#'   on `min(200, n_posterior_draws)` draws.
+#' @param seed Optional non-negative integer used to make the predictive
+#'   p-values reproducible. If `NULL`, defaults to the Stan seed stored in the
+#'   fit when available.
+#' @return A data frame with one row for the atom PPC and one row for the
+#'   continuous PPC. The returned columns are `p_value`, `statistic`, `scale`,
+#'   `ndraws`, `mean_observed_discrepancy`, and
+#'   `mean_replicated_discrepancy`.
+#' @examples
+#' \dontrun{
+#' data("trunc_comp_example", package = "TruncComp2")
+#' fit <- trunc_comp_bayes(
+#'   Y ~ R,
+#'   atom = 0,
+#'   data = trunc_comp_example,
+#'   chains = 4,
+#'   iter_warmup = 500,
+#'   iter_sampling = 1000,
+#'   refresh = 0
+#' )
+#'
+#' posterior_predictive_pvalues(fit)
+#' }
+#' @export
+posterior_predictive_pvalues <- function(object, ndraws = NULL, seed = NULL) {
+  bayes_ppc_summary(object = object, ndraws = ndraws, seed = seed)$table
 }
 
 #' Posterior predictive checks for a Bayesian truncated-comparison fit
@@ -206,7 +527,8 @@ bayes_ppc_continuous_plot_inputs <- function(ppc_data,
 #' @param seed Optional non-negative integer used to make the predictive checks
 #'   reproducible.
 #' @return If `type = "both"`, a named list with `atom` and `continuous`
-#'   `ggplot2` objects. Otherwise returns the requested `ggplot2` object.
+#'   `ggplot2` objects. Otherwise returns the requested `ggplot2` object. Each
+#'   plot subtitle reports the corresponding posterior predictive p-value.
 #' @examples
 #' \dontrun{
 #' data("trunc_comp_example", package = "TruncComp2")
@@ -230,7 +552,23 @@ posterior_predictive_check <- function(object,
                                        ndraws = 50,
                                        seed = NULL) {
   type <- match.arg(type)
-  ppc_data <- bayes_ppc_data(object = object, ndraws = ndraws, seed = seed)
+  bayes_validate_ppc_object(object)
+  resolved_settings <- bayes_ppc_resolve_settings(object, ndraws = ndraws, seed = seed)
+  parameters <- bayes_ppc_component_parameters(object)
+  ppc_data <- bayes_ppc_data(
+    object = object,
+    ndraws = resolved_settings$ndraws,
+    seed = resolved_settings$seed,
+    parameters = parameters
+  )
+  ppc_summary <- bayes_ppc_summary(
+    object = object,
+    ndraws = resolved_settings$ndraws,
+    seed = resolved_settings$seed,
+    ppc_data = ppc_data,
+    parameters = parameters
+  )
+  ppc_table <- ppc_summary$table
   continuous_support <- bayes_fit_continuous_support(object)
   continuous_plot_inputs <- bayes_ppc_continuous_plot_inputs(
     ppc_data,
@@ -246,6 +584,10 @@ posterior_predictive_check <- function(object,
   ) +
     ggplot2::labs(
       title = "Posterior predictive check for the atom model",
+      subtitle = sprintf(
+        "Posterior predictive p = %.3f",
+        ppc_table["atom", "p_value"]
+      ),
       x = paste0("Indicator for Y = atom (", object$atom, ")"),
       y = "Proportion"
     )
@@ -257,6 +599,10 @@ posterior_predictive_check <- function(object,
   ) +
     ggplot2::labs(
       title = "Posterior predictive check for the continuous part",
+      subtitle = sprintf(
+        "Posterior predictive p = %.3f",
+        ppc_table["continuous", "p_value"]
+      ),
       x = continuous_plot_inputs$x_label,
       y = "Density"
     )

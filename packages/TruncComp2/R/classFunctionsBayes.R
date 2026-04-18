@@ -18,6 +18,13 @@ bayes_arm_labels <- function() {
   )
 }
 
+bayes_ppc_labels <- function() {
+  c(
+    atom = "Atom model",
+    continuous = "Continuous model"
+  )
+}
+
 bayes_interval_matrix <- function(draws, parameter, conf.level) {
   rows <- lapply(parameter, function(name) {
     bayes_equal_tail_interval(draws[[name]], conf.level)
@@ -38,7 +45,7 @@ bayes_interval_matrix <- function(draws, parameter, conf.level) {
 #'   [trunc_comp_bayes()].
 #' @param ... Unused additional arguments.
 #' @return Invisibly returns a list of class `"trunc_comp_bayes_summary"` with
-#'   elements `contrasts`, `arms`, `diagnostics`, and `settings`.
+#'   elements `contrasts`, `arms`, `ppc`, `diagnostics`, and `settings`.
 #' @export
 summary.trunc_comp_bayes_fit <- function(object, ...) {
   if(!is.null(object$call)) {
@@ -58,10 +65,23 @@ summary.trunc_comp_bayes_fit <- function(object, ...) {
   }
   cat("\n")
 
+  ppc_table <- NULL
+  if(isTRUE(object$success)) {
+    ppc_table <- tryCatch(
+      posterior_predictive_pvalues(object),
+      error = identity
+    )
+
+    if(inherits(ppc_table, "error")) {
+      ppc_table <- NULL
+    }
+  }
+
   summary_object <- structure(
     list(
       contrasts = object$summary_table,
       arms = object$arm_table,
+      ppc = ppc_table,
       diagnostics = object$diagnostics,
       settings = object$settings,
       success = object$success,
@@ -95,6 +115,17 @@ summary.trunc_comp_bayes_fit <- function(object, ...) {
   cat("Arm-specific summaries\n")
   print.default(arm_mat)
   cat("\n")
+
+  if(!is.null(ppc_table)) {
+    ppc_labels <- bayes_ppc_labels()
+    ppc_print <- ppc_table[, c("p_value", "statistic", "scale", "ndraws"), drop = FALSE]
+    rownames(ppc_print) <- unname(ppc_labels[rownames(ppc_table)])
+    colnames(ppc_print) <- c("Posterior Predictive P", "Statistic", "Scale", "Draws")
+
+    cat("Posterior predictive checks\n")
+    print(ppc_print)
+    cat("\n")
+  }
 
   diagnostics <- object$diagnostics
   cat("Sampler diagnostics\n")

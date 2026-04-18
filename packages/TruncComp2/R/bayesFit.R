@@ -473,6 +473,7 @@ bayes_diagnostics <- function(fit, draws, parameters = bayes_parameter_names("co
 new_trunc_comp_bayes_fit <- function(fit = NULL, draws = NULL,
                                      summary_table = NULL, arm_table = NULL,
                                      diagnostics = NULL, settings = NULL,
+                                     ppc_table = NULL, ppc_settings = NULL,
                                      conf.level, success, error = "",
                                      data = NULL, atom = NULL, call = NULL) {
   out <- list(
@@ -482,6 +483,8 @@ new_trunc_comp_bayes_fit <- function(fit = NULL, draws = NULL,
     arm_table = arm_table,
     diagnostics = diagnostics,
     settings = settings,
+    ppc_table = ppc_table,
+    ppc_settings = ppc_settings,
     conf.level = conf.level,
     success = success,
     error = error,
@@ -647,7 +650,7 @@ fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
   arm_table <- bayes_arm_table(draws, conf.level)
   diagnostics <- bayes_diagnostics(fit, draws)
 
-  new_trunc_comp_bayes_fit(
+  fit_object <- new_trunc_comp_bayes_fit(
     fit = fit,
     draws = draws,
     summary_table = summary_table,
@@ -660,4 +663,16 @@ fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
     atom = atom,
     call = call
   )
+
+  default_ppc <- tryCatch(
+    bayes_ppc_summary(fit_object),
+    error = identity
+  )
+
+  if(!inherits(default_ppc, "error")) {
+    fit_object$ppc_table <- default_ppc$table
+    fit_object$ppc_settings <- default_ppc$settings
+  }
+
+  fit_object
 }

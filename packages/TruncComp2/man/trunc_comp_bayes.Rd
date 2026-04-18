@@ -112,8 +112,10 @@ The Bayesian pathway is experimental. It fits a two-part model with one atom
 probability per treatment arm and one truncated stick-breaking mixture per
 treatment arm for the non-atom outcomes. The continuous component can be
 modeled either with Gaussian kernels on the real line or with Gamma kernels
-on the positive real line. No p-values or likelihood-ratio statistics are
-reported.
+on the positive real line. Likelihood-ratio statistics are not reported, but
+discrepancy-based posterior predictive p-values are available through
+\code{\link[=posterior_predictive_pvalues]{posterior_predictive_pvalues()}} and \code{\link[=posterior_predictive_check]{posterior_predictive_check()}} for model
+checking.
 
 In the stored posterior draws and summaries:
 \itemize{

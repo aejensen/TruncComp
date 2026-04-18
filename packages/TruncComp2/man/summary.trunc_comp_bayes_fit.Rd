@@ -14,7 +14,7 @@
 }
 \value{
 Invisibly returns a list of class \code{"trunc_comp_bayes_summary"} with
-elements \code{contrasts}, \code{arms}, \code{diagnostics}, and \code{settings}.
+elements \code{contrasts}, \code{arms}, \code{ppc}, \code{diagnostics}, and \code{settings}.
 }
 \description{
 Prints posterior treatment contrasts, arm-specific summaries, and sampler

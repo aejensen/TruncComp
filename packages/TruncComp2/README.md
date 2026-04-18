@@ -120,10 +120,14 @@ The Bayesian path also provides:
   separately in each arm
 - `posterior_predictive_check(fit)` to assess the atom and continuous parts of
   the Bayesian model using posterior predictive checks
+- `posterior_predictive_pvalues(fit)` to extract discrepancy-based posterior
+  predictive p-values for those same model checks; these are model-checking
+  summaries rather than frequentist hypothesis-test p-values
 
 For positive-support Bayesian fits, the continuous PPC is shown as a density
 overlay on `log(Y)` so the visual diagnostic is not distorted by the boundary
-at zero.
+at zero, and the corresponding continuous posterior predictive p-value is
+computed on that same `log(Y)` scale.
 
 For both `method = "lrt"` and `method = "splrt"`, joint confidence-region
 surfaces are available for unadjusted fits through
@@ -147,6 +151,8 @@ fit_bayes <- trunc_comp_bayes(
 )
 
 posterior_density_plot(fit_bayes)
+
+posterior_predictive_pvalues(fit_bayes)
 
 ppc_plots <- posterior_predictive_check(fit_bayes, seed = 1)
 ppc_plots$atom
@@ -175,6 +181,8 @@ fit_bayes_positive <- trunc_comp_bayes(
   iter_sampling = 1000,
   refresh = 0
 )
+
+posterior_predictive_pvalues(fit_bayes_positive)
 ```
 
 # Confidence Intervals

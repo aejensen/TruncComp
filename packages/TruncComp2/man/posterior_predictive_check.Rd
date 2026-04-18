@@ -27,7 +27,8 @@ reproducible.}
 }
 \value{
 If \code{type = "both"}, a named list with \code{atom} and \code{continuous}
-\code{ggplot2} objects. Otherwise returns the requested \code{ggplot2} object.
+\code{ggplot2} objects. Otherwise returns the requested \code{ggplot2} object. Each
+plot subtitle reports the corresponding posterior predictive p-value.
 }
 \description{
 Uses \href{https://mc-stan.org/bayesplot/}{bayesplot} to visualize posterior

@@ -3,9 +3,12 @@ test_that("Bayesian print, summary, coef, and confint methods work on successful
 
   expect_match(paste(capture.output(print(fit)), collapse = "\n"), "trunc_comp_bayes_fit")
 
-  capture.output(summary_out <- summary(fit))
+  summary_text <- paste(capture.output(summary_out <- summary(fit)), collapse = "\n")
   expect_s3_class(summary_out, "trunc_comp_bayes_summary")
-  expect_true(all(c("contrasts", "arms", "diagnostics", "settings") %in% names(summary_out)))
+  expect_true(all(c("contrasts", "arms", "ppc", "diagnostics", "settings") %in% names(summary_out)))
+  expect_equal(rownames(summary_out$ppc), c("atom", "continuous"))
+  expect_true(all(summary_out$ppc$p_value >= 0 & summary_out$ppc$p_value <= 1))
+  expect_match(summary_text, "Posterior predictive checks")
 
   coefficients <- coef(fit)
   expect_equal(names(coefficients), c("mu_delta", "delta_atom", "alpha_delta", "delta"))

@@ -7,6 +7,7 @@ test_that("Successful Bayesian fits return the expected object shape", {
 
   expect_true(all(c(
     "fit", "draws", "summary_table", "arm_table", "diagnostics",
+    "ppc_table", "ppc_settings",
     "settings", "conf.level", "success", "error", "data", "atom", "call"
   ) %in% names(fit)))
 
@@ -18,6 +19,8 @@ test_that("Successful Bayesian fits return the expected object shape", {
 
   expect_true(all(is.finite(contrast_estimates)))
   expect_true(all(is.finite(arm_estimates)))
+  expect_equal(rownames(fit$ppc_table), c("atom", "continuous"))
+  expect_true(all(is.finite(fit$ppc_table$p_value)))
 })
 
 test_that("Positive-support Bayesian fits return the expected object shape", {
@@ -34,4 +37,6 @@ test_that("Positive-support Bayesian fits return the expected object shape", {
 
   expect_true(all(is.finite(contrast_estimates)))
   expect_true(all(is.finite(arm_estimates)))
+  expect_equal(rownames(fit$ppc_table), c("atom", "continuous"))
+  expect_true(all(is.finite(fit$ppc_table$p_value)))
 })

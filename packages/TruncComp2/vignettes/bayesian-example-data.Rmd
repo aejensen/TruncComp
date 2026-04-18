@@ -166,7 +166,14 @@ posterior_density_plot(fit_bayes, x = density_x)
 The fit object also supports posterior predictive checks for both parts of the
 Bayesian model. The atom PPC compares the fitted Bernoulli atom model with the
 observed atom indicators, while the continuous PPC compares replicated non-atom
-draws from the fitted mixture model with the observed non-atom outcomes.
+draws from the fitted mixture model with the observed non-atom outcomes. The
+package also reports discrepancy-based posterior predictive p-values for these
+two checks. These are posterior predictive model-checking summaries rather than
+frequentist hypothesis-test p-values.
+
+```{r}
+posterior_predictive_pvalues(fit_bayes)
+```
 
 ```{r, fig.width=11, fig.height=5.5, out.width="100%"}
 ppc_plots <- posterior_predictive_check(fit_bayes, seed = 1)
@@ -283,7 +290,12 @@ As before, the atom PPC checks the Bernoulli atom model, while the continuous
 PPC compares replicated non-atom draws from the fitted Gamma mixture with the
 observed positive outcomes. For the positive-support fit, the continuous PPC is
 shown on the `log(Y)` scale so the density overlay is not distorted by the
-boundary at zero.
+boundary at zero, and the corresponding continuous posterior predictive p-value
+is computed on that same `log(Y)` scale.
+
+```{r}
+posterior_predictive_pvalues(fit_bayes_positive)
+```
 
 ```{r, fig.width=11, fig.height=5.5, out.width="100%"}
 ppc_plots_positive <- posterior_predictive_check(fit_bayes_positive, seed = 1)

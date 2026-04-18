@@ -38,6 +38,8 @@ Exported user-facing helpers include:
 densities implied by the Bayesian fit.
 \item \code{\link[=posterior_predictive_check]{posterior_predictive_check()}} for \code{bayesplot}-based posterior predictive
 checks of the Bayesian fit.
+\item \code{\link[=posterior_predictive_pvalues]{posterior_predictive_pvalues()}} for discrepancy-based posterior
+predictive p-values from the Bayesian fit.
 \item \code{\link[=summary.trunc_comp_fit]{summary.trunc_comp_fit()}} and \code{\link[=print.trunc_comp_fit]{print.trunc_comp_fit()}} for displaying results.
 \item \code{\link[=summary.trunc_comp_bayes_fit]{summary.trunc_comp_bayes_fit()}} and \code{\link[=print.trunc_comp_bayes_fit]{print.trunc_comp_bayes_fit()}} for
 Bayesian posterior summaries.

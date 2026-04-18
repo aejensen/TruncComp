@@ -29,6 +29,18 @@ Rscript -e 'if(!requireNamespace("roxygen2", quietly = TRUE)) install.packages("
 Run that before package checks so the generated `man/*.Rd` files and
 `NAMESPACE` stay in sync with the source comments.
 
+Because the package now includes a packaged Stan model, Bayesian changes also
+require the generated Stan exports to stay in sync with `inst/stan/*.stan`.
+From the package root, regenerate those files with:
+
+```sh
+Rscript -e 'rstantools::rstan_config()'
+```
+
+That step needs to be rerun whenever either packaged Stan model changes,
+including the positive-support Gamma mixture model in
+`inst/stan/trunc_comp_bayes_positive.stan`.
+
 The primary user-facing fitting interface is now `trunc_comp()`. The older
 camelCase helpers remain only as deprecated compatibility wrappers and should
 not be used in new docs, examples, or tests.
@@ -109,3 +121,14 @@ algorithm = "optimize")` alternatives against grid-based references for both
 the parametric and semi-parametric methods. It is intentionally kept out of
 routine package checks because those optimizer paths are materially slower than
 the default grid-based intervals.
+
+The experimental Bayesian pathway also has a package-local validation script:
+
+```sh
+Rscript tools/validate-bayesian-dp.R
+```
+
+That script runs fixed-scenario checks for the Bayesian DP mixture
+implementation, compares its summaries with the existing `lrt` and `splrt`
+paths where the estimands overlap, and enforces the current diagnostic
+thresholds for the reference scenarios.

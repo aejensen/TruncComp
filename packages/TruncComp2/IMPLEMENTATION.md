@@ -8,8 +8,15 @@ The package has two main estimation paths:
 
 - `method = "LRT"`: a fully parametric likelihood-ratio test implemented in [R/LRT.R](R/LRT.R)
 - `method = "SPLRT"`: a semi-parametric likelihood-ratio test implemented in [R/SPLRT.R](R/SPLRT.R), using the internal empirical-likelihood helpers in [R/empiricalLikelihood.R](R/empiricalLikelihood.R)
+- `trunc_comp_bayes()`: an experimental Bayesian two-part Dirichlet process
+  mixture implementation using the packaged Stan models in
+  [inst/stan/trunc_comp_bayes.stan](inst/stan/trunc_comp_bayes.stan) and
+  [inst/stan/trunc_comp_bayes_positive.stan](inst/stan/trunc_comp_bayes_positive.stan)
 
 The exported entry point for both methods is [R/truncComp.R](R/truncComp.R).
+The Bayesian entry point is [R/truncCompBayes.R](R/truncCompBayes.R), with the
+fit helpers in [R/bayesFit.R](R/bayesFit.R) and S3 methods in
+[R/classFunctionsBayes.R](R/classFunctionsBayes.R).
 
 Both methods now accept the same additive covariate-adjustment interface through
 `adjust = ~ ...`. The adjusted `SPLRT` path is a genuine extension beyond the
@@ -20,6 +27,33 @@ The package now ships two fixed example loaders:
 
 - `loadTruncComp2Example()` for the original two-column example used by the semi-parametric path
 - `loadTruncComp2AdjustedExample()` for a 3-level categorical-covariate example used to illustrate both parametric and semi-parametric adjustment
+
+## Experimental Bayesian Path
+
+The Bayesian path preserves the same standardized `Y` / `A` / `R`
+representation as the frequentist code, but routes fitting through Stan rather
+than through `glm`, `lm`, or empirical likelihood.
+
+The Stan model is pre-written and packaged. At a high level it fits:
+
+- a Bernoulli model for atom versus non-atom status in each arm
+- a truncated stick-breaking Gaussian mixture for the non-atom outcomes in each
+  arm when `continuous_support = "real_line"`
+- a truncated stick-breaking Gamma mixture for the non-atom outcomes in each
+  arm when `continuous_support = "positive_real"`
+
+The R-side Bayesian helpers are responsible for:
+
+- validating the no-covariate input restrictions
+- standardizing the non-atom outcomes before sampling
+- choosing the packaged Stan model based on `continuous_support`
+- calling `rstan::sampling()` on the corresponding packaged Stan model
+- extracting posterior draws for stable arm-level and contrast summaries
+- computing stored posterior intervals and sampler diagnostics
+
+The returned `"trunc_comp_bayes_fit"` object does not expose LR statistics or
+p-values. Instead it stores posterior draws, equal-tail credible intervals,
+posterior probabilities, and convergence diagnostics.
 
 ## End-to-End Control Flow
 

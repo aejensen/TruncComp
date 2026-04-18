@@ -5,6 +5,8 @@ The package implements:
 
 - a parametric likelihood-ratio test (`method = "lrt"`)
 - a semi-parametric likelihood-ratio test (`method = "splrt"`)
+- an experimental Bayesian two-part Dirichlet process mixture path via
+  `trunc_comp_bayes()`
 
 The current implementation exposes a unified R-idiomatic API for both methods and computes both paths internally:
 
@@ -20,6 +22,9 @@ The currently supported scope is:
 - one atom value representing the unobserved or undefined outcome
 - optional additive baseline-covariate adjustment for both `method = "lrt"` and `method = "splrt"` through `adjust = ~ ...`
 - adjusted `SPLRT` provides fitted tests and component confidence intervals, but not joint confidence regions or `delta` intervals
+- the Bayesian path is currently experimental, no-covariate only, and supports
+  either real-line non-atom outcomes or strictly positive non-atom outcomes via
+  `continuous_support = "positive_real"`
 
 To install the development version of TruncComp2 run the following commands from within R
 
@@ -44,6 +49,30 @@ Rscript -e 'if(!requireNamespace("roxygen2", quietly = TRUE)) install.packages("
 - Packaged example dataset: `trunc_comp_example`
 - Packaged adjusted example dataset: `trunc_comp_adjusted_example`
 
+# Experimental Bayesian Interface
+
+`trunc_comp_bayes()` fits an explicit two-part Bayesian model with:
+
+- one atom probability per treatment arm
+- one truncated stick-breaking mixture per treatment arm for the non-atom
+  outcomes
+
+The current Bayesian implementation:
+
+- uses packaged `rstan` models under `inst/stan/`
+- supports only the no-covariate model
+- supports `continuous_support = "real_line"` for Gaussian kernels and
+  `continuous_support = "positive_real"` for Gamma kernels on the positive real
+  line
+- reports posterior summaries and diagnostics rather than p-values or
+  likelihood-ratio statistics
+- returns the combined-outcome contrast `delta` as the headline summary,
+  alongside `delta_atom`, `mu_delta`, and `alpha_delta`
+- includes `posterior_density_plot()` for the arm-specific posterior outcome
+  densities implied by the fitted two-part DPMM
+- includes `posterior_predictive_check()` for `bayesplot`-based posterior
+  predictive checks of both the atom and continuous model parts
+
 # Main Interface
 
 The primary entry point is:
@@ -53,6 +82,7 @@ trunc_comp(Y ~ R, atom = 0, data = d, method = "lrt")
 trunc_comp(Y ~ R, atom = 0, data = d, method = "lrt", adjust = ~ age + sex)
 trunc_comp(Y ~ R, atom = 0, data = d, method = "splrt")
 trunc_comp(Y ~ R, atom = 0, data = d, method = "splrt", adjust = ~ age + sex)
+trunc_comp_bayes(Y ~ R, atom = 0, data = d)
 ```
 
 The fitted object reports:
@@ -72,12 +102,80 @@ conditional treatment effects from the adjusted observed-outcome and logistic
 submodels. In that adjusted setting, `delta` is not reported and remains `NA`,
 and `confint()` rejects `parameter = "delta"` and `parameter = "joint"`.
 
+For `trunc_comp_bayes()`, the returned object instead stores posterior draws
+and summaries for:
+
+- `delta_atom`: difference in atom probability
+- `mu_delta`: difference in mean among non-atom outcomes
+- `alpha_delta`: odds ratio of being observed
+- `delta`: combined-outcome contrast
+
+along with Stan diagnostics such as divergences, `Rhat`, and effective sample
+sizes.
+
+The Bayesian path also provides:
+
+- `posterior_density_plot(fit)` to visualize the arm-specific posterior mean
+  outcome densities, with pointwise credible ribbons and the atom mass shown
+  separately in each arm
+- `posterior_predictive_check(fit)` to assess the atom and continuous parts of
+  the Bayesian model using posterior predictive checks
+
+For positive-support Bayesian fits, the continuous PPC is shown as a density
+overlay on `log(Y)` so the visual diagnostic is not distorted by the boundary
+at zero.
+
 For both `method = "lrt"` and `method = "splrt"`, joint confidence-region
 surfaces are available for unadjusted fits through
 `confint(..., parameter = "joint")`. If `offset` is omitted, the default
 surface window is expanded adaptively from the fitted data, and the plot is
 rendered with `ggplot2::theme_minimal()`. Adjusted fits currently support only
 the stored component intervals.
+
+A compact Bayesian plotting workflow on the packaged example data is:
+
+```r
+data("trunc_comp_example", package = "TruncComp2")
+fit_bayes <- trunc_comp_bayes(
+  Y ~ R,
+  atom = 0,
+  data = trunc_comp_example,
+  chains = 4,
+  iter_warmup = 500,
+  iter_sampling = 1000,
+  refresh = 0
+)
+
+posterior_density_plot(fit_bayes)
+
+ppc_plots <- posterior_predictive_check(fit_bayes, seed = 1)
+ppc_plots$atom
+ppc_plots$continuous
+```
+
+For strictly positive non-atom outcomes, switch the continuous kernel family:
+
+```r
+positive_data <- simulate_truncated_data(
+  20,
+  f0 = function(n) stats::rgamma(n, shape = 4, rate = 2.5),
+  f1 = function(n) stats::rgamma(n, shape = 5, rate = 2.2),
+  pi0 = 0.7,
+  pi1 = 0.6,
+  atom = 0
+)
+
+fit_bayes_positive <- trunc_comp_bayes(
+  Y ~ R,
+  atom = 0,
+  data = positive_data,
+  continuous_support = "positive_real",
+  chains = 4,
+  iter_warmup = 500,
+  iter_sampling = 1000,
+  refresh = 0
+)
+```
 
 # Confidence Intervals
 

@@ -11,6 +11,10 @@
 \item \code{method = "lrt"} fits the fully parametric likelihood-ratio procedure.
 \item \code{method = "splrt"} fits the semi-parametric likelihood-ratio procedure with
 an internal empirical-likelihood engine for the observed-outcome component.
+\item \code{\link[=trunc_comp_bayes]{trunc_comp_bayes()}} fits the experimental Bayesian two-part Dirichlet
+process mixture model for the no-covariate setting, with either real-line
+Gaussian kernels or positive-support Gamma kernels for the non-atom
+outcomes.
 }
 
 The main entry point is \code{\link[=trunc_comp]{trunc_comp()}}, which returns an object of class
@@ -29,7 +33,14 @@ supplied through \code{adjust}.
 Exported user-facing helpers include:
 \itemize{
 \item \code{\link[=trunc_comp]{trunc_comp()}} for fitting the model.
+\item \code{\link[=trunc_comp_bayes]{trunc_comp_bayes()}} for the experimental Bayesian pathway.
+\item \code{\link[=posterior_density_plot]{posterior_density_plot()}} for plotting the arm-specific posterior outcome
+densities implied by the Bayesian fit.
+\item \code{\link[=posterior_predictive_check]{posterior_predictive_check()}} for \code{bayesplot}-based posterior predictive
+checks of the Bayesian fit.
 \item \code{\link[=summary.trunc_comp_fit]{summary.trunc_comp_fit()}} and \code{\link[=print.trunc_comp_fit]{print.trunc_comp_fit()}} for displaying results.
+\item \code{\link[=summary.trunc_comp_bayes_fit]{summary.trunc_comp_bayes_fit()}} and \code{\link[=print.trunc_comp_bayes_fit]{print.trunc_comp_bayes_fit()}} for
+Bayesian posterior summaries.
 \item \code{\link[=confint.trunc_comp_fit]{confint.trunc_comp_fit()}} and \code{\link[=joint_contrast_surface]{joint_contrast_surface()}} for marginal and joint
 inference.
 \item \code{\link[=simulate_truncated_data]{simulate_truncated_data()}}, \code{trunc_comp_example}, and

@@ -12,6 +12,29 @@ The current package implementation is narrower than the general framework discus
 - adjusted `method = "SPLRT"` currently implements fitted tests and component confidence intervals, but not joint confidence regions or `Delta` intervals
 - two estimation methods: parametric likelihood-ratio (`method = "LRT"`) and semi-parametric likelihood-ratio (`method = "SPLRT"`)
 
+The package also includes an experimental Bayesian pathway through
+`trunc_comp_bayes()`. That path currently supports only the no-covariate
+setting and uses a two-part model with:
+
+- arm-specific atom probabilities
+- arm-specific truncated stick-breaking mixtures for `Y | A = 1`
+
+The continuous component can be specified with:
+
+- `continuous_support = "real_line"` for Gaussian kernels on the real line
+- `continuous_support = "positive_real"` for Gamma kernels on the positive real
+  line, requiring all non-atom outcomes to be strictly positive
+
+Its primary posterior outputs are:
+
+- `delta_atom`: difference in atom probability
+- `mu_delta`: difference in mean among non-atom outcomes
+- `alpha_delta`: odds ratio of being observed
+- `delta`: combined-outcome contrast
+
+Unlike the likelihood-ratio paths, the Bayesian implementation reports
+posterior summaries and diagnostics rather than p-values or LR statistics.
+
 This document describes the model as it is implemented in the package source, with the manuscript used for interpretation and motivation.
 
 For an engineering-focused walkthrough of the current code paths and the internal empirical-likelihood routine, see [IMPLEMENTATION.md](IMPLEMENTATION.md).

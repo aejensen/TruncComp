@@ -148,9 +148,9 @@ jointContrastPlot <- function(mu_delta, log_or_delta, surface, m, conf.level) {
 
   plot_obj <- ggplot2::ggplot(
     plot_data,
-    ggplot2::aes(x = mu_delta, y = log_or_delta, fill = statistic)
+    ggplot2::aes(x = mu_delta, y = log_or_delta)
   ) +
-    ggplot2::geom_raster() +
+    ggplot2::geom_raster(ggplot2::aes(fill = statistic)) +
     ggplot2::geom_contour(
       ggplot2::aes(z = statistic),
       breaks = stats::qchisq(conf.level, 2),
@@ -472,6 +472,11 @@ jointContrastSurfaceData <- function(m, muDelta = NULL, logORdelta = NULL,
   if(isTRUE(include_delta)) {
     out$delta_surface <- deltaOut
   }
+
+  if(isTRUE(plot)) {
+    return(invisible(out))
+  }
+
   out
 }
 

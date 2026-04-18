@@ -59,6 +59,19 @@ test_that("joint contrast surface matches the null test and vanishes at the fitt
                0, tolerance = 1e-6)
 })
 
+test_that("joint_contrast_surface returns invisibly when plotting", {
+  example_data <- trunc_comp_example
+  model <- trunc_comp(Y ~ R, atom = 0, data = example_data, method = "splrt")
+
+  plotted <- withVisible(joint_contrast_surface(model, plot = TRUE, resolution = 5))
+  unplotted <- withVisible(joint_contrast_surface(model, plot = FALSE, resolution = 5))
+
+  expect_false(plotted$visible)
+  expect_true(unplotted$visible)
+  expect_equal(dim(plotted$value$surface), c(5, 5))
+  expect_equal(dim(unplotted$value$surface), c(5, 5))
+})
+
 test_that("existing TruncComp2 data validation still stops before EL helper use", {
   bad_data <- data.frame(
     Y = c(0, 0, 1, 0, 2, 3),

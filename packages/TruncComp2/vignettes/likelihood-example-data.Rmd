@@ -1,0 +1,274 @@
+---
+title: "Likelihood-based analysis of the packaged example data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Likelihood-based analysis of the packaged example data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+`TruncComp2` provides two likelihood-based frequentist procedures for the
+two-group truncated-outcome problem:
+
+- `method = "lrt"` for the parametric likelihood-ratio analysis
+- `method = "splrt"` for the semi-parametric likelihood-ratio analysis
+
+This vignette applies both methods to the packaged example data set used
+throughout the package documentation. The goal is to compare the fitted atom
+mechanism, the fitted mean contrast among the observed outcomes, and the
+combined-outcome contrast on the original outcome scale.
+
+## Load the example data
+
+```{r}
+library(TruncComp2)
+
+data("trunc_comp_example", package = "TruncComp2")
+example_data <- transform(
+  trunc_comp_example,
+  A = as.integer(Y != 0)
+)
+
+head(example_data, 10)
+```
+
+The packaged example uses `0` as the atom, so `A = 0` marks the undefined or
+unobserved outcome and `A = 1` marks rows where the continuous outcome is
+observed away from the atom.
+
+As in the Bayesian vignette, it is useful to look at the example on the three
+most relevant scales before fitting either likelihood:
+
+- the atom probability
+- the mean among the non-atom outcomes
+- the mean on the original combined-outcome scale
+
+```{r}
+arm_summary <- do.call(
+  rbind,
+  lapply(split(example_data, example_data$R), function(d) {
+    data.frame(
+      n = nrow(d),
+      atom_probability = mean(d$A == 0L),
+      observed_probability = mean(d$A == 1L),
+      mean_non_atom = mean(d$Y[d$A == 1L]),
+      mean_combined = mean(d$Y),
+      row.names = NULL
+    )
+  })
+)
+
+arm_summary$arm <- c("control", "treatment")
+arm_summary <- arm_summary[, c("arm", "n", "atom_probability",
+                               "observed_probability", "mean_non_atom",
+                               "mean_combined")]
+arm_summary
+```
+
+This table makes the target quantities concrete. The two likelihood-based
+procedures below use the same atom and the same binary treatment indicator, but
+they differ in how strongly they model the non-atom outcome distribution.
+
+## Fit the parametric and semi-parametric likelihoods
+
+For the same formula interface, the package can fit either the parametric
+likelihood-ratio procedure or the semi-parametric likelihood-ratio procedure:
+
+```{r}
+fit_lrt <- trunc_comp(
+  Y ~ R,
+  atom = 0,
+  data = example_data,
+  method = "lrt"
+)
+
+fit_splrt <- trunc_comp(
+  Y ~ R,
+  atom = 0,
+  data = example_data,
+  method = "splrt"
+)
+
+fit_lrt
+fit_splrt
+```
+
+The two printed objects report the same three fitted treatment-effect summaries:
+
+- `mu_delta`: difference in means among the observed outcomes
+- `alpha_delta`: odds ratio of being observed away from the atom
+- `delta`: combined-outcome mean difference on the original scale
+
+Each fit also stores the joint likelihood-ratio statistic and its p-value.
+
+## Compare the fitted likelihood results
+
+```{r}
+fit_comparison <- data.frame(
+  method = c("Parametric likelihood", "Semi-parametric likelihood"),
+  mu_delta = c(fit_lrt$mu_delta, fit_splrt$mu_delta),
+  alpha_delta = c(fit_lrt$alpha_delta, fit_splrt$alpha_delta),
+  delta = c(fit_lrt$delta, fit_splrt$delta),
+  statistic = c(fit_lrt$statistic, fit_splrt$statistic),
+  p_value = c(fit_lrt$p.value, fit_splrt$p.value),
+  row.names = NULL
+)
+
+fit_comparison
+```
+
+For this particular example the two methods agree extremely closely, and in
+fact the fitted contrasts are the same to the displayed precision. That will
+not always happen in general. The point of the shared `trunc_comp()` interface
+is that both methods target the same treatment-effect summaries even though the
+semi-parametric procedure places less structure on the continuous non-atom
+distribution.
+
+The full printed summaries also expose the stored component confidence
+intervals and the joint likelihood-ratio result:
+
+```{r}
+summary(fit_lrt)
+summary(fit_splrt)
+```
+
+Notice that the summary output reports the point estimate for the
+combined-outcome contrast `delta`, but leaves its confidence interval blank.
+That is intentional. Unlike `mu_delta` and `alpha_delta`, the package does not
+store one default interval for `delta` on the fitted object because there are
+multiple supported constructions for that interval, and they answer slightly
+different questions. Instead, `delta` intervals are computed on demand through
+`confint()` after you choose the interval type explicitly.
+
+## Component confidence intervals
+
+The component intervals are available directly through `confint()`:
+
+```{r}
+confint(fit_lrt)
+confint(fit_splrt)
+```
+
+These correspond to the two primary model components:
+
+- the contrast in mean among the observed outcomes
+- the odds ratio for being observed away from the atom
+
+They are not exactly the same type of interval under the two methods.
+
+- For `method = "lrt"`, both component intervals are Wald intervals from the
+  fitted parametric submodels: a Normal-model interval for `mu_delta` and a
+  logistic-model interval, exponentiated to the odds-ratio scale, for
+  `alpha_delta`.
+- For `method = "splrt"`, the interval for `mu_delta` is an empirical-
+  likelihood interval based on the observed non-atom outcomes, while the
+  interval for `alpha_delta` comes from profiling the logistic observation
+  model and then exponentiating back to the odds-ratio scale.
+
+For this example the fitted component intervals are again very similar across
+the two likelihood paths.
+
+## Combined-outcome intervals for `delta`
+
+Unlike the component intervals, intervals for the combined-outcome contrast
+`delta` are computed on demand. The package currently provides three choices:
+
+- `method = "welch"` for a direct interval on the combined outcome
+- `method = "profile"` for a profile-likelihood interval
+- `method = "projected"` for a joint-surface projection interval
+
+For the two likelihood-based `delta` constructions, `profile` and `projected`,
+there are actually two numerical ways to compute the interval:
+
+- a default grid-based route, which evaluates the likelihood surface on a
+  finite grid in `(mu_delta, log_or_delta)` space and then profiles or projects
+  that surface
+- an alternative optimizer-based route, which searches directly for the
+  relevant `delta` endpoints without first building the full grid
+
+In the public interface, this is controlled by the `algorithm` argument to
+`confint(..., parameter = "delta", method = "profile" | "projected")`. The
+default is `algorithm = "grid"`, which is usually the most transparent choice
+because it is tied directly to the same joint surface returned by
+`joint_contrast_surface()`. The optimizer-based route,
+`algorithm = "optimize"`, is available as a slower direct alternative. In this
+vignette, the `profile` and `projected` intervals below use that optimizer-
+based route.
+
+```{r}
+extract_delta_interval <- function(fit, method) {
+  algorithm <- if(method %in% c("profile", "projected")) "optimize" else "grid"
+
+  capture.output(
+    interval <- confint(
+      fit,
+      parameter = "delta",
+      method = method,
+      algorithm = algorithm,
+      plot = FALSE
+    )
+  )
+
+  data.frame(
+    lower = unname(interval[1, 1]),
+    upper = unname(interval[1, 2]),
+    row.names = NULL
+  )
+}
+
+delta_interval_table <- do.call(
+  rbind,
+  lapply(
+    list(
+      list(label = "Parametric likelihood", fit = fit_lrt),
+      list(label = "Semi-parametric likelihood", fit = fit_splrt)
+    ),
+    function(entry) {
+      do.call(
+        rbind,
+        lapply(c("welch", "profile", "projected"), function(method_name) {
+          interval <- extract_delta_interval(entry$fit, method_name)
+          data.frame(
+            method = entry$label,
+            interval_type = if(method_name %in% c("profile", "projected")) {
+              paste0(method_name, " (optimize)")
+            } else {
+              method_name
+            },
+            lower = interval$lower,
+            upper = interval$upper,
+            row.names = NULL
+          )
+        })
+      )
+    }
+  )
+)
+
+delta_interval_table
+```
+
+On this data set the Welch interval is identical across the two fitted objects
+because it depends only on the observed combined outcome. The profile and
+projected intervals use the fitted likelihood surface and can differ slightly
+between the parametric and semi-parametric procedures.
+
+## Joint confidence surfaces
+
+For successful unadjusted fits, `TruncComp2` also exposes the joint
+likelihood-ratio surface in `(mu_delta, log_or_delta)`. This is the object that
+underlies the projected and profile-style `delta` intervals above.
+
+Below is the joint confidence plot for the semi-parametric likelihood path on
+the same example data:
+
+```{r, fig.width=11, fig.height=5.5, out.width="100%"}
+joint_contrast_surface(fit_splrt, resolution = 60)
+```

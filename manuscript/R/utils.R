@@ -21,8 +21,27 @@ format_count <- function(x) {
   formatC(as.integer(round(x)), format = "d", big.mark = ",")
 }
 
+format_percent <- function(x, digits = 1) {
+  stopifnot(length(x) == 1, is.numeric(x), is.finite(x))
+  paste0(formatC(round(100 * x, digits), format = "f", digits = digits), "\\%")
+}
+
+format_probability <- function(x, digits = 3) {
+  stopifnot(length(x) == 1, is.numeric(x), is.finite(x))
+  formatC(round(x, digits), format = "f", digits = digits)
+}
+
+format_p_value <- function(x, digits = 3) {
+  stopifnot(length(x) == 1, is.numeric(x), is.finite(x))
+  if (x < 10^-digits) {
+    return(sprintf("$<%s$", formatC(10^-digits, format = "f", digits = digits)))
+  }
+  formatC(round(x, digits), format = "f", digits = digits)
+}
+
 latex_escape <- function(x) {
-  x <- gsub("([#$%&_{}])", "\\\\\\1", x, perl = TRUE)
+  x <- gsub("([#$&_{}])", "\\\\\\1", x, perl = TRUE)
+  x <- gsub("(?<!\\\\)%", "\\\\%", x, perl = TRUE)
   x
 }
 

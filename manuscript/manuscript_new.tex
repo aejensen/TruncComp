@@ -55,7 +55,7 @@
 \maketitle
 
 \begin{abstract}
-Continuous outcomes such as quality-of-life scores are often undefined after death or a related event. A common pragmatic solution is to encode such patients by the worst possible score and analyze the resulting composite outcome with a one-dimensional procedure. That preserves a clinically meaningful ordering, but it conflates treatment effects on the atom with treatment effects on the continuous part among those with observed outcomes. We propose likelihood-ratio tests for the joint null of no treatment effect on either component. The construction yields a single prespecified p-value together with interpretable component-wise effect estimates and confidence regions. We present both a parametric version and a semi-parametric version based on empirical likelihood, establish their large-sample calibration, and study their behavior in simulations. The methods are most advantageous when treatment acts primarily through one component or when the atom and continuous components move in different directions. A secondary empirical illustration with a public atom-at-zero expenditure outcome shows how the joint analysis can reveal structure that standard one-dimensional tests largely miss.
+Continuous outcomes such as quality-of-life scores are often undefined after death or a related event. A common pragmatic solution is to encode such patients by the worst possible score and analyze the resulting composite outcome with a one-dimensional procedure. That preserves a clinically meaningful ordering, but it conflates treatment effects on the atom with treatment effects on the continuous part among those with observed outcomes. We propose likelihood-ratio tests for the joint null of no treatment effect on either component. The construction yields a single prespecified p-value together with interpretable component-wise effect estimates and confidence regions. We present both a parametric version and a semi-parametric version based on empirical likelihood, establish their large-sample calibration, and study their behavior in simulations. The methods are most advantageous when treatment acts primarily through one component or when the atom and continuous components move in different directions. A clinical application to the IST-3 acute ischemic stroke trial illustrates the method using death by six months as the atom and EuroQol visual analogue score among survivors as the continuous component.
 \end{abstract}
 
 \begin{center}
@@ -75,7 +75,7 @@ Other approaches address truncated-by-death outcomes from different perspectives
 
 Our construction combines ideas from two-part models for semi-continuous outcomes \citep{aitchison1955distribution,cragg1971some} and empirical-likelihood inference for mean restrictions \citep{owen1988empirical,owen1991empirical,kitamura2001asymptotic}. We develop a factorized likelihood-ratio framework that yields a single prespecified p-value for the joint null together with interpretable component-wise effect estimates and confidence regions. We present both a parametric version, which is efficient under a credible model for the positive part, and a semi-parametric version, which relaxes that distributional commitment while retaining the same Bernoulli component. The resulting procedures preserve the clinically meaningful atom used in practice, but they test a sharper question than direct one-dimensional analyses of the combined outcome.
 
-Although we motivate the method by quality of life truncated by death, the same structure arises whenever one special value has a substantively different meaning than the remainder of an otherwise continuous scale. The target is an observed-data treatment contrast, not a principal-stratum causal estimand. The rest of the paper is organized as follows. Section~\ref{sec:method} introduces the statistical setup and the proposed tests. Section~\ref{sec:simulation-study} reports a simulation study, Section~\ref{sec:application} gives a secondary empirical illustration, and Section~\ref{sec:discussion} concludes. Additional simulation results and a derivation of the empirical-likelihood component are collected in Appendix~\ref{app:supplementary-simulation-results} and Appendix~\ref{app:supplementary-derivation}.
+Although we motivate the method by quality of life truncated by death, the same structure arises whenever one special value has a substantively different meaning than the remainder of an otherwise continuous scale. The target is an observed-data treatment contrast, not a principal-stratum causal estimand. The rest of the paper is organized as follows. Section~\ref{sec:method} introduces the statistical setup and the proposed tests. Section~\ref{sec:simulation-study} reports a simulation study, Section~\ref{sec:application} gives a clinical application, and Section~\ref{sec:discussion} concludes. Additional simulation results and a derivation of the empirical-likelihood component are collected in Appendix~\ref{app:supplementary-simulation-results} and Appendix~\ref{app:supplementary-derivation}.
 
 \section{Method}\label{sec:method}
 
@@ -88,30 +88,56 @@ We observe independent and identically distributed random variables $(Y_i, A_i, 
   \Pr(A_i = 1 \mid R_i = 1, X_i)
   &= \Pr(A_i = 1 \mid R_i = 0, X_i).
 \end{align*}
-In practice, analysts often replace this bivariate object by a single combined outcome
+In practice, analysts often replace this bivariate object by a single combined outcome. Let $\mathcal{Y} \subset \mathbb{R}$ be a compact set containing the support of $Y_i \mid A_i = 1$, and let $\mathcal{E} \notin \mathcal{Y}$ be a distinguished symbol representing the undefined outcome. We define the outcome space by
+\[
+  \widetilde{\mathcal{Y}} = \mathcal{Y} \sqcup \{\mathcal{E}\},
+\]
+where $\sqcup$ denotes disjoint union. We equip $\widetilde{\mathcal{Y}}$ with the $\sigma$-algebra
+\[
+  \widetilde{\mathcal{B}} = \{B,\; B \cup \{\mathcal{E}\} : B \in \mathcal{B}(\mathcal{Y})\},
+\]
+where $\mathcal{B}(\mathcal{Y})$ is the Borel $\sigma$-algebra on $\mathcal{Y}$ induced by $\mathbb{R}$. Thus $\mathcal{E}$ is an abstract atom, distinct from every point of $\mathcal{Y}$, and $\widetilde{Y}_i$ is a $\widetilde{\mathcal{Y}}$-valued random variable. For fixed $e_0 \in \mathbb{R}$, we define the numerical representation map
+\[
+  c_{e_0}:\widetilde{\mathcal{Y}} \to \mathbb{R}, \qquad c_{e_0}(y)=y \text{ for } y \in \mathcal{Y}, \qquad c_{e_0}(\mathcal{E}) = e_0,
+\]
+and arithmetic is performed on $c_{e_0}(\widetilde{Y}_i)$, not on the abstract atom itself. When no ambiguity arises, one may equivalently work directly on the numerical outcome space $\mathcal{Y} \cup \{e_0\} \subseteq \mathbb{R}$, thereby identifying the atom with the actual number $e_0$. Throughout most of the manuscript we use the atom-at-zero representation $c_0$, obtained by setting $e_0 = 0$.
 \begin{align}
-  \widetilde{Y}_i = Y_i \mathbbm{1}(A_i = 1) + \mathcal{E}\mathbbm{1}(A_i = 0),\label{eq:combinedOutcome}
+  \widetilde{Y}_i
+  &=
+  \begin{cases}
+    Y_i, & A_i = 1,\\
+    \mathcal{E}, & A_i = 0.
+  \end{cases}\label{eq:combinedOutcome}
 \end{align}
 where $\mathcal{E}$ is a fixed atom representing the undefined outcome. The distribution of $\widetilde{Y}_i$ is therefore a mixture of a point mass at $\mathcal{E}$ and a continuous distribution on the support of $Y_i \mid A_i = 1$.
+\[
+  \widetilde{Y}_i^{\,0} := c_0(\widetilde{Y}_i)
+  =
+  \begin{cases}
+    Y_i, & A_i = 1,\\
+    0, & A_i = 0.
+  \end{cases}
+\]
+This is the real-valued combined outcome used whenever expectations or other arithmetic summaries are taken.
 
-The conditional mean of the combined outcome is
+The conditional mean of the numerical combined outcome is
 \begin{align*}
-  \E[\widetilde{Y}_i \mid R_i, X_i]
-  = \E[Y_i \mid A_i = 1, R_i, X_i]\Pr(A_i = 1 \mid R_i, X_i)
-  + \mathcal{E}\Pr(A_i = 0 \mid R_i, X_i).
+  \E[\widetilde{Y}_i^{\,0} \mid R_i, X_i]
+  = \E[Y_i \mid A_i = 1, R_i, X_i]\Pr(A_i = 1 \mid R_i, X_i).
 \end{align*}
 This quantity can be identical between treatment groups even when treatment affects both the observation probability and the continuous component. To see this, let
 \[
 \E[Y_i \mid A_i = 1, R_i = 0, X_i] = \mu(X_i), \qquad
 \E[Y_i \mid A_i = 1, R_i = 1, X_i] = \mu(X_i) + \mu_\delta(X_i),
 \]
-and, for simplicity, set $\mathcal{E} = 0$. Then
+Then
 \begin{align}
   \Delta_{\widetilde{Y}}(X_i)
-  &= \E[\widetilde{Y}_i \mid R_i = 1, X_i] - \E[\widetilde{Y}_i \mid R_i = 0, X_i]\label{eq:Delta}\\
+  &= \E[\widetilde{Y}_i^{\,0} \mid R_i = 1, X_i] - \E[\widetilde{Y}_i^{\,0} \mid R_i = 0, X_i]\label{eq:Delta}\\
   &= \mu(X_i)\left[\Pr(A_i = 1 \mid R_i = 1, X_i) - \Pr(A_i = 1 \mid R_i = 0, X_i)\right]\nonumber\\
   &\quad + \mu_\delta(X_i)\Pr(A_i = 1 \mid R_i = 1, X_i).\nonumber
 \end{align}
+Here $\Delta_{\widetilde{Y}}(X_i)$ is a contrast on the atom-at-zero numerical representation $\widetilde{Y}_i^{\,0}$, not a mean on the abstract disjoint-union space.
 Choosing
 \[
 \mu_\delta(X_i)
@@ -119,7 +145,7 @@ Choosing
 \]
 forces $\Delta_{\widetilde{Y}}(X_i)=0$ even though both components depend on treatment. Thus testing $\Delta_{\widetilde{Y}}(X_i)=0$ is generally not equivalent to testing no treatment effect on the joint observed-data structure, and the latter requires two restrictions.
 
-Throughout, $\mathcal{E}$ is treated as a fixed, prespecified atom representing the clinically worst value on the combined scale. The event $A_i = 0$ therefore denotes the substantive atom event, such as death before assessment or zero days alive out of hospital, rather than ordinary measurement missingness. Our estimands are defined with respect to the observed-data law of $(A_i, Y_i \mid A_i = 1)$, so identifiability is with respect to that observed-data structure rather than a latent principal stratum. The inferential development below assumes positive probabilities of $A_i = 1$ in both treatment groups, identifiable finite-dimensional models for the Bernoulli component, and, when the parametric procedure is used, a correctly specified model for the conditional outcome distribution.
+In the abstract formulation, $\mathcal{E}$ is a fixed prespecified atom representing the clinically worst state on the combined scale. When numerical summaries are required, we pass to a real-valued representation $c_{e_0}$; throughout most of the manuscript, the default choice is $e_0 = 0$. In applications where the observed endpoint truly has an atom at a real number such as $0$, we may work directly on that numerical scale. The event $A_i = 0$ therefore denotes the substantive atom event, such as death before assessment or zero days alive out of hospital, rather than ordinary measurement missingness. Our estimands are defined with respect to the observed-data law of $(A_i, Y_i \mid A_i = 1)$, so identifiability is with respect to that observed-data structure rather than a latent principal stratum. The inferential development below assumes positive probabilities of $A_i = 1$ in both treatment groups, identifiable finite-dimensional models for the Bernoulli component, and, when the parametric procedure is used, a correctly specified model for the conditional outcome distribution.
 
 To exploit that structure, we model the binary and continuous components separately. Let
 \begin{align*}
@@ -148,14 +174,14 @@ where
 \end{align*}
 The factorization follows from the likelihood construction; it does not require independence between the value of $Y_i$ and the event $A_i = 1$.
 
-We now impose generalized linear models on the two components:
+We now impose finite-dimensional regression models on the two components. Let $s_\beta(x) = h_\beta(x)^\top\eta_\beta$ and $s_\mu(x) = h_\mu(x)^\top\eta_\mu$, where $h_\beta$ and $h_\mu$ are prespecified transformations of the baseline covariates and $\eta_\beta,\eta_\mu$ are nuisance parameters. The working models used for covariate adjustment are
 \begin{align}
   \logit \Pr(A_i = 1 \mid R_i, X_i)
   &= \beta_0 + \beta_\delta R_i + s_\beta(X_i),\label{eq:glm1}\\
   \E[Y_i \mid A_i = 1, R_i, X_i]
   &= \mu_0 + \mu_\delta R_i + s_\mu(X_i),\label{eq:glm2}
 \end{align}
-where $s_\mu$ and $s_\beta$ are finite-dimensional regression terms for the additional covariates. The parameter $\mu_\delta$ is the mean difference among observed outcomes, and $\beta_\delta$ is the log odds-ratio of being observed.
+so that treatment enters additively on the logit scale for the observation probability and additively on the mean scale for the continuous non-atom outcome. The parameter $\mu_\delta$ is the conditional mean difference among observed outcomes at fixed covariates, and $\beta_\delta$ is the conditional log odds-ratio of being observed. We write $\alpha_\delta = \exp(\beta_\delta)$ for the corresponding odds ratio.
 
 On the original outcome scale, $\mu_\delta$ quantifies how treatment shifts the positive part of the outcome distribution among subjects with observed outcomes, whereas $\beta_\delta$ quantifies how treatment changes the odds that the outcome is observed at all. Reporting the pair therefore separates improvement in the continuous component from improvement in the probability of escaping the atom. This two-component contrast is the scientific target of the proposed likelihood-ratio test. It remains informative even when a single combined-outcome contrast such as $\Delta_{\widetilde{Y}}(X_i)$ is zero because the two components offset each other.
 
@@ -177,28 +203,176 @@ The null hypothesis of no treatment effect is tested with $W_n^P(0,0)$.
 
 \subsection{Parametric likelihood-ratio test}
 
-In the parametric version, one specifies a parametric model for the observed outcomes. For example, combining Equation~(\ref{eq:glm2}) with a normal model yields
-\begin{align*}
-  Y_i \mid A_i = 1, R_i, X_i
-  \sim N\left(\mu_0 + \mu_\delta R_i + s_\mu(X_i), \sigma^2\right).
-\end{align*}
-This produces the usual Gaussian likelihood-ratio statistic for $W_{Y,n}^P(\mu_\delta)$. Other parametric families can be used in the same way when scientifically appropriate.
+In the parametric version, the continuous non-atom outcome distribution is specified fully. In the Gaussian working model considered here,
+\begin{align}
+  A_i \mid R_i = r, X_i = x
+  &\sim \Bernoulli\{\pi_r(x)\},\nonumber\\
+  Y_i \mid A_i = 1, R_i = r, X_i = x
+  &\sim N\{\mu_r(x),\sigma^2\},\label{eq:parametric-adjusted-model}
+\end{align}
+where
+\[
+  \pi_r(x)
+  =
+  \logit^{-1}\{\beta_0 + \beta_\delta r + s_\beta(x)\},
+  \qquad
+  \mu_r(x)
+  =
+  \mu_0 + \mu_\delta r + s_\mu(x),
+  \qquad r \in \{0,1\}.
+\]
+The residual variance $\sigma^2$ is common to the two treatment arms, conditional on the adjustment covariates. Let $\theta_P = (\beta_0,\beta_\delta,\eta_\beta^\top,\mu_0,\mu_\delta,\eta_\mu^\top,\sigma^2)^\top$ collect all finite-dimensional parameters. The observed-data likelihood under the Gaussian model is
+\begin{align}
+  L_n^P(\theta_P)
+  &=
+  \prod_{i = 1}^n
+  \left[
+    \pi_{R_i}(X_i)^{A_i}
+    \{1-\pi_{R_i}(X_i)\}^{1-A_i}
+  \right]\nonumber\\
+  &\quad \times
+  \prod_{i = 1}^n
+  \left[
+    (2\pi\sigma^2)^{-1/2}
+    \exp\left\{-\frac{\{Y_i-\mu_{R_i}(X_i)\}^2}{2\sigma^2}\right\}
+  \right]^{A_i}.
+  \label{eq:parametric-adjusted-likelihood}
+\end{align}
+Thus the likelihood is the product of a Bernoulli likelihood for whether the outcome escapes the atom and a Normal likelihood for the observed continuous values. The null model for the joint test imposes $\mu_\delta = 0$ and $\beta_\delta = 0$; the remaining regression parameters and $\sigma^2$ are nuisance parameters profiled out in Equation~(\ref{eq:LRTtotal}).
+
+The regression formulation also induces marginal summaries standardized to a common covariate distribution. Let $\mathbb{P}_n$ denote the empirical distribution of the observed baseline covariates, so that $\mathbb{P}_n g(X) = n^{-1}\sum_{i=1}^n g(X_i)$. For $r \in \{0,1\}$ define
+\begin{align}
+  \bar{\pi}_{r,n}
+  &=
+  \mathbb{P}_n\{\pi_r(X)\},
+  &
+  \bar{\rho}_{r,n}
+  &=
+  1-\bar{\pi}_{r,n},
+  &
+  \bar{\mu}_{r,n}
+  &=
+  \mathbb{P}_n\{\mu_r(X)\}.
+  \label{eq:standardized-components}
+\end{align}
+Here $\bar{\pi}_{r,n}$ is the observation probability that would be obtained if all subjects were assigned treatment arm $r$ while retaining the empirical covariate distribution, $\bar{\rho}_{r,n}$ is the corresponding atom probability, and $\bar{\mu}_{r,n}$ is the standardized mean of the continuous outcome among non-atom observations. The component contrasts are
+\[
+  \delta_{\pi,n} = \bar{\pi}_{1,n}-\bar{\pi}_{0,n},
+  \qquad
+  \delta_{\rho,n} = \bar{\rho}_{1,n}-\bar{\rho}_{0,n} = -\delta_{\pi,n},
+  \qquad
+  \delta_{\mu,n} = \bar{\mu}_{1,n}-\bar{\mu}_{0,n}.
+\]
+Under the additive mean model in Equation~(\ref{eq:glm2}), $\delta_{\mu,n} = \mu_\delta$ for every empirical covariate distribution. By contrast, the observation-probability contrast $\delta_{\pi,n}$ is a marginal standardization of the conditional log-odds model, whereas $\beta_\delta$ and $\alpha_\delta=\exp(\beta_\delta)$ remain the conditional log odds-ratio and odds ratio, respectively.
+
+For a real-valued representation $c_{e_0}$ of the atom, the covariate-standardized combined-outcome contrast induced by the parametric model is
+\begin{align}
+  \Delta_n^{(e_0)}
+  &=
+  \mathbb{P}_n
+  \Bigl[
+    e_0\{1-\pi_1(X)\}
+    + \pi_1(X)\mu_1(X)
+    - e_0\{1-\pi_0(X)\}
+    - \pi_0(X)\mu_0(X)
+  \Bigr].
+  \label{eq:standardized-delta}
+\end{align}
+For the atom-at-zero representation used in most of the manuscript, Equation~(\ref{eq:standardized-delta}) reduces to $\mathbb{P}_n\{\pi_1(X)\mu_1(X)-\pi_0(X)\mu_0(X)\}$. These standardized quantities compare the two treatment arms at the same empirical covariate distribution, rather than comparing arm-specific fitted means over potentially different covariate distributions.
 
 \begin{proposition}
-Assume that the parametric model for $Y_i \mid A_i = 1, R_i, X_i$ is correctly specified, that the regression models in Equations~(\ref{eq:glm1}) and~(\ref{eq:glm2}) are finite-dimensional and correctly specified, that the true parameter lies in the interior of the parameter space, that the model is identifiable with nonsingular Fisher information, and that $\Pr(A_i = 1 \mid R_i = r, X_i) > 0$ almost surely for $r = 0,1$. Let $n_r = \sum_{i = 1}^n \mathbbm{1}(R_i = r)$ and assume $n_0, n_1 \to \infty$ with $n_1 / n_0 \to c \in (0,\infty)$. Then, under the null hypothesis $\mu_\delta = \beta_\delta = 0$, the profile likelihood-ratio statistic $W_n^P(0,0)$ in Equation~(\ref{eq:LRTtotal}) converges in distribution to $\chi^2_2$.
+Assume that the parametric model for $Y_i \mid A_i = 1, R_i, X_i$ is correctly specified, that the regression models in Equations~(\ref{eq:glm1}) and~(\ref{eq:glm2}) are finite-dimensional and correctly specified, that the true parameter lies in the interior of the parameter space, that the model is identifiable with nonsingular Fisher information, and that $0 < \Pr(A_i = 1 \mid R_i = r, X_i) < 1$ almost surely for $r = 0,1$. Let $n_r = \sum_{i = 1}^n \mathbbm{1}(R_i = r)$ and assume $n_0, n_1 \to \infty$ with $n_1 / n_0 \to c \in (0,\infty)$. Then, under the null hypothesis $\mu_\delta = \beta_\delta = 0$, the profile likelihood-ratio statistic $W_n^P(0,0)$ in Equation~(\ref{eq:LRTtotal}) converges in distribution to $\chi^2_2$.
 \end{proposition}
 
 \begin{proof}
 Under the stated regularity conditions, the joint likelihood is a regular finite-dimensional likelihood with two scalar restrictions under the null: one in the continuous component and one in the Bernoulli component. Because the likelihood factorizes into $L_{Y,n}$ and $L_{A,n}$, the joint likelihood-ratio statistic is exactly the sum of the corresponding component likelihood-ratio statistics. Wilks' theorem \citep{wilks1938large} therefore yields the $\chi^2_2$ limit.
 \end{proof}
 
-In practice, this test is easy to compute with standard software: one fits the observed-outcome model with and without the treatment term and does the same for the logistic model for $A_i$, then adds the two log-likelihood differences according to Equation~(\ref{eq:LRTtotal}). At the 5\% level the critical value is $5.99$, and at the 1\% level it is $9.21$.
+The same fitted conditional laws determine both the component likelihood-ratio statistic and the standardized summaries in Equations~(\ref{eq:standardized-components})--(\ref{eq:standardized-delta}). Thus covariate adjustment has two distinct roles: it defines the conditional restrictions tested by the likelihood ratio, and it yields marginal summaries by averaging the fitted arm-specific conditional quantities over a common empirical distribution of $X_i$.
 
 \subsection{Semi-parametric likelihood-ratio test}
 
-The parametric test depends on the chosen distributional model for the observed outcomes. To relax that assumption, we replace the first component by a profile empirical likelihood while retaining the Bernoulli likelihood for $A_i$. When there are no additional covariates, the resulting procedure is fully non-parametric for the observed-outcome component. Covariate-adjusted variants can be built by combining the same logistic model for $A_i$ with a regression empirical likelihood for $\mu_\delta$, but the no-covariate case is enough to display the main construction.
+The parametric test depends on the chosen distributional model for the observed outcomes. To relax that assumption, we replace the Gaussian likelihood for the continuous non-atom outcome by an empirical likelihood for the conditional mean restrictions, while retaining the parametric Bernoulli likelihood for $A_i$. The observation component is therefore still governed by Equation~(\ref{eq:glm1}), but no Normality, homoscedasticity, or parametric shape assumption is imposed on the distribution of $Y_i \mid A_i = 1, R_i, X_i$ beyond the finite-dimensional conditional mean model in Equation~(\ref{eq:glm2}).
 
-To simplify the presentation, we now assume that $X_i$ is absent. Let
+Let $\mathcal{J} = \{i : A_i = 1\}$ and $M_n = |\mathcal{J}|$. For $i \in \mathcal{J}$ define the observed-outcome design vector
+\[
+  Z_i =
+  \{1, R_i, h_\mu(X_i)^\top\}^\top,
+  \qquad
+  \theta =
+  (\mu_0,\mu_\delta,\eta_\mu^\top)^\top,
+\]
+so that $\mu_{R_i}(X_i)=Z_i^\top\theta$. The semi-parametric continuous component is characterized by the moment restriction
+\begin{equation}
+  \E\!\left[
+    Z_i\{Y_i-Z_i^\top\theta\}
+    \mid A_i = 1
+  \right] = 0.
+  \label{eq:adjusted-el-moment}
+\end{equation}
+For a fixed candidate value $m_\delta$ of the treatment mean coefficient, write $\theta(m_\delta,\nu)$ for the vector obtained by setting the treatment component of $\theta$ equal to $m_\delta$ and collecting the remaining coefficients in the nuisance vector $\nu$. Define
+\[
+  g_i\{m_\delta,\nu\}
+  =
+  Z_i\left[Y_i-Z_i^\top\theta(m_\delta,\nu)\right],
+  \qquad i \in \mathcal{J}.
+\]
+The profile empirical likelihood ratio for the continuous component is
+\begin{align}
+  R_{Y,n}^{\mathrm{E}}(m_\delta)
+  =
+  \sup_{\nu,\{p_i:i\in\mathcal{J}\}}
+  \left\{
+    \prod_{i \in \mathcal{J}} M_n p_i
+  \right\},
+  \label{eq:adjusted-el-primal}
+\end{align}
+where the supremum is over weights satisfying
+\[
+  p_i \geq 0,
+  \qquad
+  \sum_{i \in \mathcal{J}} p_i = 1,
+  \qquad
+  \sum_{i \in \mathcal{J}} p_i g_i\{m_\delta,\nu\}=0.
+\]
+The corresponding empirical-likelihood deviance is
+\begin{equation}
+  \widetilde{W}_{Y,n}^P(m_\delta)
+  =
+  -2\log R_{Y,n}^{\mathrm{E}}(m_\delta).
+  \label{eq:adjusted-el-profile}
+\end{equation}
+Equivalently, for each feasible $(m_\delta,\nu)$ there is a Lagrange multiplier $\lambda(m_\delta,\nu)$ of the same dimension as $Z_i$ such that
+\[
+  \sum_{i \in \mathcal{J}}
+  \frac{g_i\{m_\delta,\nu\}}
+  {1+\lambda(m_\delta,\nu)^\top g_i\{m_\delta,\nu\}}
+  =0,
+  \qquad
+  1+\lambda(m_\delta,\nu)^\top g_i\{m_\delta,\nu\} > 0
+  \quad\text{for all }i\in\mathcal{J}.
+\]
+In dual form,
+\begin{equation}
+  \widetilde{W}_{Y,n}^P(m_\delta)
+  =
+  \inf_{\nu}
+  2\sum_{i \in \mathcal{J}}
+  \log\left[
+    1+\lambda(m_\delta,\nu)^\top g_i\{m_\delta,\nu\}
+  \right],
+  \label{eq:adjusted-el-dual}
+\end{equation}
+with the value set to infinity when the empirical-likelihood constraints are infeasible. The fitted non-atom mean functions are standardized in the same way as in Equation~(\ref{eq:standardized-components}):
+\[
+  \bar{\mu}_{r,n}^{\mathrm{SP}}(\theta)
+  =
+  \mathbb{P}_n\{(1,r,h_\mu(X)^\top)\theta\},
+  \qquad r\in\{0,1\}.
+\]
+Under the additive mean model, $\bar{\mu}_{1,n}^{\mathrm{SP}}(\theta)-\bar{\mu}_{0,n}^{\mathrm{SP}}(\theta)=\mu_\delta$. The semi-parametric standardized combined-outcome contrast is obtained by inserting this empirical-likelihood mean model and the fitted logistic observation probabilities into Equation~(\ref{eq:standardized-delta}). Thus the continuous distribution itself is left unspecified, but the mean component entering the standardized contrast is defined by the estimating equations in Equation~(\ref{eq:adjusted-el-moment}).
+
+When $X_i$ is absent, the empirical-likelihood regression construction reduces to the familiar two-sample empirical likelihood for the observed outcome means. Let
 \[
 \mathcal{I}_0 = \{i = 1,\ldots,n : R_i = 0, A_i = 1\},
 \qquad
@@ -207,17 +381,25 @@ To simplify the presentation, we now assume that $X_i$ is absent. Let
 Lemma~\ref{lem:empirical-likelihood-derivation} in Appendix~\ref{app:supplementary-derivation} shows that, for fixed $(\mu_0,\mu_\delta)$, the empirical-likelihood deviance for the observed outcomes is
 \begin{align}
   \widetilde{W}_{Y,n}(\mu_0,\mu_\delta)
-  &= 2\Biggl(
-    \sum_{i \in \mathcal{I}_0}\log\left(1 + \lambda_0(Y_i - \mu_0)\right)
-    + \sum_{j \in \mathcal{I}_1}\log\left(1 + \lambda_1(Y_j - \mu_0 - \mu_\delta)\right)
-  \Biggr),\label{eq:nonparametric}
+  &= 2\sum_{i = 1}^n \Biggl[
+    (1-R_i)\log\left(1 + \lambda_0(\widetilde{Y}_i^{\,0} - A_i\mu_0)\right)
+    + R_i\log\left(1 + \lambda_1(\widetilde{Y}_i^{\,0} - A_i(\mu_0 + \mu_\delta))\right)
+  \Biggr],\label{eq:nonparametric}
 \end{align}
-where $\lambda_0$ and $\lambda_1$ solve
+where terms with $A_i = 0$ contribute zero because $\widetilde{Y}_i^{\,0} = 0$ in that case. Writing
+\[
+  n_0 = \sum_{i = 1}^n (1-R_i)A_i = |\mathcal{I}_0|,
+  \qquad
+  n_1 = \sum_{i = 1}^n R_iA_i = |\mathcal{I}_1|,
+\]
+the dual parameters $\lambda_0$ and $\lambda_1$ solve
 \begin{align*}
-  \frac{1}{|\mathcal{I}_0|}\sum_{i \in \mathcal{I}_0}
-  \frac{Y_i - \mu_0}{1 + \lambda_0(Y_i - \mu_0)} &= 0,\\
-  \frac{1}{|\mathcal{I}_1|}\sum_{j \in \mathcal{I}_1}
-  \frac{Y_j - \mu_0 - \mu_\delta}{1 + \lambda_1(Y_j - \mu_0 - \mu_\delta)} &= 0.
+  \frac{1}{n_0}\sum_{i = 1}^n
+  (1-R_i)\frac{\widetilde{Y}_i^{\,0} - A_i\mu_0}
+  {1 + \lambda_0(\widetilde{Y}_i^{\,0} - A_i\mu_0)} &= 0,\\
+  \frac{1}{n_1}\sum_{i = 1}^n
+  R_i\frac{\widetilde{Y}_i^{\,0} - A_i(\mu_0 + \mu_\delta)}
+  {1 + \lambda_1(\widetilde{Y}_i^{\,0} - A_i(\mu_0 + \mu_\delta))} &= 0.
 \end{align*}
 The profile version is obtained by minimizing over the nuisance mean:
 \begin{align*}
@@ -230,40 +412,551 @@ The semi-parametric test statistic is then
   \widetilde{W}_n^P(\mu_\delta, \beta_\delta)
   = \widetilde{W}_{Y,n}^P(\mu_\delta) + W_{A,n}^P(\beta_\delta).\label{eq:LRT_SP_total}
 \end{equation}
+The first term is the profile empirical-likelihood deviance in Equation~(\ref{eq:adjusted-el-profile}), or equivalently Equation~(\ref{eq:nonparametric}) in the no-covariate special case; the second term is the Bernoulli profile likelihood-ratio statistic from Equation~(\ref{eq:LRTtotal}).
 
-\begin{proposition}
-Assume that there are no additional covariates, that $\Pr(A_i = 1 \mid R_i = r) > 0$ for $r = 0,1$, and that $n_0, n_1 \to \infty$ with $n_1 / n_0 \to c \in (0,\infty)$. Suppose further that the Bernoulli model for $A_i$ is correctly specified, that under the null hypothesis the observed outcomes in the two treatment groups have a common finite mean, strictly positive finite variance, and support whose convex hull contains that mean as an interior point. Then, under $\mu_\delta = \beta_\delta = 0$, the semi-parametric statistic $\widetilde{W}_n^P(0,0)$ in Equation~(\ref{eq:LRT_SP_total}) converges in distribution to $\chi^2_2$.
+\begin{proposition}[Covariate-adjusted semi-parametric likelihood-ratio test]\label{prop:covariate-adjusted-splrt}
+Consider the null hypothesis
+\[
+  H_0:\ \mu_\delta = 0,\quad \beta_\delta = 0,
+\]
+equivalently, under the additive adjustment models, no covariate-standardized difference in the non-atom mean and no covariate-specific log odds-ratio for observation. Assume that $(Y_i,A_i,R_i,X_i)$ are independent observations from a common law; that for some $\varepsilon>0$, $\varepsilon \leq \Pr(R_i=1\mid X_i) \leq 1-\varepsilon$ and $\varepsilon \leq \Pr(A_i=1\mid R_i=r,X_i) \leq 1-\varepsilon$ almost surely for $r=0,1$; that the logistic model in Equation~(\ref{eq:glm1}) and the conditional mean model in Equation~(\ref{eq:glm2}) are correctly specified; that the true finite-dimensional parameters lie in the interior of their parameter spaces; that the Fisher information for the Bernoulli component is nonsingular; and that, for the empirical-likelihood component, $\E\|Z_i\{Y_i-Z_i^\top\theta_0\}\|^{2+\eta}<\infty$ for some $\eta>0$, the covariance matrix of $Z_i\{Y_i-Z_i^\top\theta_0\}$ conditional on $A_i=1$ is nonsingular, and the derivative matrix of the moment condition in Equation~(\ref{eq:adjusted-el-moment}) has full column rank. Then, under $H_0$,
+\[
+  \widetilde{W}_n^P(0,0)
+  =
+  \widetilde{W}_{Y,n}^P(0)+W_{A,n}^P(0)
+  \ \overset{d}{\longrightarrow}\ \chi^2_2.
+\]
+The two degrees of freedom correspond to the two scalar restrictions tested jointly: $\mu_\delta=0$ in the continuous mean component and $\beta_\delta=0$ in the observation component.
 \end{proposition}
 
 \begin{proof}
-Under the stated conditions, $W_{A,n}^P(0)$ is the usual one-parameter Bernoulli likelihood-ratio statistic, so Wilks' theorem gives a $\chi^2_1$ limit. For the observed outcomes, standard two-sample empirical-likelihood theory for a mean-difference constraint implies that $\widetilde{W}_{Y,n}^P(0)$ has the Wilks-type $\chi^2_1$ limit; see \citet{owen1991empirical}. The joint criterion is the sum of these two orthogonal components, so the overall null statistic has the $\chi^2_2$ limit.
+The Bernoulli component is a regular finite-dimensional likelihood with one scalar restriction, so Wilks' theorem gives $W_{A,n}^P(0)\overset{d}{\to}\chi^2_1$. Conditional on the non-atom sample, the continuous component is an empirical likelihood for estimating equations with a single profiled scalar restriction. The empirical-likelihood Wilks theorem for estimating equations therefore gives $\widetilde{W}_{Y,n}^P(0)\overset{d}{\to}\chi^2_1$ under the stated moment, rank, and interiority conditions \citep{owen1991empirical,qin1994empirical}. The Bernoulli score is a function of $(A_i,R_i,X_i)$, whereas the empirical-likelihood estimating function has conditional mean zero given $(A_i=1,R_i,X_i)$; hence the two components are asymptotically block-orthogonal. The sum in Equation~(\ref{eq:LRT_SP_total}) therefore has the $\chi^2_2$ null limit.
 \end{proof}
+
+The adjusted parametric and semi-parametric analyses consequently target the same two-component treatment structure. Both use the logistic model for the probability of escaping the atom and both summarize treatment effects at the empirical covariate distribution through Equations~(\ref{eq:standardized-components})--(\ref{eq:standardized-delta}). They differ in the continuous non-atom component: the parametric analysis uses a fully specified Gaussian conditional distribution with common residual variance, whereas the semi-parametric analysis uses only the regression moment restrictions in Equation~(\ref{eq:adjusted-el-moment}) and leaves the remaining shape of the continuous distribution unspecified. The semi-parametric likelihood-ratio test is therefore less sensitive to non-Normality of the continuous outcomes, at the cost of relying more directly on large-sample empirical-likelihood approximations and on feasibility of the moment constraints.
 
 \subsection{Inference and interpretation}
 
 Confidence regions follow by inverting the corresponding likelihood-ratio statistic. For the parametric procedure, an asymptotic $(1-\alpha)100\%$ simultaneous confidence region for $(\mu_\delta,\beta_\delta)$ is
 \begin{align*}
   \mathrm{CI}^{(\mu_\delta,\beta_\delta)}_{1-\alpha}
-  = \left\{(m,b) \in \mathbb{R}^2 : W_n^P(m,b) \leq \chi^2_2(1-\alpha)\right\}.
+  = \left\{(m,b) \in \mathbb{R}^2 : W_n^P(m,b) \leq \chi^2_{2,1-\alpha}\right\}.
 \end{align*}
 For the semi-parametric procedure, one replaces $W_n^P$ by $\widetilde{W}_n^P$. Correspondingly, the marginal intervals are
 \begin{align*}
   \mathrm{CI}^{\mu_\delta}_{1-\alpha}
-  &= \left\{m \in \mathbb{R} : W_{Y,n}^P(m) \leq \chi^2_1(1-\alpha)\right\}
+  &= \left\{m \in \mathbb{R} : W_{Y,n}^P(m) \leq \chi^2_{1,1-\alpha}\right\}
   \quad \text{or} \quad
-  \left\{m \in \mathbb{R} : \widetilde{W}_{Y,n}^P(m) \leq \chi^2_1(1-\alpha)\right\},\\
+  \left\{m \in \mathbb{R} : \widetilde{W}_{Y,n}^P(m) \leq \chi^2_{1,1-\alpha}\right\},\\
   \mathrm{CI}^{\beta_\delta}_{1-\alpha}
-  &= \left\{b \in \mathbb{R} : W_{A,n}^P(b) \leq \chi^2_1(1-\alpha)\right\}.
+  &= \left\{b \in \mathbb{R} : W_{A,n}^P(b) \leq \chi^2_{1,1-\alpha}\right\}.
 \end{align*}
-We recommend reporting the simultaneous confidence region because it displays the joint uncertainty about the effect on the continuous and binary components.
+Here $\chi^2_{q,1-\alpha}$ denotes the $(1-\alpha)$ quantile of a chi-square distribution with $q$ degrees of freedom. We recommend reporting the simultaneous confidence region because it displays the joint uncertainty about the effect on the continuous and binary components.
 
-Because many applied reports still request summaries on the combined-outcome scale $\Delta$, one can also project or profile the likelihood ratio onto $\Delta$. We regard those intervals as secondary because they collapse the two-component effect back to a single scale; Appendix~\ref{app:supplementary-delta-intervals} describes the corresponding profile and projected constructions.
+Many applied reports also require an interval on the numerical combined-outcome scale. Such an interval concerns a derived scalar functional, denoted here by $\Delta$ or $\Delta^{(e_0)}$, rather than the two-component parameter itself. It therefore answers a different inferential question from the region for $(\mu_\delta,\beta_\delta)$: it summarizes the consequence of the atom and continuous components after the atom has been assigned the numerical value $e_0$ through the representation map $c_{e_0}$. This scalar summary is useful for reporting effects on the original numerical scale, but it is secondary to the two-component analysis because it necessarily collapses changes in the observation probability and changes in the non-atom mean into a single number.
+
+To define the likelihood-based intervals uniformly, let
+\begin{equation}
+  \mathcal{W}_n(m,b)
+  =
+  \begin{cases}
+    W_n^P(m,b), & \text{for the parametric likelihood},\\[0.4em]
+    \widetilde{W}_n^P(m,b), & \text{for the semi-parametric likelihood}.
+  \end{cases}
+  \label{eq:generic-lr-surface}
+\end{equation}
+For fixed component contrasts $(m,b)$, let $\widehat{\pi}_r(x;b)$ denote the fitted observation probability in arm $r$ obtained after profiling the Bernoulli nuisance parameters under the restriction $\beta_\delta=b$. Similarly, let $\widehat{\mu}_r(x;m)$ denote the fitted conditional non-atom mean in arm $r$ obtained after profiling the continuous-component nuisance parameters under the restriction $\mu_\delta=m$. In the parametric analysis this profiling is with respect to the Gaussian likelihood; in the semi-parametric analysis it is with respect to the empirical-likelihood estimating-equation constraints. The profiled combined-outcome contrast induced by $(m,b)$ and the atom representation $c_{e_0}$ is
+\begin{align}
+  g_n^{(e_0)}(m,b)
+  &=
+  \mathbb{P}_n
+  \Bigl[
+    e_0\{1-\widehat{\pi}_1(X;b)\}
+    + \widehat{\pi}_1(X;b)\widehat{\mu}_1(X;m)
+    \nonumber\\
+  &\qquad\qquad
+    - e_0\{1-\widehat{\pi}_0(X;b)\}
+    - \widehat{\pi}_0(X;b)\widehat{\mu}_0(X;m)
+  \Bigr].
+  \label{eq:profiled-delta-map}
+\end{align}
+When there are no adjustment covariates and $e_0=0$, this reduces to
+\[
+  g_n^{(0)}(m,b)
+  =
+  \widehat{\pi}_1(b)\widehat{\mu}_1(m)
+  -
+  \widehat{\pi}_0(b)\widehat{\mu}_0(m),
+\]
+where $\widehat{\pi}_r(b)$ and $\widehat{\mu}_r(m)$ are the corresponding arm-specific profiled probabilities and means. The fitted likelihood-based estimate of the numerical combined-outcome contrast is $g_n^{(e_0)}(\widehat{\mu}_\delta,\widehat{\beta}_\delta)$, where $(\widehat{\mu}_\delta,\widehat{\beta}_\delta)$ denotes the unrestricted component estimate.
+
+The first interval is the direct Welch interval for the atom-at-zero numerical outcome. Let $n_r=\sum_{i=1}^n\mathbbm{1}(R_i=r)$ and define
+\[
+  \widehat{\Delta}_{\mathrm{W}}
+  =
+  \bar{\widetilde{Y}}^{\,0}_1-\bar{\widetilde{Y}}^{\,0}_0,
+  \qquad
+  \bar{\widetilde{Y}}^{\,0}_r
+  =
+  n_r^{-1}\sum_{i:R_i=r}\widetilde{Y}_i^{\,0},
+\]
+with arm-specific sample variances
+\[
+  S_r^2
+  =
+  (n_r-1)^{-1}\sum_{i:R_i=r}
+  \left(\widetilde{Y}_i^{\,0}-\bar{\widetilde{Y}}^{\,0}_r\right)^2,
+  \qquad r\in\{0,1\}.
+\]
+The Welch standard error and Satterthwaite degrees of freedom are
+\[
+  \widehat{\mathrm{se}}_{\mathrm{W}}^2
+  =
+  \frac{S_1^2}{n_1}+\frac{S_0^2}{n_0},
+  \qquad
+  \widehat{\nu}
+  =
+  \frac{
+    \left(S_1^2/n_1+S_0^2/n_0\right)^2
+  }{
+    \frac{(S_1^2/n_1)^2}{n_1-1}
+    +
+    \frac{(S_0^2/n_0)^2}{n_0-1}
+  },
+\]
+with the usual limiting interpretation if one of the variance terms is zero. The resulting interval is
+\begin{equation}
+  \mathrm{CI}^{\Delta,\mathrm{W}}_{1-\alpha}
+  =
+  \left[
+    \widehat{\Delta}_{\mathrm{W}}
+    -
+    t_{\widehat{\nu},1-\alpha/2}\widehat{\mathrm{se}}_{\mathrm{W}},
+    \widehat{\Delta}_{\mathrm{W}}
+    +
+    t_{\widehat{\nu},1-\alpha/2}\widehat{\mathrm{se}}_{\mathrm{W}}
+  \right],
+  \label{eq:welch-delta-ci}
+\end{equation}
+where $t_{\widehat{\nu},1-\alpha/2}$ is the corresponding Student quantile. This interval treats $\widetilde{Y}^{\,0}$ as an ordinary real-valued outcome and therefore does not use the two-component likelihood structure.
+
+The second interval is obtained by projecting the simultaneous likelihood-ratio confidence region for the component parameter onto the $\Delta^{(e_0)}$ scale. Define
+\begin{equation}
+  \mathcal{C}_{2,n}(1-\alpha)
+  =
+  \left\{
+    (m,b)\in\mathbb{R}^2:
+    \mathcal{W}_n(m,b)\leq\chi^2_{2,1-\alpha}
+  \right\}.
+  \label{eq:component-simultaneous-region}
+\end{equation}
+The projected likelihood-ratio interval is the image of this region under the profiled map in Equation~(\ref{eq:profiled-delta-map}):
+\begin{equation}
+  \mathrm{CI}^{\Delta,\mathrm{proj}}_{1-\alpha}
+  =
+  \left[
+    \inf_{(m,b)\in\mathcal{C}_{2,n}(1-\alpha)}
+    g_n^{(e_0)}(m,b),
+    \sup_{(m,b)\in\mathcal{C}_{2,n}(1-\alpha)}
+    g_n^{(e_0)}(m,b)
+  \right].
+  \label{eq:projected-delta-ci}
+\end{equation}
+Equivalently, its endpoints are the constrained optimization problems
+\begin{align}
+  L_{\mathrm{proj}}
+  &=
+  \inf_{m,b}
+  g_n^{(e_0)}(m,b)
+  \quad
+  \text{subject to}
+  \quad
+  \mathcal{W}_n(m,b)\leq\chi^2_{2,1-\alpha},
+  \label{eq:projected-delta-lower}\\
+  U_{\mathrm{proj}}
+  &=
+  \sup_{m,b}
+  g_n^{(e_0)}(m,b)
+  \quad
+  \text{subject to}
+  \quad
+  \mathcal{W}_n(m,b)\leq\chi^2_{2,1-\alpha}.
+  \label{eq:projected-delta-upper}
+\end{align}
+Because this construction preserves the entire two-dimensional confidence set before mapping it to a scalar, it inherits simultaneous coverage for $(\mu_\delta,\beta_\delta)$ and is typically conservative for $\Delta^{(e_0)}$ alone.
+
+The third interval profiles the likelihood ratio directly over the scalar constraint $\Delta^{(e_0)}=d$. For each $d\in\mathbb{R}$, define
+\begin{equation}
+  T_n(d)
+  =
+  \inf_{m,b}
+  \left\{
+    \mathcal{W}_n(m,b):
+    g_n^{(e_0)}(m,b)=d
+  \right\}.
+  \label{eq:delta-profile-stat-section}
+\end{equation}
+Thus evaluating $T_n(d)$ is itself a constrained optimization problem: minimize the joint likelihood-ratio surface over component contrasts whose profiled numerical combined-outcome contrast is exactly $d$. The profile likelihood-ratio interval is
+\begin{equation}
+  \mathrm{CI}^{\Delta,\mathrm{prof}}_{1-\alpha}
+  =
+  \left\{
+    d\in\mathbb{R}: T_n(d)\leq\chi^2_{1,1-\alpha}
+  \right\},
+  \label{eq:profile-delta-ci}
+\end{equation}
+with endpoints
+\[
+  L_{\mathrm{prof}}
+  =
+  \inf\{d:T_n(d)\leq\chi^2_{1,1-\alpha}\},
+  \qquad
+  U_{\mathrm{prof}}
+  =
+  \sup\{d:T_n(d)\leq\chi^2_{1,1-\alpha}\}.
+\]
+The one-degree-of-freedom calibration reflects that the null constraint is on the single scalar functional $g_n^{(e_0)}(m,b)$, while the remaining component direction is profiled out.
+
+\begin{proposition}[Likelihood-ratio intervals for the combined-outcome contrast]\label{prop:delta-lr-intervals}
+Let $\theta_\delta=(\mu_\delta,\beta_\delta)^\top$. Suppose that $\mathcal{W}_n$ satisfies the regularity conditions for the relevant parametric or semi-parametric likelihood-ratio theory in a neighborhood of the true value $\theta_{\delta0}$. Assume further that $g_n^{(e_0)}$ converges uniformly in probability on this neighborhood to a continuously differentiable population map $g^{(e_0)}$, that $\nabla g^{(e_0)}(\theta_{\delta0})\neq 0$, and that $\Delta_0=g^{(e_0)}(\theta_{\delta0})$. Then
+\[
+  T_n(\Delta_0)\ \overset{d}{\longrightarrow}\ \chi^2_1,
+\]
+and the profile interval in Equation~(\ref{eq:profile-delta-ci}) has asymptotic coverage $1-\alpha$ for $\Delta_0$. Moreover, if $\mathcal{C}_{2,n}(1-\alpha)$ is an asymptotic $(1-\alpha)100\%$ confidence region for $\theta_{\delta0}$, then the projected interval in Equation~(\ref{eq:projected-delta-ci}) has at least asymptotic coverage $1-\alpha$ for $\Delta_0$.
+\end{proposition}
+
+\begin{proof}
+The likelihood-ratio surface is locally quadratic under the regularity conditions for the corresponding parametric likelihood or empirical-likelihood estimating-equation model. Since $g^{(e_0)}$ is a smooth scalar map with nonzero gradient at $\theta_{\delta0}$, the null hypothesis $g^{(e_0)}(\theta_\delta)=\Delta_0$ imposes one regular scalar restriction on the two-component parameter. Wilks' theorem and the empirical-likelihood analogue therefore give the $\chi^2_1$ limit for the profiled statistic. For the projected interval, the event $\theta_{\delta0}\in\mathcal{C}_{2,n}(1-\alpha)$ implies, by construction and continuity of $g_n^{(e_0)}$, that $g_n^{(e_0)}(\theta_{\delta0})$ lies in the image interval up to an asymptotically negligible error. The stated coverage follows from the coverage of the two-dimensional confidence region.
+\end{proof}
+
+The three intervals therefore describe related but distinct targets. The Welch interval in Equation~(\ref{eq:welch-delta-ci}) is a direct one-dimensional interval for the mean difference of the coded numerical outcome $\widetilde{Y}^{\,0}$; it is simple and relatively model-light, but it does not distinguish whether the contrast arises from the atom probability, the continuous non-atom component, or both. The projected interval in Equation~(\ref{eq:projected-delta-ci}) is a likelihood-based summary derived from the simultaneous two-component confidence region; it is appropriate when $\Delta^{(e_0)}$ is reported as a secondary scalar summary while maintaining coherence with the joint analysis, and it is usually wider because it retains simultaneous uncertainty in both $\mu_\delta$ and $\beta_\delta$. The profile interval in Equation~(\ref{eq:profile-delta-ci}) is instead a direct likelihood-ratio interval for the scalar functional $\Delta^{(e_0)}$; it profiles over nuisance component directions and is therefore more focused on the numerical combined-outcome contrast. Thus the profile and projected intervals remain tied to the two-part likelihood decomposition, whereas the Welch interval is an analysis of the numerical representation alone.
+
+
+%%%%%%%%%%%%%
+
+
+
+\subsection{Bayesian two-group comparison}\label{sec:bayesian-two-group}
+
+The preceding likelihood-based development admits a natural Bayesian counterpart. We again suppress $X_i$ and work in the no-covariate setting, because this is the clearest setting in which to formulate the two-part observed-data law itself. Let $\widetilde{Y}_i^{(e_0)} = c_{e_0}(\widetilde{Y}_i)$ denote the numerical representation of the combined outcome for a fixed atom value $e_0 \in \mathbb{R}$. In the two-group comparison without covariates, the primary objects are the arm-specific observed-data laws. It is therefore more natural to fit treatment-stratified models than to impose a common mixture across treatment arms. A common mixture with only arm-specific shifts or scales would encode a priori similarity in distributional shape across arms, whereas in the present setting treatment may affect both the atom probability and the shape of the continuous non-atom distribution. Separate arm-specific mixtures align directly with the scientific question of whether the full observed-data law differs between treatment groups.
+
+Let $\mathcal{C} \subseteq \mathbb{R}$ denote the support of the continuous non-atom outcomes on the chosen numerical scale. In the two implementations considered below, $\mathcal{C} = \mathbb{R}$ or $\mathcal{C} = (0,\infty)$. Let $\lambda_{\mathcal{C}}$ denote Lebesgue measure on $\mathcal{C}$, and define the dominating measure
+\[
+  \nu_{e_0} = \delta_{e_0} + \lambda_{\mathcal{C}}.
+\]
+For each treatment arm $r \in \{0,1\}$, we write the law of the numerical combined outcome as
+\begin{equation}
+  \mathcal{L}(\widetilde{Y}_i^{(e_0)} \mid R_i = r)
+  = \rho_r \delta_{e_0} + \pi_r F_r^c,
+  \qquad
+  \pi_r = 1 - \rho_r,
+  \qquad
+  F_r^c \ll \lambda_{\mathcal{C}},
+  \label{eq:bayes-two-part}
+\end{equation}
+where $\rho_r = \Pr(\widetilde{Y}_i^{(e_0)} = e_0 \mid R_i = r)$ is the arm-specific atom probability and $F_r^c$ is an absolutely continuous probability measure on $\mathcal{C}$ describing the non-atom outcomes. Equivalently, with $f_r^c$ denoting the density of $F_r^c$ with respect to $\lambda_{\mathcal{C}}$, the density of $\widetilde{Y}_i^{(e_0)} \mid R_i = r$ with respect to $\nu_{e_0}$ is
+\[
+  q_r(y)
+  = \rho_r \mathbbm{1}\{y = e_0\}
+    + \pi_r f_r^c(y)\mathbbm{1}\{y \in \mathcal{C}\}.
+\]
+One could instead start directly from a single density with respect to the extended measure $\nu_{e_0}$ on $\mathcal{C} \cup \{e_0\}$. For the present problem, however, the explicit singular-plus-absolutely-continuous decomposition in Equation~(\ref{eq:bayes-two-part}) is clearer, because it preserves the atom probability and the non-atom distribution as separate scientific objects and mirrors the observed-data factorization used in the likelihood-based analysis.
+
+The main modeling task is therefore to specify a flexible prior for $F_r^c$. This is precisely the setting in which a Dirichlet process mixture model is attractive. The conditional non-atom distribution may be skewed, heavy-tailed, or multimodal, and a single parametric family can be too restrictive even when the scientific summaries of interest remain simple. By modeling $F_r^c$ through a nonparametric mixture, one can accommodate complex distributional shape while retaining interpretable treatment-arm summaries such as the atom probability, the mean among non-atom outcomes, and contrasts derived from them.
+
+Let $(\Theta,\mathcal{T})$ denote the parameter space for a support-matched kernel $K(\cdot \mid \theta)$ on $\mathcal{C}$. An arm-specific mixing distribution $G_r$ is said to follow a Dirichlet process with concentration parameter $\alpha_r > 0$ and base measure $G_0$, written $G_r \sim \mathrm{DP}(\alpha_r,G_0)$, if for every measurable partition $(B_1,\ldots,B_m)$ of $\Theta$,
+\[
+  \bigl(G_r(B_1),\ldots,G_r(B_m)\bigr)
+  \sim
+  \mathrm{Dirichlet}\bigl(\alpha_r G_0(B_1),\ldots,\alpha_r G_0(B_m)\bigr)
+\]
+\citep{ferguson1973bayesian}. When $G_r$ is used as a mixing distribution,
+\[
+  F_r^c(B) = \int_{\Theta} K(B \mid \theta)\,G_r(d\theta),
+  \qquad B \subseteq \mathcal{C},
+\]
+which yields the familiar Dirichlet process mixture model \citep{antoniak1974mixtures}. By Sethuraman's stick-breaking representation \citep{sethuraman1994constructive},
+\[
+  G_r = \sum_{h=1}^{\infty} w_{rh}\delta_{\theta_{rh}},
+  \qquad
+  w_{r1} = v_{r1},
+  \qquad
+  w_{rh} = v_{rh}\prod_{\ell=1}^{h-1}(1-v_{r\ell}),
+  \quad h \geq 2,
+\]
+with
+\[
+  v_{rh} \mid \alpha_r \sim \Beta(1,\alpha_r),
+  \qquad
+  \theta_{rh} \stackrel{\mathrm{iid}}{\sim} G_0.
+\]
+For computation we use the standard finite truncated approximation \citep{ishwaran2001gibbs}, retaining $H$ mixture components and assigning the remaining stick mass to the last retained component. This is the approximation used in the practical implementation.
+
+Writing $\widetilde{Y}_i^{(e_0)} = e_0$ when $A_i = 0$ and $\widetilde{Y}_i^{(e_0)} = Y_i$ when $A_i = 1$, the implemented no-covariate model may be expressed hierarchically as
+\begin{align}
+  A_i \mid R_i = r
+  &\sim \Bernoulli(\pi_r),
+  \qquad
+  r \in \{0,1\},
+  \nonumber\\
+  \pi_r
+  &= 1 - \rho_r,
+  \qquad
+  \rho_r \sim \Beta(a_{\rho}, b_{\rho}),
+  \nonumber\\
+  Y_i \mid (A_i = 1, R_i = r)
+  &\sim F_r^c,
+  \nonumber\\
+  F_r^c(dy)
+  &= \sum_{h=1}^{H} w_{rh}K(dy \mid \theta_{rh}),
+  \nonumber\\
+  v_{rh} \mid \alpha_r
+  &\sim \Beta(1,\alpha_r),
+  \qquad
+  h = 1,\ldots,H-1,
+  \nonumber\\
+  \alpha_r
+  &\sim \mathrm{Gamma}(a_{\alpha}, b_{\alpha}),
+  \nonumber\\
+  w_{r1}
+  &= v_{r1},
+  \nonumber\\
+  w_{rh}
+  &= v_{rh}\prod_{\ell=1}^{h-1}(1-v_{r\ell}),
+  \qquad
+  h = 2,\ldots,H-1,
+  \nonumber\\
+  w_{rH}
+  &= \prod_{\ell=1}^{H-1}(1-v_{r\ell}),
+  \label{eq:bayes-hierarchy}\\
+  K(dy \mid \theta_{rh})
+  &= \phi(y; m_{rh}, s_{rh}^2)\,dy,
+  \qquad
+  \mathcal{C} = \mathbb{R},
+  \nonumber\\
+  m_{rh}
+  &\sim N(m_0,s_0^2),
+  \qquad
+  s_{rh} \sim \mathrm{Lognormal}(m_s,s_s^2),
+  \nonumber\\
+  K(dy \mid \theta_{rh})
+  &= g\!\left(y; a_{rh}, a_{rh}/m_{rh}\right)\,dy,
+  \qquad
+  \mathcal{C} = (0,\infty),
+  \nonumber\\
+  m_{rh}
+  &\sim \mathrm{Lognormal}(m_m,s_m^2),
+  \qquad
+  a_{rh} \sim \mathrm{Lognormal}(m_a,s_a^2).
+  \nonumber
+\end{align}
+where $\phi(\cdot; m,s^2)$ denotes the Normal density with mean $m$ and variance $s^2$, and $g(\cdot; a,b)$ denotes the Gamma density with shape $a$ and rate $b$. Thus the full-real-line version uses Normal kernels, whereas the positive-support version uses Gamma kernels parameterized so that $m_{rh}$ is the component mean. The latter formulation requires all non-atom outcomes to be strictly positive. In either case, the mixture is arm-specific, the atom probability is explicit, and the scientific summaries remain directly interpretable despite the flexibility of the nonparametric continuous component.
+
+\paragraph{Posterior inference.}
+Let $\mathcal{D}_n = \{(\widetilde{Y}_i^{(e_0)},A_i,R_i):i=1,\ldots,n\}$ denote the observed data, and let $\vartheta$ collect all unknown quantities in Equation~(\ref{eq:bayes-hierarchy}). For arm $r$, the posterior predictive distribution of a future numerical combined outcome $\widetilde{Y}_{r,\mathrm{new}}^{(e_0)}$ is
+\begin{align*}
+  \Pr\!\left(\widetilde{Y}_{r,\mathrm{new}}^{(e_0)} \in B \mid \mathcal{D}_n\right)
+  &=
+  \int
+  \Biggl\{
+    \rho_r \delta_{e_0}(B) \\
+  &\qquad\qquad\qquad
+    + \pi_r \int_{B \cap \mathcal{C}} f_r^c(y \mid \vartheta)\,\lambda_{\mathcal{C}}(dy)
+  \Biggr\}
+  p(\vartheta \mid \mathcal{D}_n)\,d\vartheta.
+\end{align*}
+where
+\[
+  f_r^c(y \mid \vartheta)
+  = \sum_{h=1}^{H} w_{rh} k(y \mid \theta_{rh})
+\]
+is the arm-specific continuous mixture density. For posterior draw $m$, the corresponding mean among non-atom outcomes is
+\[
+  \mu_r^{c,(m)}
+  = \int_{\mathcal{C}} y f_r^c(y \mid \vartheta^{(m)})\,\lambda_{\mathcal{C}}(dy),
+\]
+which under both implemented kernels reduces to the weighted component-mean average $\mu_r^{c,(m)} = \sum_{h=1}^{H} w_{rh}^{(m)} m_{rh}^{(m)}$. The package reports the arm-specific summaries $\rho_r$, $\pi_r$, and $\mu_r^c$ together with the treatment contrasts
+\begin{align}
+  \Delta_{\mathrm{atom}}
+  &= \rho_1 - \rho_0,
+  \qquad
+  \mu_{\delta}
+  = \mu_1^c - \mu_0^c,
+  \qquad
+  \alpha_{\delta}
+  = \frac{\pi_1/(1-\pi_1)}{\pi_0/(1-\pi_0)},
+  \nonumber\\
+  \mu_r^{(e_0)}
+  &= e_0\rho_r + \pi_r\mu_r^c,
+  \qquad
+  \Delta^{(e_0)}
+  = \mu_1^{(e_0)} - \mu_0^{(e_0)}.
+  \label{eq:bayes-estimands}
+\end{align}
+For the atom-at-zero representation used elsewhere in the manuscript, $\Delta = \Delta^{(0)} = \pi_1\mu_1^c - \pi_0\mu_0^c$. Thus the Bayesian analysis reports, on a common posterior scale, the atom probability in each arm, the mean among non-atom outcomes in each arm, the atom-probability contrast, the contrast in non-atom means, the odds-ratio summary $\alpha_{\delta}$ for escaping the atom, and the induced contrast on the numerical combined-outcome scale.
+
+All of these functionals are computed draw-by-draw from the posterior sample and are then summarized by posterior medians or means, equal-tail credible intervals, and directional posterior probabilities. In the present implementation the default point summaries are posterior medians, with equal-tail credible intervals. Because several scientifically relevant quantities are nonlinear functions of $(\rho_r,\pi_r,\mu_r^c)$, it is important to compute them at each posterior draw rather than by plugging posterior means into the formulas in Equation~(\ref{eq:bayes-estimands}). Directional summaries such as $\Pr(\Delta_{\mathrm{atom}} < 0 \mid \mathcal{D}_n)$, $\Pr(\mu_{\delta} > 0 \mid \mathcal{D}_n)$, $\Pr(\alpha_{\delta} > 1 \mid \mathcal{D}_n)$, or $\Pr(\Delta^{(e_0)} > 0 \mid \mathcal{D}_n)$ are then immediate from the posterior draws, with the relevant direction chosen according to whether larger or smaller outcomes are clinically preferred.
+
+\paragraph{Posterior predictive checks and model assessment.}
+Model adequacy is assessed through posterior predictive checks in the sense of \citet{gelman1996posterior}. These are Bayesian diagnostics based on the posterior predictive distribution, not frequentist goodness-of-fit tests. For each posterior draw $\vartheta^{(m)}$, one generates a replicated data set by first drawing
+\[
+  A_i^{\mathrm{rep},(m)} \mid R_i = r, \vartheta^{(m)} \sim \Bernoulli\!\left(\pi_r^{(m)}\right),
+\]
+and then, for those replicated subjects with $A_i^{\mathrm{rep},(m)} = 1$,
+\[
+  Y_i^{\mathrm{rep},(m)} \mid \bigl(A_i^{\mathrm{rep},(m)} = 1, R_i = r, \vartheta^{(m)}\bigr)
+  \sim F_r^{c,(m)}.
+\]
+The replicated combined outcome is finally reconstructed as $\widetilde{Y}_i^{\mathrm{rep},(e_0,m)} = e_0$ when $A_i^{\mathrm{rep},(m)} = 0$ and $\widetilde{Y}_i^{\mathrm{rep},(e_0,m)} = Y_i^{\mathrm{rep},(m)}$ otherwise. The observed data and the replicated data are then compared through discrepancies chosen to target the two components of the model.
+
+For the atom part, the relevant question is whether the fitted Bernoulli model reproduces the observed armwise frequency of the atom. A natural discrepancy is therefore the maximum armwise absolute deviation between the observed atom rate and the fitted atom probability,
+\[
+  T_A(\widetilde{y},\vartheta)
+  =
+  \max_{r \in \{0,1\}}
+  \left|
+    \frac{1}{n_r}\sum_{i:R_i=r}\mathbbm{1}\{\widetilde{y}_i = e_0\} - \rho_r
+  \right|.
+\]
+For the continuous non-atom part, the relevant question is whether the fitted mixture reproduces the shape of the conditional distribution among subjects with observed outcomes. The implementation therefore uses the maximum armwise Kolmogorov--Smirnov discrepancy between the empirical non-atom distribution and the fitted continuous mixture CDF,
+\[
+  T_C(y,\vartheta)
+  =
+  \max_{r \in \{0,1\}}
+  \sup_{t \in \mathcal{C}}
+  \left|
+    \widehat{F}_{r,\mathrm{obs}}^c(t) - F_r^c(t \mid \vartheta)
+  \right|.
+\]
+For positive-support models the same comparison can be displayed on the log scale for graphical stability, but the target remains the arm-specific conditional non-atom law. These checks are supplemented naturally by graphical posterior predictive displays, such as grouped bar plots for the atom indicators and density or CDF overlays for the non-atom outcomes.
+
+More generally, one may also examine scalar posterior predictive discrepancies based on arm-specific means, tail probabilities, quantiles, or other summaries chosen for the application. For any discrepancy $T(\cdot,\vartheta)$, the posterior predictive $p$-value is
+\[
+  p_{\mathrm{ppc}}
+  =
+  \Pr\!\left\{
+    T(\widetilde{Y}^{\mathrm{rep}},\vartheta)
+    \geq
+    T(\widetilde{Y},\vartheta)
+    \,\middle|\,
+    \mathcal{D}_n
+  \right\},
+\]
+estimated by the corresponding empirical proportion over posterior draws and replicated data sets. Such quantities are useful diagnostics for systematic lack of fit in either the atom model or the continuous conditional distribution, but they should be interpreted as Bayesian model-checking summaries rather than as classical significance tests.
+
+\paragraph{Choosing the truncation level.}
+Because the infinite stick-breaking mixture is implemented through a finite truncation, the number of retained mixture components $H$ should be viewed as an approximation-control parameter rather than as an estimand for a ``true'' finite number of mixture components. The inferential target is the posterior of the scientific functionals in Equation~(\ref{eq:bayes-estimands}), not the posterior of an exact component count. This distinction is important in flexible mixture models, because nearby kernels may split or merge without materially changing either the fitted non-atom distribution or the posterior of the scientific summaries.
+
+For arm $r \in \{0,1\}$, the truncated stick-breaking construction implies
+\[
+  v_{rh} \mid \alpha_r \sim \Beta(1,\alpha_r),
+  \qquad
+  h = 1,\ldots,H-1,
+\]
+with weights
+\[
+  w_{r1} = v_{r1},
+  \qquad
+  w_{rh} = v_{rh}\prod_{\ell=1}^{h-1}(1-v_{r\ell}),
+  \quad h = 2,\ldots,H-1,
+\]
+and
+\[
+  w_{rH} = \prod_{\ell=1}^{H-1}(1-v_{r\ell}).
+\]
+Thus $w_{rH}$ is the residual stick mass after the first $H-1$ breaks, and the implementation assigns this remaining mass to the final retained component. If one were to continue the stick-breaking construction by one additional break $V_{rH} \mid \alpha_r \sim \Beta(1,\alpha_r)$, then the mass lying strictly beyond the retained truncation point would be $w_{rH}(1-V_{rH})$. Since
+\[
+  \E(1-V_{rH} \mid \alpha_r) = \frac{\alpha_r}{1+\alpha_r},
+\]
+a natural truncation diagnostic is
+\begin{equation}
+  T_{rH}
+  = w_{rH}\frac{\alpha_r}{1+\alpha_r},
+  \label{eq:truncation-diagnostic}
+\end{equation}
+which is the posterior expected omitted stick mass beyond $H$, conditional on the currently retained residual stick. Small values of $T_{rH}$ indicate that little posterior mass remains beyond the truncation boundary. This is more informative than monitoring $w_{rH}$ alone, because the last retained component may itself be genuinely occupied by data.
+
+We therefore choose $H$ by monitoring the posterior of $T_{rH}$ rather than by treating the number of occupied components as a scientific target. Let
+\[
+  n_r^{\mathrm{obs}}
+  =
+  \sum_{i=1}^n \mathbbm{1}(A_i = 1, R_i = r)
+\]
+denote the number of observed non-atom outcomes in arm $r$, and define the arm-specific tolerance
+\[
+  \eta_r = \min\!\left\{0.02,\frac{1}{n_r^{\mathrm{obs}}}\right\}.
+\]
+Operationally, we regard a truncation level as adequate when, for both treatment arms,
+\begin{equation}
+  Q_{0.95}(T_{rH} \mid \mathcal{D}_n) < \eta_r,
+  \label{eq:truncation-rule}
+\end{equation}
+and the Markov chain Monte Carlo diagnostics are satisfactory, with no divergent transitions, $\widehat{R} \leq 1.01$, and adequate bulk and tail effective sample sizes. If Equation~(\ref{eq:truncation-rule}) fails in either arm, then $H$ is increased and the model is refit; the final analysis uses the smallest $H$ satisfying the criterion.
+
+In the present implementation the ladder $H = 10 \rightarrow 20 \rightarrow 40$ is especially natural under the default prior $\alpha_r \sim \mathrm{Gamma}(2,1)$. Conditional on $\alpha_r$,
+\[
+  \E(w_{rH} \mid \alpha_r)
+  =
+  \left(\frac{\alpha_r}{1+\alpha_r}\right)^{H-1},
+\]
+so that
+\[
+  \E(T_{rH})
+  =
+  \E\!\left[
+    \left(\frac{\alpha_r}{1+\alpha_r}\right)^H
+  \right].
+\]
+Under $\mathrm{Gamma}(2,1)$, this prior mean omitted mass is approximately $0.033$ for $H=10$, $0.0039$ for $H=20$, and $1.6 \times 10^{-4}$ for $H=40$. Thus $H=10$ already provides a moderate truncation, $H=20$ drives the prior expected omitted mass below one-half of one percent, and $H=40$ makes prior truncation error negligible for practical purposes. Posterior predictive checks remain essential for overall model assessment, but they address model adequacy rather than truncation adequacy and therefore complement, rather than replace, the diagnostic in Equation~(\ref{eq:truncation-rule}).
+
+\paragraph{Covariate extensions.}
+The no-covariate treatment-stratified model is the primary development in this paper, but the same two-part architecture extends naturally when baseline covariates are present. A direct extension retains treatment stratification and replaces the arm-specific constants $\pi_r$ and $F_r^c$ by covariate-dependent quantities $\pi_r(x)$ and $F_r^c(\cdot \mid x)$. For example, one may write
+\begin{align*}
+  A_i \mid R_i = r, X_i = x
+  &\sim \Bernoulli\!\bigl(\pi_r(x)\bigr),\\
+  Y_i \mid (A_i = 1, R_i = r, X_i = x)
+  &\sim F_r^c(\cdot \mid x),
+\end{align*}
+and then let the component-specific kernel means vary with $x$ within each treatment arm. A convenient dependent Dirichlet process construction is
+\begin{align*}
+  Y_i \mid (A_i = 1, R_i = r, X_i = x, z_i = h)
+  &\sim K\!\bigl(\cdot \mid m_{rh}(x),\vartheta_{rh}\bigr),\\
+  m_{rh}(\cdot)
+  &\sim \mathcal{GP}\!\bigl(\mu_{0h}(\cdot), C_h(\cdot,\cdot)\bigr),
+\end{align*}
+so that the kernel locations vary smoothly with the covariates while the random mixing distribution remains treatment-arm specific. This yields a predictor-dependent mixture model in the spirit of dependent Dirichlet process constructions \citep{maceachern1999dependent,gelfand2005bayesian}; see also \citet{rasmussen2006gaussian} for Gaussian process priors. Such a formulation preserves the two-part interpretation while allowing treatment groups to differ not only in atom probability but also in how the entire non-atom distribution evolves over the covariates.
+
+If a more modular regression component is preferred, the Gaussian-process mean functions can be replaced by Bayesian additive regression trees on the kernel means, thereby retaining a flexible regression surface while leaving the mixture structure unchanged \citep{chipman2010bart}. This is attractive when nonlinear covariate effects and interactions are important but a fully predictor-dependent random measure is unnecessary.
+
+When a covariate is purely categorical, especially when it indexes substantively related groups, a hierarchical construction is often more appropriate than a fully continuous predictor-dependent process. For levels $\ell = 1,\ldots,L$ of a factor covariate, one may introduce within each treatment arm
+\[
+  G_r^\star \sim \mathrm{DP}(\gamma_r,H_0),
+  \qquad
+  G_{r\ell} \mid G_r^\star \sim \mathrm{DP}(\alpha_r,G_r^\star),
+\]
+so that
+\[
+  F_{r\ell}^c(B)
+  =
+  \int_{\Theta} K(B \mid \theta)\,G_{r\ell}(d\theta),
+  \qquad
+  B \subseteq \mathcal{C}.
+\]
+This is a hierarchical Dirichlet process mixture model \citep{teh2006hierarchical}; ANOVA-type dependent random-measure formulations provide a closely related alternative for factor effects \citep{deiorio2004anova}. If the factor levels correspond to different hospital sites, such a hierarchical construction is especially natural. Hospitals are expected to have related but not identical outcome distributions because of differences in case mix, clinical practice, or measurement processes. The site-specific random measures $G_{r\ell}$ therefore allow each hospital to retain its own atom probability model and its own non-atom distribution, while the shared parent measure $G_r^\star$ induces borrowing of strength by encouraging the hospitals within a treatment arm to reuse common mixture atoms. In this way, data-rich sites stabilize inference for data-sparse sites without forcing the site-specific distributions to be identical. These covariate-adjusted extensions are conceptually straightforward continuations of the no-covariate framework, but the basic two-group model already captures the main ideas needed for the present paper.
+
+
+
+
+%%%%%%%%%%%%%
+
+
+
 
 \section{Simulation study}\label{sec:simulation-study}
 
-The simulation study had two purposes: to assess null calibration and to compare power with standard one-dimensional analyses when treatment acts through the atom, the positive part, or both. In every replicate, the two treatment groups had equal size, the atom was fixed at $\mathcal{E} = 0$, and each subject contributed the combined outcome $\widetilde{Y}_i = A_iY_i$, where $A_i \mid R_i = r$ was Bernoulli with scenario-specific probability $\pi_r$ and $Y_i \mid (A_i = 1, R_i = r)$ followed the corresponding survivor distribution.
+The simulation study had two purposes: to assess null calibration and to compare power with standard one-dimensional analyses when treatment acts through the atom, the positive part, or both. In every replicate, the two treatment groups had equal size, we worked on the atom-at-zero numerical representation, equivalently the coded variable $\widetilde{Y}_i^{\,0} = c_0(\widetilde{Y}_i)$, and each subject contributed the numerical combined outcome $\widetilde{Y}_i^{\,0} = A_iY_i$, where $A_i \mid R_i = r$ was Bernoulli with scenario-specific probability $\pi_r$ and $Y_i \mid (A_i = 1, R_i = r)$ followed the corresponding survivor distribution.
 
-Table~\ref{tab:simulation} lists the data-generating mechanisms. The scenarios were chosen to isolate the practically important comparisons: a low-atom normal reference case (Scenario~1), a pure atom-probability effect (Scenario~2), an antagonistic case in which the atom and continuous components move in opposite directions while the mean of $\widetilde{Y}$ stays fixed (Scenario~3), a concordant joint improvement case (Scenario~4), a gamma shape-change case with survivor-mean shift (Scenario~5), and a rare-outlier contamination case that is deliberately favorable to rank-based methods (Scenario~6).
+Table~\ref{tab:tab:simulation} lists the data-generating mechanisms. The scenarios were chosen to isolate the practically important comparisons: a low-atom normal reference case (Scenario~1), a pure atom-probability effect (Scenario~2), an antagonistic case in which the atom and continuous components move in opposite directions while the mean of the coded combined outcome stays fixed (Scenario~3), a concordant joint improvement case (Scenario~4), a gamma shape-change case with survivor-mean shift (Scenario~5), and a rare-outlier contamination case that is deliberately favorable to rank-based methods (Scenario~6).
 
 \input{build/tables/simulation-scenarios.tex}
 
@@ -285,40 +978,88 @@ Figure~\ref{fig:powerCurves} shows power as a function of sample size at the str
 \label{fig:powerEffectCurves}
 \end{figure}
 
-Three patterns are most important. First, in Scenario~2, where treatment acts only on the atom probability, the proposed likelihood-ratio procedures gain power because they target the Bernoulli component directly, whereas the $t$-test and Wilcoxon test must infer that effect indirectly through the combined outcome. Second, Scenario~3 is the identifying example for the paper: the mean of the combined outcome is held fixed even though both components change. In that antagonistic setting, the likelihood-ratio procedures continue to detect the treatment effect, whereas the one-dimensional tests are greatly attenuated because they target a contrast that has been constructed to cancel.
+The results support the main motivation for the proposed tests, but they also show that no single procedure is uniformly best. Scenario~3 is the clearest verification of the two-component idea. In that antagonistic setting, the coded combined-outcome mean is fixed at every effect level even though the atom probability and survivor mean both change. Consequently, at $n=250$ and the strongest effect level, the one-dimensional tests remain close to their null rejection rates, while both likelihood-ratio procedures reject essentially all replicates. This is the setting in which decomposing the atom and non-atom components is indispensable: the treatment effect is real in the observed-data law, but it has been deliberately hidden from a test of the numerical combined mean.
 
-The remaining scenarios show the limits of any single preferred procedure. Scenario~5 narrows the gap between the parametric and semi-parametric analyses because the positive part changes shape as well as mean, and Scenario~6 is deliberately favorable to rank-based methods because the positive part contains rare high outliers. Across these settings, however, the two proposed tests are strongest precisely when the data reflect the two-component structure they are designed to detect.
+The other scenarios clarify when this advantage should and should not be expected. In the normal reference setting (Scenario~1), the parametric and semi-parametric likelihood-ratio tests track each other closely and have high power, as expected under a correctly specified continuous component. In the survival-only setting (Scenario~2), however, the likelihood-ratio procedures do not dominate the one-dimensional tests; at the strongest effect level and $n=250$, all four methods have power around 86--87\%. The gain from modeling the Bernoulli component directly is offset by the two-degree-of-freedom nature of the joint test in this particular configuration. In the concordant setting (Scenario~4), where both components improve in the same direction, all methods perform well because the treatment effect is already visible on the coded combined-outcome scale.
 
-The supplementary null-calibration display in Figure~\ref{fig:type1Curves} shows that all four procedures remain close to the nominal 5\% level in the null settings we considered. The long supplementary tables document the full scenario-by-sample-size patterns underlying Figure~\ref{fig:powerCurves}.
+The non-normal scenarios illustrate the limits of the procedures and the role of the survivor distribution. In the gamma shape-change setting (Scenario~5), the semi-parametric likelihood-ratio test is modestly more powerful than the parametric version and both substantially outperform the one-dimensional tests, reflecting the benefit of a method that targets the survivor mean without imposing a normal positive-part distribution. In the rare-outlier contamination setting (Scenario~6), the rank-based Wilcoxon test is intentionally favored and has the highest power, whereas the proposed likelihood-ratio tests remain more sensitive than the $t$-test but are not competitive with Wilcoxon at the smaller sample sizes. This scenario is a useful reminder that the proposed methods are designed for component-specific mean and atom effects, not for every possible distributional alternative.
 
-\section{Empirical illustration}\label{sec:application}
+The null-calibration results are mostly reassuring but not perfectly uniform. The $t$-test, Wilcoxon test, and parametric likelihood-ratio test remain close to the nominal 5\% level across the null configurations. The semi-parametric likelihood-ratio test is also close to nominal except in the smallest rare-outlier null cells, where it is anti-conservative at $n=50$ and still mildly elevated at $n=100$ before settling near 5\% for larger samples. Thus the main conclusions are strongest for moderate sample sizes, while very small contaminated samples require caution for the semi-parametric procedure. The long supplementary tables document the full scenario-by-sample-size patterns underlying Figure~\ref{fig:powerCurves}.
 
-As a secondary empirical illustration, we use \ApplicationDatasetDescription{} ($n = \ApplicationN{}$). Although this is not a truncation-by-death data set, it has the same atom-plus-continuous structure: \ApplicationOutcomeLabel{} has a point mass at zero corresponding to \ApplicationAtomMeaning{}, with a positive continuous part among subjects with nonzero outcomes.
+\section{Clinical application: IST-3 stroke trial}\label{sec:application}
 
-Figure~\ref{fig:application} shows the empirical distributions in the two treatment groups together with the simultaneous confidence region for the semi-parametric analysis. In our notation, we code $A = 0$ when the outcome equals zero and $A = 1$ otherwise; $Y$ then denotes the positive part of the outcome among subjects with $A = 1$.
+We apply the proposed methods to \ApplicationDatasetDescription{} \citep{IST3Lancet2012,IST3DataShare}. Acute ischemic stroke is a natural setting for atom-plus-continuous endpoints: treatment may affect both mortality and functional health, and death before follow-up is not a missing quality-of-life value but a clinically meaningful terminal state. Among survivors, the 6-month EuroQol visual analogue score (EQ-VAS) is a patient-centered continuous measure on a 0 to 100 scale, with larger values indicating better self-rated health.
+
+The IST-3 data were downloaded from Edinburgh DataShare. The fixed-width data file \texttt{ist3.dat} and accompanying SAS syntax identify allocated treatment, death by 6 months, and 6-month EQ-VAS. The syntax labels \texttt{itt\_treat} as allocated treatment, \texttt{dead6mo} as death before 6 months, and \texttt{euroqol6} as the 6-month EuroQol health state. We verified the treatment coding against the text treatment field: \texttt{itt\_treat = 0} corresponds to rt-PA and \texttt{itt\_treat = 1} corresponds to placebo/control. We therefore set $R=1$ for rt-PA and $R=0$ for placebo/control. The DataShare record is publicly downloadable after the end of the embargo, but reuse is conditional on the IST-3 Data Use Agreement; the data citation is \citet{IST3DataShare}, DOI \ApplicationISTThreeDoi{}.
+
+For the application endpoint, we code
+\[
+  Y =
+  \begin{cases}
+    -1, & \text{death by 6 months},\\
+    \text{6-month EQ-VAS}, & \text{alive with observed EQ-VAS},
+  \end{cases}
+  \qquad
+  A = \mathbbm{1}(Y \ne -1).
+\]
+Thus the atom is $-1$, representing death by 6 months, and the continuous component is EQ-VAS among 6-month survivors. Alive participants with missing 6-month EQ-VAS were excluded from this analysis because the continuous component was not observed; deaths were retained through the atom. This left \ApplicationN{} participants for analysis, including \ApplicationControlN{} placebo/control participants and \ApplicationTreatmentN{} rt-PA participants. Table~\ref{tab:ist3-descriptives} reports the analysis sample, death counts, survivor EQ-VAS summaries, and the combined endpoint mean.
+
+\input{build/tables/application-descriptives.tex}
+
+Figure~\ref{fig:application} displays the atom and survivor components together with the semiparametric joint confidence region. The death atom was similar in the two arms: \ApplicationControlDeaths{} placebo/control participants (\ApplicationControlDeathPct{}) and \ApplicationTreatmentDeaths{} rt-PA participants (\ApplicationTreatmentDeathPct{}) died before 6 months. Among survivors with EQ-VAS, however, the mean was \ApplicationControlMean{} in the placebo/control arm and \ApplicationTreatmentMean{} in the rt-PA arm, giving $\hat\mu_\delta=\ApplicationMuDelta{}$ points. The fitted odds ratio for being alive with observed EQ-VAS rather than at the death atom was $\hat\alpha_\delta=\ApplicationAlphaDelta{}$, and the combined mean contrast under the $Y=-1$ death coding was $\hat\Delta=\ApplicationDelta{}$.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{application.pdf}
-\caption{\ApplicationDatasetName{}: histograms of \ApplicationOutcomeShort{} by treatment group (left and middle panels) and the semi-parametric simultaneous confidence region for $(\mu_\delta,\beta_\delta)$ (right panel).}
+\caption{IST-3 endpoint components and semiparametric likelihood-ratio region. The left panel shows death and alive-with-EQ-VAS counts by treatment arm. The middle panel shows the survivor EQ-VAS distribution. The right panel shows the semiparametric likelihood-ratio surface for $(\mu_\delta,\log\alpha_\delta)$ with reference lines at no survivor mean difference and no atom-probability difference.}
 \label{fig:application}
 \end{figure}
 
-Standard one-dimensional analyses provide only weak evidence of a difference: Welch's two-sample $t$-test yields p-value \ApplicationTTestP{}, and the Wilcoxon test yields p-value \ApplicationWilcoxP{}. By contrast, the parametric likelihood-ratio test yields p-value \ApplicationLRTP{}, and the semi-parametric analysis yields p-value \ApplicationSPLRTP{}. The semi-parametric estimate of the positive-part mean difference is \ApplicationMuDelta{}, while the fitted odds ratio for escaping the atom is \ApplicationAlphaDelta{}.
+Table~\ref{tab:ist3-frequentist} compares standard one-dimensional analyses with the proposed joint tests. A Welch $t$-test applied directly to the atom-coded endpoint gave p-value \ApplicationTTestP{}, and the Wilcoxon rank-sum test gave p-value \ApplicationWilcoxP{}. The atom-coded $t$-test depends on the numerical choice $-1$ for death; moving the death atom would change the mean contrast and its standard error. The Wilcoxon test is less tied to that exact value, but it treats all deaths as tied observations at the worst rank and still collapses the endpoint to one dimension. A survivor-only analysis is more sensitive to the EQ-VAS difference, but it conditions on a post-randomization survival event and therefore answers a different observed-data question.
 
-This contrast is substantively informative because \ApplicationComponentSummary{} The illustration is therefore not presented as a definitive clinical truncation-by-death analysis, but as a public example of how the proposed joint test can reveal a two-component signal that is muted on the raw combined-outcome scale.
+\input{build/tables/application-frequentist.tex}
+
+The likelihood-ratio procedures test the joint null of no treatment effect on the death atom probability and no treatment effect on survivor EQ-VAS. The parametric LRT statistic was \ApplicationLRTStatistic{} with p-value \ApplicationLRTP{}, and the semiparametric LRT statistic was \ApplicationSPLRTStatistic{} with p-value \ApplicationSPLRTP{}. In this data set the two procedures agree closely, suggesting that the signal is mainly a location shift in the survivor EQ-VAS component rather than a feature driven by the parametric distributional assumption. Clinically, $\mu_\delta$ is the rt-PA minus control mean EQ-VAS difference among 6-month survivors; $\alpha_\delta$ is the rt-PA/control odds ratio for being alive with observed EQ-VAS rather than at the death atom; and $\Delta$ is the rt-PA minus control mean of the combined endpoint after assigning death the value $-1$. The joint rejection should therefore be interpreted as evidence that the observed two-component endpoint distribution differs between randomized arms, not as a survivor-average causal effect.
+
+\input{build/tables/application-delta-ci.tex}
+
+Table~\ref{tab:ist3-delta-ci} illustrates three confidence intervals for $\Delta$ implemented in the software. The Welch interval is the direct interval for the atom-coded mean contrast. The profile interval constrains the full likelihood at a fixed $\Delta$, while the projected interval maps the joint confidence region for the component parameters into the implied combined mean contrast. In IST-3, the profile interval is nearly identical to the Welch interval, whereas the projected interval is wider because it preserves joint uncertainty in both the atom and survivor components.
+
+We also fit the experimental Bayesian two-part model in \texttt{TruncComp2}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors, and the continuous survivor EQ-VAS distribution used a two-component normal mixture on the internally standardized real-line scale with weakly informative component and concentration priors. The real-line model was used because some survivors had EQ-VAS equal to 0, so a positive-support model would be inappropriate. The Bayesian fit is cached with the generated application data; setting \texttt{TRUNCCOMP\_REFRESH\_IST3\_BAYES=true} regenerates it from the fixed-width file. Because this Bayesian implementation uses a practical finite truncation for the manuscript build, we report sampler and truncation diagnostics alongside the posterior summaries.
+
+\input{build/tables/application-bayes-summary.tex}
+
+The posterior summaries in Table~\ref{tab:ist3-bayes} separate the survival/atom component from the survivor EQ-VAS component. The benefit-oriented combined endpoint uses the same coding as the frequentist analysis, so $\Pr(\Delta>0\mid\mathrm{data})$ is the posterior probability that rt-PA improves the combined endpoint. The posterior probabilities $\Pr(\mu_\delta>0\mid\mathrm{data})$ and $\Pr(\alpha_\delta>1\mid\mathrm{data})$ separately summarize benefit on survivor EQ-VAS and on avoiding the atom. Figure~\ref{fig:application-posterior} shows the posterior densities for these component and combined contrasts.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{application-posterior.pdf}
+\caption{Posterior distributions for the IST-3 treatment contrasts. Vertical dashed lines mark no survivor mean difference, no difference in the odds of being alive with observed EQ-VAS, and no combined endpoint mean difference.}
+\label{fig:application-posterior}
+\end{figure}
+
+Finally, we assessed whether the Bayesian model reproduced both parts of the endpoint. Table~\ref{tab:ist3-ppc} reports posterior predictive checks for the atom model and the survivor EQ-VAS distribution, and Figure~\ref{fig:application-ppc} displays the corresponding replicated data summaries. These checks are important because a model can match the death proportions while still misrepresenting the bounded and potentially skewed EQ-VAS distribution among survivors. In this application the atom component is reproduced well, whereas the continuous-component check is deliberately treated as a warning about the simple real-line mixture approximation to a bounded health-state score. The posterior predictive assessment is therefore used as a model check, not as evidence for treatment efficacy.
+
+\input{build/tables/application-ppc.tex}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{application-ppc.pdf}
+\caption{Posterior predictive checks for the IST-3 Bayesian model, separately for the death atom and the survivor EQ-VAS component.}
+\label{fig:application-ppc}
+\end{figure}
 
 \section{Discussion}\label{sec:discussion}
 
 We have proposed parametric and semi-parametric likelihood-ratio tests for continuous outcomes with a clinically meaningful atom. The key step is to retain the atomized outcome used in practice while testing the joint null of no treatment effect on the atom probability and no treatment effect on the positive part. This yields one prespecified p-value together with interpretable component-wise effect estimates and confidence regions.
 
-The simulations show why that distinction matters. The gain is largest when treatment acts mainly through one component or when the atom and positive part move in opposite directions, because those are exactly the settings in which a one-dimensional composite can dilute or cancel signal. The empirical illustration serves the same purpose in a public data set: the joint tests detect structure that is only weakly visible to standard analyses of the raw combined outcome.
+The simulations show why that distinction matters. The gain is largest when treatment acts mainly through one component or when the atom and positive part move in opposite directions, because those are exactly the settings in which a one-dimensional composite can dilute or cancel signal. The IST-3 application serves the same purpose in a clinically recognizable setting: the joint tests detect two-component structure that is only weakly visible to standard analyses of the raw combined outcome.
 
 This observed-data focus should also guide interpretation. The parameter pair $(\mu_\delta,\beta_\delta)$ is not a survivor-average causal effect or a principal-stratum estimand; it describes the two components of the observed outcome distribution under randomization. The procedures are asymptotic, require positive numbers of observed outcomes in both groups, and the parametric version is only as credible as the model specified for $Y \mid A = 1$. The semi-parametric version relaxes that distributional assumption, but it still relies on regularity of the Bernoulli model and on feasible empirical-likelihood constraints.
 
 For trials that require a single prespecified primary analysis, the framework offers one joint p-value together with clinically interpretable follow-up summaries for the binary and continuous components. That makes it attractive when investigators want to preserve the meaning of a worst-rank or atom-at-zero endpoint without collapsing the scientific question to a single distribution on the combined scale.
 
-An implementation of both procedures, including the code used to generate the manuscript analyses, is available in the R package \texttt{TruncComp2} on GitHub \citep{TruncCompGitHub}.
+Software implementing both procedures, including the code used to generate the manuscript analyses, is available on GitHub \citep{TruncCompGitHub}.
 
 \clearpage
 \appendix
@@ -326,13 +1067,13 @@ An implementation of both procedures, including the code used to generate the ma
 
 This appendix collects the simulation figures and tables referenced in Section~\ref{sec:simulation-study}. It also records the exact simulation protocol implemented in \texttt{simulation-study/scripts/run-simulation-study.R} and \texttt{simulation-study/R/simulation-study.R}.
 
-The simulation study used the full factorial design generated by the code defaults: six scenarios, four effect levels $h \in \{0,1,2,3\}$, and ten per-group sample sizes $n \in \{50,100,\ldots,500\}$, for a total of $240$ cells. Each replicate contained exactly $n$ control observations and $n$ treatment observations. Within group $r \in \{0,1\}$, the indicator $A$ of whether the continuous outcome was observed was drawn as $A \sim \mathrm{Bernoulli}(\pi_r)$. Conditional on $A = 1$, the positive outcome was drawn from a scenario-specific distribution $F_{r,h}$; conditional on $A = 0$, the observed combined outcome was set to the atom $0$. Thus the analyzed endpoint was always $\widetilde{Y} = AY$, and no covariate adjustment was used.
+The simulation study used the full factorial design generated by the code defaults: six scenarios, four effect levels $h \in \{0,1,2,3\}$, and ten per-group sample sizes $n \in \{50,100,\ldots,500\}$, for a total of $240$ cells. Each replicate contained exactly $n$ control observations and $n$ treatment observations. Within group $r \in \{0,1\}$, the indicator $A$ of whether the continuous outcome was observed was drawn as $A \sim \mathrm{Bernoulli}(\pi_r)$. Conditional on $A = 1$, the positive outcome was drawn from a scenario-specific distribution $F_{r,h}$; conditional on $A = 0$, the numerical atom value was recorded as $0$. Thus the analyzed endpoint was always the atom-at-zero numerical combined outcome $\widetilde{Y}^{\,0} = AY$, equivalently $c_0(\widetilde{Y})$, and no covariate adjustment was used.
 
-The six scenario families were as follows. Scenario~1 used $\pi_0 = \pi_1 = 0.85$, $Y \mid A = 1, R = 0 \sim N(3, 1)$, and $Y \mid A = 1, R = 1 \sim N(3 + \delta_h, 1)$ with $\delta_h \in \{0, 0.20, 0.35, 0.50\}$. Scenario~2 used $\pi_0 = 0.45$, $\pi_1 \in \{0.45, 0.50, 0.55, 0.60\}$, and $Y \mid A = 1, R = 0 \sim Y \mid A = 1, R = 1 \sim N(3, 1)$. Scenario~3 used $\pi_0 = 0.50$, $\pi_1 \in \{0.50, 0.55, 0.60, 0.65\}$, $Y \mid A = 1, R = 0 \sim N(3, 1)$, and $Y \mid A = 1, R = 1 \sim N(1.5/\pi_1, 1)$, so that $E(\widetilde{Y} \mid R = 1) = E(\widetilde{Y} \mid R = 0) = 1.5$ at every effect level even though both components change. Scenario~4 used $\pi_0 = 0.50$, $\pi_1 \in \{0.50, 0.55, 0.60, 0.65\}$, $Y \mid A = 1, R = 0 \sim N(3, 1)$, and $Y \mid A = 1, R = 1 \sim N(3 + 0.15h, 1)$. Scenario~5 used $\pi_0 = \pi_1 = 0.65$, $Y \mid A = 1, R = 0 \sim \Gamma(9, 3/9)$, and $Y \mid A = 1, R = 1 \sim \Gamma(k_h, m_h/k_h)$ with $(k_h, m_h) \in \{(9, 3.0), (6, 3.2), (4, 3.4), (2.5, 3.6)\}$, where $\Gamma(k,\theta)$ denotes a gamma distribution with shape $k$ and scale $\theta$. Scenario~6 used $\pi_0 = \pi_1 = 0.80$ and $Y \mid A = 1, R = r \sim 0.95\,N(3 + \delta_h r, 0.35^2) + 0.05\,N(10 + \delta_h r, 0.5^2)$ with $\delta_h \in \{0, 0.10, 0.20, 0.35\}$.
+The six scenario families were as follows. Scenario~1 used $\pi_0 = \pi_1 = 0.85$, $Y \mid A = 1, R = 0 \sim N(3, 1)$, and $Y \mid A = 1, R = 1 \sim N(3 + \delta_h, 1)$ with $\delta_h \in \{0, 0.20, 0.35, 0.50\}$. Scenario~2 used $\pi_0 = 0.45$, $\pi_1 \in \{0.45, 0.50, 0.55, 0.60\}$, and $Y \mid A = 1, R = 0 \sim Y \mid A = 1, R = 1 \sim N(3, 1)$. Scenario~3 used $\pi_0 = 0.50$, $\pi_1 \in \{0.50, 0.55, 0.60, 0.65\}$, $Y \mid A = 1, R = 0 \sim N(3, 1)$, and $Y \mid A = 1, R = 1 \sim N(1.5/\pi_1, 1)$, so that $E(\widetilde{Y}^{\,0} \mid R = 1) = E(\widetilde{Y}^{\,0} \mid R = 0) = 1.5$ at every effect level even though both components change. Scenario~4 used $\pi_0 = 0.50$, $\pi_1 \in \{0.50, 0.55, 0.60, 0.65\}$, $Y \mid A = 1, R = 0 \sim N(3, 1)$, and $Y \mid A = 1, R = 1 \sim N(3 + 0.15h, 1)$. Scenario~5 used $\pi_0 = \pi_1 = 0.65$, $Y \mid A = 1, R = 0 \sim \Gamma(9, 3/9)$, and $Y \mid A = 1, R = 1 \sim \Gamma(k_h, m_h/k_h)$ with $(k_h, m_h) \in \{(9, 3.0), (6, 3.2), (4, 3.4), (2.5, 3.6)\}$, where $\Gamma(k,\theta)$ denotes a gamma distribution with shape $k$ and scale $\theta$. Scenario~6 used $\pi_0 = \pi_1 = 0.80$ and $Y \mid A = 1, R = r \sim 0.95\,N(3 + \delta_h r, 0.35^2) + 0.05\,N(10 + \delta_h r, 0.5^2)$ with $\delta_h \in \{0, 0.10, 0.20, 0.35\}$.
 
 For each cell, the driver called \texttt{set.seed(20260416 + cell\_id - 1)} before generating the 10,000 replicates, where \texttt{cell\_id} increases first over scenarios, then over effect levels, and then over sample sizes. Each replicate was analyzed by four methods applied to the combined outcome data frame produced by \texttt{simulateTruncatedData()}: \texttt{wilcox.test(Y \textasciitilde{} R, exact = FALSE)} for the Wilcoxon rank-sum test, \texttt{t.test(Y \textasciitilde{} R)} for Welch's two-sample $t$-test, \texttt{truncComp(Y \textasciitilde{} R, atom = 0, method = "LRT")} for the parametric likelihood-ratio test, and \texttt{truncComp(Y \textasciitilde{} R, atom = 0, method = "SPLRT")} for the semi-parametric likelihood-ratio test. In the package implementation, the parametric test combines a logistic likelihood-ratio comparison for $A$ with a Gaussian likelihood-ratio comparison for $Y$ among observations with $A = 1$, whereas the semi-parametric test combines the same logistic component with an empirical-likelihood test for the survivor mean difference. Both proposed procedures report a two-degree-of-freedom $\chi^2$-calibrated joint p-value.
 
-Within each cell, rejection rates were computed as the proportion of successful replicates with p-value below $0.05$ for each method, and the Monte Carlo standard error was computed from that rejection proportion using the number of successful replicates for the given method. If a method call errored or returned a non-finite p-value, that replicate was counted as a failure for that method. The aggregated results object stores method-specific failure rates and runtimes, and the supplementary tables report the largest failure rate across the four methods in each cell. For the manuscript displays, Figure~\ref{fig:powerCurves} uses the strongest non-null effect level ($h = 3$) across all six scenarios; Figure~\ref{fig:powerEffectCurves} uses all four effect levels at $n = 250$ per group across all six scenarios; and Figure~\ref{fig:type1Curves} uses the null cells with $h = 0$ across all six scenarios. The six long supplementary tables list the complete power results for all $240$ cells together with the expected combined-outcome contrast $E(\widetilde{Y} \mid R = 1) - E(\widetilde{Y} \mid R = 0)$ used in the code-generated summaries.
+Within each cell, rejection rates were computed as the proportion of successful replicates with p-value below $0.05$ for each method, and the Monte Carlo standard error was computed from that rejection proportion using the number of successful replicates for the given method. If a method call errored or returned a non-finite p-value, that replicate was counted as a failure for that method. The aggregated results object stores method-specific failure rates and runtimes, and the supplementary tables report the largest failure rate across the four methods in each cell. For the manuscript displays, Figure~\ref{fig:powerCurves} uses the strongest non-null effect level ($h = 3$) across all six scenarios; Figure~\ref{fig:powerEffectCurves} uses all four effect levels at $n = 250$ per group across all six scenarios; and Figure~\ref{fig:type1Curves} uses the null cells with $h = 0$ across all six scenarios. The six long supplementary tables list the complete power results for all $240$ cells together with the expected coded combined-outcome contrast $E(\widetilde{Y}^{\,0} \mid R = 1) - E(\widetilde{Y}^{\,0} \mid R = 0)$ used in the code-generated summaries.
 
 Figure~\ref{fig:type1Curves} summarizes the $h = 0$ null-calibration results across all six scenarios.
 
@@ -396,18 +1137,16 @@ For the continuous component, let $\widehat{\mu}_0(\mu_\delta)$ denote the profi
     \arg\min\limits_{\mu_0 \in \mathbb{R}} \widetilde{W}_{Y,n}(\mu_0,\mu_\delta), & \text{semi-parametric},
   \end{cases}
 \]
-and define $\widehat{\mu}_1(\mu_\delta) = \widehat{\mu}_0(\mu_\delta) + \mu_\delta$. The profiled combined-outcome contrast induced by the pair $(\mu_\delta,\beta_\delta)$ is then
+and define $\widehat{\mu}_1(\mu_\delta) = \widehat{\mu}_0(\mu_\delta) + \mu_\delta$. The profiled atom-at-zero numerical combined-outcome contrast induced by the pair $(\mu_\delta,\beta_\delta)$ is then
 \begin{align}
   g_n(\mu_\delta,\beta_\delta)
   &=
   \widehat{\pi}_1(\beta_\delta)\widehat{\mu}_1(\mu_\delta)
-  + \bigl(1 - \widehat{\pi}_1(\beta_\delta)\bigr)\mathcal{E}\nonumber\\
-  &\quad -
-  \widehat{\pi}_0(\beta_\delta)\widehat{\mu}_0(\mu_\delta)
-  - \bigl(1 - \widehat{\pi}_0(\beta_\delta)\bigr)\mathcal{E}.
+  -
+  \widehat{\pi}_0(\beta_\delta)\widehat{\mu}_0(\mu_\delta).
   \label{eq:delta-map}
 \end{align}
-Equation~(\ref{eq:delta-map}) is the map that the software evaluates at every joint candidate point. In particular, the reported point estimate \texttt{Delta} is $\widehat{\Delta}_n := g_n(\widehat{\mu}_\delta,\widehat{\beta}_\delta)$.
+Equation~(\ref{eq:delta-map}) is the map that the software evaluates at every joint candidate point on the atom-at-zero numerical combined-outcome scale. In particular, the reported point estimate \texttt{Delta} is $\widehat{\Delta}_n := g_n(\widehat{\mu}_\delta,\widehat{\beta}_\delta)$.
 
 Let
 \[
@@ -415,7 +1154,7 @@ Let
   \qquad
   c_{2,\alpha} = \chi^2_2(1-\alpha)
 \]
-denote the one- and two-degree-of-freedom upper quantiles used for the $\Delta$-scale profile and projected intervals, respectively.
+denote the one- and two-degree-of-freedom upper quantiles used for the profile and projected intervals on the atom-at-zero numerical combined-outcome scale $\Delta$, respectively.
 
 \subsection*{Projected interval}
 
@@ -513,7 +1252,7 @@ These expressions are obtained directly from Equations~(\ref{eq:delta-proj-opt-l
 
 \subsection*{Profile interval}
 
-The $\Delta$-profile statistic is the one-dimensional profile of the same joint surface under the nonlinear constraint in Equation~(\ref{eq:delta-map}). For any target value $\Delta \in \mathbb{R}$, define
+The $\Delta$-profile statistic is the one-dimensional profile of the same joint surface under the nonlinear constraint in Equation~(\ref{eq:delta-map}). For any target value $\Delta \in \mathbb{R}$ on the atom-at-zero numerical combined-outcome scale, define
 \begin{equation}
   T_n(\Delta)
   =
@@ -604,11 +1343,11 @@ Differentiating with respect to $\mu_0$ and setting the derivative to zero gives
   =
   \overline{Y}_+ + (1-\overline{R}_+)\mu_\delta.
 \]
-Substituting these expressions into Equation~(\ref{eq:delta-map}) yields the exact affine representation
+Substituting these expressions into Equation~(\ref{eq:delta-map}) yields the exact affine representation on the atom-at-zero numerical combined-outcome scale
 \begin{align}
   g_n(\mu_\delta,\beta_\delta)
   &=
-  \bigl(\widehat{\pi}_1(\beta_\delta) - \widehat{\pi}_0(\beta_\delta)\bigr)(\overline{Y}_+ - \mathcal{E})\nonumber\\
+  \bigl(\widehat{\pi}_1(\beta_\delta) - \widehat{\pi}_0(\beta_\delta)\bigr)\overline{Y}_+\nonumber\\
   &\quad +
   \bigl\{\widehat{\pi}_1(\beta_\delta)(1-\overline{R}_+) + \widehat{\pi}_0(\beta_\delta)\overline{R}_+\bigr\}\mu_\delta.
   \label{eq:delta-parametric-affine}
@@ -620,7 +1359,7 @@ Therefore, for fixed target $\Delta$ and fixed $\beta_\delta$, the unique compat
   \frac{
     \Delta
     -
-    \bigl(\widehat{\pi}_1(\beta_\delta) - \widehat{\pi}_0(\beta_\delta)\bigr)(\overline{Y}_+ - \mathcal{E})
+    \bigl(\widehat{\pi}_1(\beta_\delta) - \widehat{\pi}_0(\beta_\delta)\bigr)\overline{Y}_+
   }{
     \widehat{\pi}_1(\beta_\delta)(1-\overline{R}_+) + \widehat{\pi}_0(\beta_\delta)\overline{R}_+
   },
@@ -692,7 +1431,9 @@ Once the profile function $\Delta \mapsto T_n(\Delta)$ has been defined, the low
 
 \section{Supplementary derivation of the semi-parametric test statistic}\label{app:supplementary-derivation}
 
-This appendix records the constrained empirical-likelihood calculation underlying Equation~(\ref{eq:nonparametric}). Throughout, the treatment-group means among the observed outcomes are parameterized as $\mu_0$ for group $R = 0$ and $\mu_1 = \mu_0 + \mu_\delta$ for group $R = 1$.
+This appendix records the constrained empirical-likelihood calculation underlying Equation~(\ref{eq:nonparametric}). The grouped expression derived below is algebraically equivalent to the full-sample representation in Equation~(\ref{eq:nonparametric}) because $\widetilde{Y}_i^{\,0} = 0$ whenever $A_i = 0$. Throughout, the treatment-group means among the observed outcomes are parameterized as $\mu_0$ for group $R = 0$ and $\mu_1 = \mu_0 + \mu_\delta$ for group $R = 1$.
+
+More explicitly, the full-sample notation in Equation~(\ref{eq:nonparametric}) uses the factors $1-R_i$ and $R_i$ to select the control and treatment contributions, while the factors involving $A_i$ suppress subjects with $A_i = 0$. If $R_i = 0$ and $A_i = 1$, then $\widetilde{Y}_i^{\,0} = Y_i$ and the control-arm summand reduces to $\log\{1 + \lambda_0(Y_i - \mu_0)\}$. If $R_i = 1$ and $A_i = 1$, then the treatment-arm summand reduces to $\log\{1 + \lambda_1(Y_i - \mu_0 - \mu_\delta)\}$. If $A_i = 0$, then $\widetilde{Y}_i^{\,0} = 0$ and both summands equal $\log(1) = 0$. Thus the full-sample display is exactly the same criterion as the grouped notation indexed by $\mathcal{I}_0$ and $\mathcal{I}_1$.
 
 \begin{lemma}\label{lem:empirical-likelihood-derivation}
 Fix $(\mu_0,\mu_\delta) \in \mathbb{R}^2$ such that $\mu_0$ lies in the interior of the convex hull of $\{Y_i : i \in \mathcal{I}_0\}$ and $\mu_0 + \mu_\delta$ lies in the interior of the convex hull of $\{Y_j : j \in \mathcal{I}_1\}$. Define the normalized empirical likelihood ratio

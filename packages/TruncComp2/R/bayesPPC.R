@@ -95,12 +95,15 @@ bayes_ppc_component_parameters <- function(object) {
 
   list(
     support = extracted$support,
+    bounded_kernel = extracted$bounded_kernel,
     weights = extracted$weights,
     means = extracted$means,
     sds = extracted$sds,
     shapes = extracted$shapes,
     m_comp = extracted$m_comp,
     phi_comp = extracted$phi_comp,
+    mu_logit_comp = extracted$mu_logit_comp,
+    sigma_logit_comp = extracted$sigma_logit_comp,
     eta = extracted$eta,
     score_min = extracted$score_min,
     score_max = extracted$score_max,
@@ -152,6 +155,9 @@ bayes_ppc_continuous_matrix <- function(weights, means, arm_obs, draw_indices,
                                         ),
                                         sds = NULL, shapes = NULL,
                                         m_comp = NULL, phi_comp = NULL,
+                                        bounded_kernel = c("beta", "logit_normal"),
+                                        mu_logit_comp = NULL,
+                                        sigma_logit_comp = NULL,
                                         eta = NULL,
                                         score_min = NULL, score_max = NULL,
                                         score_values = NULL,
@@ -159,6 +165,7 @@ bayes_ppc_continuous_matrix <- function(weights, means, arm_obs, draw_indices,
                                         bin_lower = NULL, bin_upper = NULL,
                                         bin_valid = NULL) {
   continuous_support <- bayes_continuous_support(continuous_support)
+  bounded_kernel <- bayes_bounded_kernel(bounded_kernel)
   n_rep <- length(draw_indices)
   n_obs <- length(arm_obs)
   n_components <- dim(weights)[3]
@@ -195,24 +202,36 @@ bayes_ppc_continuous_matrix <- function(weights, means, arm_obs, draw_indices,
           rate = component_shapes / component_means
         )
       } else if(identical(continuous_support, "bounded_continuous")) {
-        component_m <- m_comp[draw, arm, component_index]
-        component_phi <- phi_comp[draw, arm, component_index]
-        x_rep <- stats::rbeta(
-          length(arm_index),
-          shape1 = component_m * component_phi,
-          shape2 = (1 - component_m) * component_phi
-        )
-        yrep[s, arm_index] <- score_min + (score_max - score_min) * x_rep
+        if(identical(bounded_kernel, "logit_normal")) {
+          yrep[s, arm_index] <- bayes_logitnormal_random(
+            mu = mu_logit_comp[draw, arm, component_index],
+            sigma = sigma_logit_comp[draw, arm, component_index],
+            score_min = score_min,
+            score_max = score_max
+          )
+        } else {
+          component_m <- m_comp[draw, arm, component_index]
+          component_phi <- phi_comp[draw, arm, component_index]
+          x_rep <- stats::rbeta(
+            length(arm_index),
+            shape1 = component_m * component_phi,
+            shape2 = (1 - component_m) * component_phi
+          )
+          yrep[s, arm_index] <- score_min + (score_max - score_min) * x_rep
+        }
       } else {
         eta_group <- eta_group_by_arm[[arm]]
         pmf <- bayes_score_pmf(
           weights = weights[draw, arm, ],
-          m_comp = m_comp[draw, arm, ],
-          phi_comp = phi_comp[draw, arm, ],
+          m_comp = if(identical(bounded_kernel, "beta")) m_comp[draw, arm, ] else NULL,
+          phi_comp = if(identical(bounded_kernel, "beta")) phi_comp[draw, arm, ] else NULL,
           eta = eta[draw, eta_group, ],
           bin_lower = bin_lower,
           bin_upper = bin_upper,
-          bin_valid = bin_valid
+          bin_valid = bin_valid,
+          bounded_kernel = bounded_kernel,
+          mu_logit_comp = if(identical(bounded_kernel, "logit_normal")) mu_logit_comp[draw, arm, ] else NULL,
+          sigma_logit_comp = if(identical(bounded_kernel, "logit_normal")) sigma_logit_comp[draw, arm, ] else NULL
         )
         yrep[s, arm_index] <- sample(
           score_values,
@@ -266,6 +285,9 @@ bayes_ppc_data <- function(object, ndraws = 50L, seed = NULL, parameters = NULL)
       shapes = parameters$shapes,
       m_comp = parameters$m_comp,
       phi_comp = parameters$phi_comp,
+      bounded_kernel = parameters$bounded_kernel,
+      mu_logit_comp = parameters$mu_logit_comp,
+      sigma_logit_comp = parameters$sigma_logit_comp,
       eta = parameters$eta,
       score_min = parameters$score_min,
       score_max = parameters$score_max,
@@ -370,8 +392,12 @@ bayes_ppc_mixture_cdf <- function(x, weights, means,
                                   ),
                                   sds = NULL, shapes = NULL,
                                   m_comp = NULL, phi_comp = NULL,
+                                  bounded_kernel = c("beta", "logit_normal"),
+                                  mu_logit_comp = NULL,
+                                  sigma_logit_comp = NULL,
                                   score_min = NULL, score_max = NULL) {
   continuous_support <- bayes_continuous_support(continuous_support)
+  bounded_kernel <- bayes_bounded_kernel(bounded_kernel)
 
   kernels <- vapply(
     seq_along(weights),
@@ -381,6 +407,16 @@ bayes_ppc_mixture_cdf <- function(x, weights, means,
       }
 
       if(identical(continuous_support, "bounded_continuous")) {
+        if(identical(bounded_kernel, "logit_normal")) {
+          return(bayes_logitnormal_cdf(
+            x = x,
+            mu = mu_logit_comp[h],
+            sigma = sigma_logit_comp[h],
+            score_min = score_min,
+            score_max = score_max
+          ))
+        }
+
         x_unit <- pmin(pmax((x - score_min) / (score_max - score_min), 0), 1)
         return(stats::pbeta(
           x_unit,
@@ -423,6 +459,9 @@ bayes_ppc_continuous_discrepancy <- function(y_cont, arm_obs, weights_draw, mean
                                              ),
                                              sds_draw = NULL, shapes_draw = NULL,
                                              m_comp_draw = NULL, phi_comp_draw = NULL,
+                                             bounded_kernel = c("beta", "logit_normal"),
+                                             mu_logit_comp_draw = NULL,
+                                             sigma_logit_comp_draw = NULL,
                                              eta_draw = NULL,
                                              score_min = NULL, score_max = NULL,
                                              score_values = NULL,
@@ -430,6 +469,7 @@ bayes_ppc_continuous_discrepancy <- function(y_cont, arm_obs, weights_draw, mean
                                              bin_lower = NULL, bin_upper = NULL,
                                              bin_valid = NULL) {
   continuous_support <- bayes_continuous_support(continuous_support)
+  bounded_kernel <- bayes_bounded_kernel(bounded_kernel)
 
   max(vapply(
     1:2,
@@ -443,12 +483,15 @@ bayes_ppc_continuous_discrepancy <- function(y_cont, arm_obs, weights_draw, mean
         eta_group <- eta_group_by_arm[[arm]]
         pmf <- bayes_score_pmf(
           weights = weights_draw[arm, ],
-          m_comp = m_comp_draw[arm, ],
-          phi_comp = phi_comp_draw[arm, ],
+          m_comp = if(identical(bounded_kernel, "beta")) m_comp_draw[arm, ] else NULL,
+          phi_comp = if(identical(bounded_kernel, "beta")) phi_comp_draw[arm, ] else NULL,
           eta = eta_draw[eta_group, ],
           bin_lower = bin_lower,
           bin_upper = bin_upper,
-          bin_valid = bin_valid
+          bin_valid = bin_valid,
+          bounded_kernel = bounded_kernel,
+          mu_logit_comp = if(identical(bounded_kernel, "logit_normal")) mu_logit_comp_draw[arm, ] else NULL,
+          sigma_logit_comp = if(identical(bounded_kernel, "logit_normal")) sigma_logit_comp_draw[arm, ] else NULL
         )
         fitted_cdf <- cumsum(pmf)
         observed_cdf <- vapply(
@@ -469,10 +512,21 @@ bayes_ppc_continuous_discrepancy <- function(y_cont, arm_obs, weights_draw, mean
         weights = weights_draw[arm, ],
         means = if(continuous_support %in% c("real_line", "positive_real")) means_draw[arm, ] else NULL,
         continuous_support = continuous_support,
+        bounded_kernel = bounded_kernel,
         sds = if(identical(continuous_support, "real_line")) sds_draw[arm, ] else NULL,
         shapes = if(identical(continuous_support, "positive_real")) shapes_draw[arm, ] else NULL,
-        m_comp = if(identical(continuous_support, "bounded_continuous")) m_comp_draw[arm, ] else NULL,
-        phi_comp = if(identical(continuous_support, "bounded_continuous")) phi_comp_draw[arm, ] else NULL,
+        m_comp = if(identical(continuous_support, "bounded_continuous") && identical(bounded_kernel, "beta")) {
+          m_comp_draw[arm, ]
+        } else NULL,
+        phi_comp = if(identical(continuous_support, "bounded_continuous") && identical(bounded_kernel, "beta")) {
+          phi_comp_draw[arm, ]
+        } else NULL,
+        mu_logit_comp = if(identical(continuous_support, "bounded_continuous") && identical(bounded_kernel, "logit_normal")) {
+          mu_logit_comp_draw[arm, ]
+        } else NULL,
+        sigma_logit_comp = if(identical(continuous_support, "bounded_continuous") && identical(bounded_kernel, "logit_normal")) {
+          sigma_logit_comp_draw[arm, ]
+        } else NULL,
         score_min = if(identical(continuous_support, "bounded_continuous")) score_min else NULL,
         score_max = if(identical(continuous_support, "bounded_continuous")) score_max else NULL
       )
@@ -594,8 +648,19 @@ bayes_ppc_summary <- function(object, ndraws = NULL, seed = NULL,
       continuous_support = parameters$support,
       sds_draw = if(identical(parameters$support, "real_line")) parameters$sds[draw, , ] else NULL,
       shapes_draw = if(identical(parameters$support, "positive_real")) parameters$shapes[draw, , ] else NULL,
-      m_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score")) parameters$m_comp[draw, , ] else NULL,
-      phi_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score")) parameters$phi_comp[draw, , ] else NULL,
+      m_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score") && identical(parameters$bounded_kernel, "beta")) {
+        parameters$m_comp[draw, , ]
+      } else NULL,
+      phi_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score") && identical(parameters$bounded_kernel, "beta")) {
+        parameters$phi_comp[draw, , ]
+      } else NULL,
+      bounded_kernel = parameters$bounded_kernel,
+      mu_logit_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score") && identical(parameters$bounded_kernel, "logit_normal")) {
+        parameters$mu_logit_comp[draw, , ]
+      } else NULL,
+      sigma_logit_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score") && identical(parameters$bounded_kernel, "logit_normal")) {
+        parameters$sigma_logit_comp[draw, , ]
+      } else NULL,
       eta_draw = if(identical(parameters$support, "bounded_score")) bayes_ppc_eta_draw(parameters$eta, draw) else NULL,
       score_min = parameters$score_min,
       score_max = parameters$score_max,
@@ -613,8 +678,19 @@ bayes_ppc_summary <- function(object, ndraws = NULL, seed = NULL,
       continuous_support = parameters$support,
       sds_draw = if(identical(parameters$support, "real_line")) parameters$sds[draw, , ] else NULL,
       shapes_draw = if(identical(parameters$support, "positive_real")) parameters$shapes[draw, , ] else NULL,
-      m_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score")) parameters$m_comp[draw, , ] else NULL,
-      phi_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score")) parameters$phi_comp[draw, , ] else NULL,
+      m_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score") && identical(parameters$bounded_kernel, "beta")) {
+        parameters$m_comp[draw, , ]
+      } else NULL,
+      phi_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score") && identical(parameters$bounded_kernel, "beta")) {
+        parameters$phi_comp[draw, , ]
+      } else NULL,
+      bounded_kernel = parameters$bounded_kernel,
+      mu_logit_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score") && identical(parameters$bounded_kernel, "logit_normal")) {
+        parameters$mu_logit_comp[draw, , ]
+      } else NULL,
+      sigma_logit_comp_draw = if(parameters$support %in% c("bounded_continuous", "bounded_score") && identical(parameters$bounded_kernel, "logit_normal")) {
+        parameters$sigma_logit_comp[draw, , ]
+      } else NULL,
       eta_draw = if(identical(parameters$support, "bounded_score")) bayes_ppc_eta_draw(parameters$eta, draw) else NULL,
       score_min = parameters$score_min,
       score_max = parameters$score_max,
@@ -761,9 +837,11 @@ posterior_predictive_pvalues <- function(object, ndraws = NULL, seed = NULL) {
 #' while `continuous_support = "positive_real"` uses Gamma predictive draws on
 #' the original positive outcome scale and displays the continuous PPC as a
 #' density overlay on `log(Y)` to avoid boundary artifacts at zero. Bounded
-#' continuous fits use Beta-mixture predictive draws on the bounded outcome
-#' scale. Bounded-score fits use discrete reported-score replications and a
-#' score-mass PPC rather than a smooth density overlay.
+#' continuous fits use predictive draws from the selected bounded kernel
+#' (`bounded_kernel = "beta"` by default, or `"logit_normal"`) on the bounded
+#' outcome scale. Bounded-score fits use discrete reported-score replications
+#' from the selected bounded kernel and heaping model, and a score-mass PPC
+#' rather than a smooth density overlay.
 #'
 #' @param object A successful `"trunc_comp_bayes_fit"` object returned by
 #'   [trunc_comp_bayes()].

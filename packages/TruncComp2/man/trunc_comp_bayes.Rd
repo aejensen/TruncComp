@@ -20,6 +20,7 @@ trunc_comp_bayes(formula, ...)
   score_step = 1,
   heaping_grids = 1,
   heaping = c("shared", "arm_specific"),
+  bounded_kernel = c("beta", "logit_normal"),
   mixture_components = 10,
   auto_select_mixture_components = TRUE,
   mixture_components_max = NULL,
@@ -46,6 +47,7 @@ trunc_comp_bayes(formula, ...)
   score_step = 1,
   heaping_grids = 1,
   heaping = c("shared", "arm_specific"),
+  bounded_kernel = c("beta", "logit_normal"),
   mixture_components = 10,
   auto_select_mixture_components = TRUE,
   mixture_components_max = NULL,
@@ -81,9 +83,12 @@ exactly one unique finite value.}
 while \code{"positive_real"} fits a Gamma-mixture model on the positive real
 line and therefore requires all non-atom outcomes to be strictly
 positive. \code{"bounded_continuous"} fits an experimental Beta-mixture model
-for finely measured survivor outcomes inside \verb{(score_min, score_max)}.
-\code{"bounded_score"} fits an experimental discretized/heaped Beta-mixture
-model for integer or grid-valued survivor scores in \verb{[score_min, score_max]}.}
+by default for finely measured survivor outcomes inside
+\verb{(score_min, score_max)}. \code{"bounded_score"} fits an experimental
+discretized/heaped Beta-mixture model by default for integer or grid-valued
+survivor scores in \verb{[score_min, score_max]}. The bounded models can
+instead use logit-normal mixture kernels via
+\code{bounded_kernel = "logit_normal"}.}
 
 \item{score_min, score_max}{Finite numeric lower and upper bounds for the two
 bounded Bayesian survivor models. Required when \code{continuous_support} is
@@ -98,6 +103,12 @@ bounded Bayesian survivor models. Required when \code{continuous_support} is
 
 \item{heaping}{Whether bounded-score heaping proportions are shared across
 arms (\code{"shared"}) or arm-specific (\code{"arm_specific"}).}
+
+\item{bounded_kernel}{Kernel family for bounded Bayesian survivor models.
+\code{"beta"} keeps the existing bounded Beta-mixture models and is the
+default. \code{"logit_normal"} uses logit-normal mixture kernels for
+\code{continuous_support = "bounded_continuous"} and
+\code{continuous_support = "bounded_score"}.}
 
 \item{mixture_components}{Initial truncation level for the arm-specific
 stick-breaking mixtures. Must be at least \code{2}. The default initial level
@@ -130,10 +141,12 @@ fields are \code{rho_alpha}, \code{rho_beta}, \code{alpha_shape}, and \code{alph
 \code{continuous_support = "real_line"}, the support-specific fields are
 \code{mu_mean}, \code{mu_sd}, \code{sigma_meanlog}, and \code{sigma_sdlog}. For
 \code{continuous_support = "positive_real"}, the support-specific fields are
-\code{mean_meanlog}, \code{mean_sdlog}, \code{shape_meanlog}, and \code{shape_sdlog}. For the
+\code{mean_meanlog}, \code{mean_sdlog}, \code{shape_meanlog}, and \code{shape_sdlog}. For
 bounded Beta-mixture models, the support-specific fields are \code{m_alpha},
-\code{m_beta}, \code{phi_meanlog}, and \code{phi_sdlog}; bounded-score fits also accept
-\code{eta_prior}, either a scalar or one value per heaping grid.}
+\code{m_beta}, \code{phi_meanlog}, and \code{phi_sdlog}. For bounded logit-normal models,
+the support-specific fields are \code{mu_logit_mean}, \code{mu_logit_sd},
+\code{sigma_logit_meanlog}, and \code{sigma_logit_sdlog}; bounded-score fits also
+accept \code{eta_prior}, either a scalar or one value per heaping grid.}
 
 \item{a}{Binary indicator for whether the continuous outcome is observed in
 the default interface.}
@@ -159,7 +172,8 @@ The Bayesian pathway is experimental. It fits a two-part model with one atom
 probability per treatment arm and one truncated stick-breaking mixture per
 treatment arm for the non-atom outcomes. The continuous component can be
 modeled with Gaussian kernels on the real line, Gamma kernels on the
-positive real line, or experimental bounded Beta-mixture kernels.
+positive real line, or experimental bounded Beta-mixture or logit-normal
+kernels.
 Likelihood-ratio statistics are not reported, but
 discrepancy-based posterior predictive p-values are available through
 \code{\link[=posterior_predictive_pvalues]{posterior_predictive_pvalues()}} and \code{\link[=posterior_predictive_check]{posterior_predictive_check()}} for model

@@ -6,6 +6,14 @@ bayes_is_bounded_support <- function(continuous_support) {
   continuous_support %in% bayes_bounded_supports()
 }
 
+bayes_fit_bounded_kernel <- function(object) {
+  if(is.null(object$settings$bounded_kernel)) {
+    return("beta")
+  }
+
+  bayes_bounded_kernel(object$settings$bounded_kernel)
+}
+
 bayes_validate_bounded_range <- function(score_min, score_max) {
   if(!(length(score_min) == 1L &&
        is.numeric(score_min) &&
@@ -86,6 +94,36 @@ bayes_score_grid_index <- function(y, score_min, score_max, score_step) {
   }
 
   index
+}
+
+bayes_score_cell_counts <- function(arm_obs, y_obs_index, j_count) {
+  j_count <- validate_bayes_positive_integer(j_count, "j_count", min_value = 1L)
+  arm_obs <- as.integer(arm_obs)
+  y_obs_index <- as.integer(y_obs_index)
+
+  if(length(arm_obs) != length(y_obs_index)) {
+    stop("arm_obs and y_obs_index must have the same length.")
+  }
+  if(length(arm_obs) == 0L) {
+    stop("At least one observed survivor score is required.")
+  }
+  if(any(is.na(arm_obs)) || any(!arm_obs %in% 1:2)) {
+    stop("arm_obs must contain arm indices 1 or 2.")
+  }
+  if(any(is.na(y_obs_index)) || any(y_obs_index < 1L | y_obs_index > j_count)) {
+    stop("y_obs_index must contain valid score-grid indices.")
+  }
+
+  cell_id <- (arm_obs - 1L) * j_count + y_obs_index
+  counts <- tabulate(cell_id, nbins = 2L * j_count)
+  nonzero <- which(counts > 0L)
+
+  list(
+    N_score_cells = as.integer(length(nonzero)),
+    score_cell_arm = as.integer((nonzero - 1L) %/% j_count + 1L),
+    score_cell_index = as.integer((nonzero - 1L) %% j_count + 1L),
+    score_cell_count = as.integer(counts[nonzero])
+  )
 }
 
 bayes_normalize_heaping <- function(heaping = "shared") {
@@ -347,16 +385,124 @@ bayes_beta_interval_prob <- function(lower, upper, shape1, shape2) {
   max(0, min(1, out))
 }
 
-bayes_score_pmf <- function(weights, m_comp, phi_comp, eta,
-                            bin_lower, bin_upper, bin_valid) {
+bayes_logitnormal_mean_quad <- local({
+  cache <- new.env(parent = emptyenv())
+
+  function(n = 20L) {
+    n <- validate_bayes_positive_integer(n, "n", min_value = 2L)
+    key <- as.character(n)
+
+    if(exists(key, envir = cache, inherits = FALSE)) {
+      return(get(key, envir = cache, inherits = FALSE))
+    }
+
+    index <- seq_len(n - 1L)
+    jacobi <- matrix(0, nrow = n, ncol = n)
+    off_diagonal <- sqrt(index / 2)
+    jacobi[cbind(index, index + 1L)] <- off_diagonal
+    jacobi[cbind(index + 1L, index)] <- off_diagonal
+
+    eig <- eigen(jacobi, symmetric = TRUE)
+    order <- order(eig$values)
+    nodes <- eig$values[order]
+    weights <- eig$vectors[1L, order]^2
+    weights <- weights / sum(weights)
+
+    out <- list(
+      n = as.integer(n),
+      nodes = as.numeric(nodes),
+      weights = as.numeric(weights)
+    )
+    assign(key, out, envir = cache)
+    out
+  }
+})
+
+bayes_logitnormal_unit_mean <- function(mu, sigma, n = 20L) {
+  sigma <- bayes_validate_positive_scalar(sigma, "sigma")
+  quad <- bayes_logitnormal_mean_quad(n)
+  sum(quad$weights * stats::plogis(mu + sqrt(2) * sigma * quad$nodes))
+}
+
+bayes_logitnormal_density <- function(x, mu, sigma, score_min, score_max) {
+  sigma <- bayes_validate_positive_scalar(sigma, "sigma")
+  score_range <- score_max - score_min
+  x_unit <- (x - score_min) / score_range
+  in_bounds <- x_unit > 0 & x_unit < 1
+  x_eval <- pmin(pmax(x_unit, .Machine$double.eps^0.25), 1 - .Machine$double.eps^0.25)
+  out <- stats::dnorm(stats::qlogis(x_eval), mean = mu, sd = sigma) /
+    (x_eval * (1 - x_eval) * score_range)
+  out[!in_bounds] <- 0
+  out
+}
+
+bayes_logitnormal_cdf <- function(x, mu, sigma, score_min, score_max) {
+  sigma <- bayes_validate_positive_scalar(sigma, "sigma")
+  x_unit <- (x - score_min) / (score_max - score_min)
+  out <- numeric(length(x_unit))
+  out[x_unit >= 1] <- 1
+  inside <- x_unit > 0 & x_unit < 1
+  out[inside] <- stats::pnorm(stats::qlogis(x_unit[inside]), mean = mu, sd = sigma)
+  out
+}
+
+bayes_logitnormal_random <- function(mu, sigma, score_min, score_max) {
+  if(!(is.numeric(mu) && is.numeric(sigma) && length(mu) == length(sigma))) {
+    stop("mu and sigma must be numeric vectors with the same length.")
+  }
+  if(!(all(is.finite(mu)) && all(is.finite(sigma)) && all(sigma > 0))) {
+    stop("mu must be finite and sigma must be positive and finite.")
+  }
+
+  score_min + (score_max - score_min) *
+    stats::plogis(stats::rnorm(length(mu), mean = mu, sd = sigma))
+}
+
+bayes_logitnormal_interval_prob <- function(lower, upper, mu, sigma) {
+  sigma <- bayes_validate_positive_scalar(sigma, "sigma")
+
+  if(upper <= lower) {
+    return(0)
+  }
+
+  if(lower <= 0 && upper >= 1) {
+    return(1)
+  }
+
+  if(lower <= 0) {
+    return(stats::pnorm(stats::qlogis(upper), mean = mu, sd = sigma))
+  }
+
+  if(upper >= 1) {
+    return(stats::pnorm(stats::qlogis(lower), mean = mu, sd = sigma, lower.tail = FALSE))
+  }
+
+  out <- exp(bayes_log_diff_exp(
+    stats::pnorm(stats::qlogis(upper), mean = mu, sd = sigma, log.p = TRUE),
+    stats::pnorm(stats::qlogis(lower), mean = mu, sd = sigma, log.p = TRUE)
+  ))
+
+  max(0, min(1, out))
+}
+
+bayes_score_pmf <- function(weights, m_comp = NULL, phi_comp = NULL, eta,
+                            bin_lower, bin_upper, bin_valid,
+                            bounded_kernel = c("beta", "logit_normal"),
+                            mu_logit_comp = NULL, sigma_logit_comp = NULL) {
+  bounded_kernel <- bayes_bounded_kernel(bounded_kernel)
   h_count <- length(weights)
   k_count <- length(eta)
   j_count <- ncol(bin_valid)
   out <- numeric(j_count)
 
   for(h in seq_len(h_count)) {
-    shape1 <- m_comp[[h]] * phi_comp[[h]]
-    shape2 <- (1 - m_comp[[h]]) * phi_comp[[h]]
+    if(identical(bounded_kernel, "beta")) {
+      shape1 <- m_comp[[h]] * phi_comp[[h]]
+      shape2 <- (1 - m_comp[[h]]) * phi_comp[[h]]
+    } else {
+      mu_logit <- mu_logit_comp[[h]]
+      sigma_logit <- sigma_logit_comp[[h]]
+    }
     grid_pmf <- numeric(j_count)
 
     for(k in seq_len(k_count)) {
@@ -368,11 +514,20 @@ bayes_score_pmf <- function(weights, m_comp, phi_comp, eta,
       interval_prob <- vapply(
         valid_j,
         function(j) {
-          bayes_beta_interval_prob(
+          if(identical(bounded_kernel, "beta")) {
+            return(bayes_beta_interval_prob(
+              lower = bin_lower[k, j],
+              upper = bin_upper[k, j],
+              shape1 = shape1,
+              shape2 = shape2
+            ))
+          }
+
+          bayes_logitnormal_interval_prob(
             lower = bin_lower[k, j],
             upper = bin_upper[k, j],
-            shape1 = shape1,
-            shape2 = shape2
+            mu = mu_logit,
+            sigma = sigma_logit
           )
         },
         numeric(1)

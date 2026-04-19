@@ -39,9 +39,11 @@ For \code{continuous_support = "real_line"} this uses Gaussian predictive draws,
 while \code{continuous_support = "positive_real"} uses Gamma predictive draws on
 the original positive outcome scale and displays the continuous PPC as a
 density overlay on \code{log(Y)} to avoid boundary artifacts at zero. Bounded
-continuous fits use Beta-mixture predictive draws on the bounded outcome
-scale. Bounded-score fits use discrete reported-score replications and a
-score-mass PPC rather than a smooth density overlay.
+continuous fits use predictive draws from the selected bounded kernel
+(\code{bounded_kernel = "beta"} by default, or \code{"logit_normal"}) on the bounded
+outcome scale. Bounded-score fits use discrete reported-score replications
+from the selected bounded kernel and heaping model, and a score-mass PPC
+rather than a smooth density overlay.
 }
 \examples{
 \dontrun{

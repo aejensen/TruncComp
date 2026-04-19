@@ -14,13 +14,17 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 RcppExport SEXP _rcpp_module_boot_stan_fit4trunc_comp_bayes_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_continuous_mod();
+RcppExport SEXP _rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_continuous_logit_normal_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_score_mod();
+RcppExport SEXP _rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_score_logit_normal_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4trunc_comp_bayes_positive_mod();
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rcpp_module_boot_stan_fit4trunc_comp_bayes_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4trunc_comp_bayes_mod, 0},
     {"_rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_continuous_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_continuous_mod, 0},
+    {"_rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_continuous_logit_normal_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_continuous_logit_normal_mod, 0},
     {"_rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_score_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_score_mod, 0},
+    {"_rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_score_logit_normal_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4trunc_comp_bayes_bounded_score_logit_normal_mod, 0},
     {"_rcpp_module_boot_stan_fit4trunc_comp_bayes_positive_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4trunc_comp_bayes_positive_mod, 0},
     {NULL, NULL, 0}
 };

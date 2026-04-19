@@ -69,6 +69,8 @@ test_that("Bounded Bayesian fits return expected settings and draw names", {
 
   expect_equal(continuous_fit$settings$continuous_support, "bounded_continuous")
   expect_equal(score_fit$settings$continuous_support, "bounded_score")
+  expect_equal(continuous_fit$settings$bounded_kernel, "beta")
+  expect_equal(score_fit$settings$bounded_kernel, "beta")
   expect_equal(continuous_fit$settings$score_min, 0)
   expect_equal(continuous_fit$settings$score_max, 100)
   expect_equal(score_fit$settings$score_step, 1)

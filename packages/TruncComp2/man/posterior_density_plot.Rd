@@ -39,9 +39,11 @@ from the atom. The atom itself is shown separately as a solid vertical spike
 with an arrowhead, annotated with the posterior mean atom probability in each
 treatment arm. Fits created with \code{continuous_support = "real_line"} use
 Gaussian kernels, \code{continuous_support = "positive_real"} uses Gamma kernels,
-\code{continuous_support = "bounded_continuous"} uses Beta kernels with the
+\code{continuous_support = "bounded_continuous"} uses the selected bounded kernel
+(\code{bounded_kernel = "beta"} by default, or \code{"logit_normal"}) with the
 outcome-scale Jacobian, and \code{continuous_support = "bounded_score"} uses a
-discrete posterior predictive mass plot.
+discrete posterior predictive mass plot from the selected bounded kernel and
+heaping model.
 }
 \examples{
 \dontrun{

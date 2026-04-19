@@ -216,13 +216,30 @@ bayes_density_component_draws <- function(object) {
   }
 
   continuous_support <- bayes_fit_continuous_support(object)
-  pars <- switch(
-    continuous_support,
-    real_line = c("w", "mu_comp", "sigma_comp", "rho"),
-    positive_real = c("w", "mean_comp", "shape_comp", "rho"),
-    bounded_continuous = c("w", "m_comp", "phi_comp", "rho"),
-    bounded_score = c("w", "m_comp", "phi_comp", "eta", "rho")
-  )
+  bounded_kernel <- if(bayes_is_bounded_support(continuous_support)) {
+    bayes_fit_bounded_kernel(object)
+  } else {
+    "beta"
+  }
+  pars <- if(identical(continuous_support, "bounded_continuous")) {
+    if(identical(bounded_kernel, "logit_normal")) {
+      c("w", "mu_logit_comp", "sigma_logit_comp", "rho")
+    } else {
+      c("w", "m_comp", "phi_comp", "rho")
+    }
+  } else if(identical(continuous_support, "bounded_score")) {
+    if(identical(bounded_kernel, "logit_normal")) {
+      c("w", "mu_logit_comp", "sigma_logit_comp", "eta", "rho")
+    } else {
+      c("w", "m_comp", "phi_comp", "eta", "rho")
+    }
+  } else {
+    switch(
+      continuous_support,
+      real_line = c("w", "mu_comp", "sigma_comp", "rho"),
+      positive_real = c("w", "mean_comp", "shape_comp", "rho")
+    )
+  }
 
   extracted <- tryCatch(
     rstan::extract(
@@ -270,27 +287,35 @@ bayes_density_component_draws <- function(object) {
   }
 
   if(identical(continuous_support, "bounded_continuous")) {
-    return(list(
+    out <- list(
       support = continuous_support,
+      bounded_kernel = bounded_kernel,
       weights = extracted$w,
       rho = extracted$rho,
       observed_prob = 1 - extracted$rho,
-      m_comp = extracted$m_comp,
-      phi_comp = extracted$phi_comp,
       score_min = object$settings$score_min,
       score_max = object$settings$score_max,
       score_range = object$settings$score_range
-    ))
+    )
+
+    if(identical(bounded_kernel, "logit_normal")) {
+      out$mu_logit_comp <- extracted$mu_logit_comp
+      out$sigma_logit_comp <- extracted$sigma_logit_comp
+    } else {
+      out$m_comp <- extracted$m_comp
+      out$phi_comp <- extracted$phi_comp
+    }
+
+    return(out)
   }
 
   if(identical(continuous_support, "bounded_score")) {
-    return(list(
+    out <- list(
       support = continuous_support,
+      bounded_kernel = bounded_kernel,
       weights = extracted$w,
       rho = extracted$rho,
       observed_prob = 1 - extracted$rho,
-      m_comp = extracted$m_comp,
-      phi_comp = extracted$phi_comp,
       eta = extracted$eta,
       score_min = object$settings$score_min,
       score_max = object$settings$score_max,
@@ -303,7 +328,17 @@ bayes_density_component_draws <- function(object) {
       bin_lower = object$settings$bin_lower,
       bin_upper = object$settings$bin_upper,
       bin_valid = object$settings$bin_valid
-    ))
+    )
+
+    if(identical(bounded_kernel, "logit_normal")) {
+      out$mu_logit_comp <- extracted$mu_logit_comp
+      out$sigma_logit_comp <- extracted$sigma_logit_comp
+    } else {
+      out$m_comp <- extracted$m_comp
+      out$phi_comp <- extracted$phi_comp
+    }
+
+    return(out)
   }
 
   list(
@@ -340,10 +375,14 @@ bayes_observed_density <- function(x, weights, means = NULL, pi,
                                      "bounded_continuous",
                                      "bounded_score"
                                    ),
+                                   bounded_kernel = c("beta", "logit_normal"),
                                    sds = NULL, shapes = NULL,
                                    m_comp = NULL, phi_comp = NULL,
+                                   mu_logit_comp = NULL,
+                                   sigma_logit_comp = NULL,
                                    score_min = NULL, score_max = NULL) {
   continuous_support <- bayes_continuous_support(continuous_support)
+  bounded_kernel <- bayes_bounded_kernel(bounded_kernel)
 
   kernels <- vapply(
     seq_along(weights),
@@ -353,6 +392,16 @@ bayes_observed_density <- function(x, weights, means = NULL, pi,
       }
 
       if(identical(continuous_support, "bounded_continuous")) {
+        if(identical(bounded_kernel, "logit_normal")) {
+          return(bayes_logitnormal_density(
+            x = x,
+            mu = mu_logit_comp[h],
+            sigma = sigma_logit_comp[h],
+            score_min = score_min,
+            score_max = score_max
+          ))
+        }
+
         return(bayes_bounded_kernel_density(
           x = x,
           m = m_comp[h],
@@ -384,12 +433,15 @@ bayes_score_density_plot_data <- function(object, extracted, conf.level) {
         eta_group <- extracted$eta_group_by_arm[[r]]
         pmf <- bayes_score_pmf(
           weights = extracted$weights[draw, r, ],
-          m_comp = extracted$m_comp[draw, r, ],
-          phi_comp = extracted$phi_comp[draw, r, ],
+          m_comp = if(identical(extracted$bounded_kernel, "beta")) extracted$m_comp[draw, r, ] else NULL,
+          phi_comp = if(identical(extracted$bounded_kernel, "beta")) extracted$phi_comp[draw, r, ] else NULL,
           eta = extracted$eta[draw, eta_group, ],
           bin_lower = extracted$bin_lower,
           bin_upper = extracted$bin_upper,
-          bin_valid = extracted$bin_valid
+          bin_valid = extracted$bin_valid,
+          bounded_kernel = extracted$bounded_kernel,
+          mu_logit_comp = if(identical(extracted$bounded_kernel, "logit_normal")) extracted$mu_logit_comp[draw, r, ] else NULL,
+          sigma_logit_comp = if(identical(extracted$bounded_kernel, "logit_normal")) extracted$sigma_logit_comp[draw, r, ] else NULL
         )
         extracted$observed_prob[draw, r] * pmf
       },
@@ -562,10 +614,21 @@ bayes_density_plot_data <- function(object,
           means = if(identical(continuous_support, "bounded_continuous")) NULL else means[draw, r, ],
           pi = observed_prob[draw, r],
           continuous_support = continuous_support,
+          bounded_kernel = extracted$bounded_kernel,
           sds = if(identical(continuous_support, "real_line")) extracted$sds[draw, r, ] else NULL,
           shapes = if(identical(continuous_support, "positive_real")) extracted$shapes[draw, r, ] else NULL,
-          m_comp = if(identical(continuous_support, "bounded_continuous")) extracted$m_comp[draw, r, ] else NULL,
-          phi_comp = if(identical(continuous_support, "bounded_continuous")) extracted$phi_comp[draw, r, ] else NULL,
+          m_comp = if(identical(continuous_support, "bounded_continuous") && identical(extracted$bounded_kernel, "beta")) {
+            extracted$m_comp[draw, r, ]
+          } else NULL,
+          phi_comp = if(identical(continuous_support, "bounded_continuous") && identical(extracted$bounded_kernel, "beta")) {
+            extracted$phi_comp[draw, r, ]
+          } else NULL,
+          mu_logit_comp = if(identical(continuous_support, "bounded_continuous") && identical(extracted$bounded_kernel, "logit_normal")) {
+            extracted$mu_logit_comp[draw, r, ]
+          } else NULL,
+          sigma_logit_comp = if(identical(continuous_support, "bounded_continuous") && identical(extracted$bounded_kernel, "logit_normal")) {
+            extracted$sigma_logit_comp[draw, r, ]
+          } else NULL,
           score_min = if(identical(continuous_support, "bounded_continuous")) extracted$score_min else NULL,
           score_max = if(identical(continuous_support, "bounded_continuous")) extracted$score_max else NULL
         )
@@ -639,9 +702,11 @@ bayes_density_plot_data <- function(object,
 #' with an arrowhead, annotated with the posterior mean atom probability in each
 #' treatment arm. Fits created with `continuous_support = "real_line"` use
 #' Gaussian kernels, `continuous_support = "positive_real"` uses Gamma kernels,
-#' `continuous_support = "bounded_continuous"` uses Beta kernels with the
+#' `continuous_support = "bounded_continuous"` uses the selected bounded kernel
+#' (`bounded_kernel = "beta"` by default, or `"logit_normal"`) with the
 #' outcome-scale Jacobian, and `continuous_support = "bounded_score"` uses a
-#' discrete posterior predictive mass plot.
+#' discrete posterior predictive mass plot from the selected bounded kernel and
+#' heaping model.
 #'
 #' @param object A successful `"trunc_comp_bayes_fit"` object returned by
 #'   [trunc_comp_bayes()].

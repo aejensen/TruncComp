@@ -3,8 +3,8 @@
 #' Fits an explicit two-part Bayesian model for a binary treatment comparison
 #' with a distinguished atom value representing an undefined or unobserved
 #' outcome. The current implementation supports only the no-covariate model,
-#' with either real-line non-atom outcomes or strictly positive non-atom
-#' outcomes.
+#' with real-line, strictly positive, bounded continuous, or bounded reported
+#' score non-atom outcomes. The bounded models are experimental MVPs.
 #'
 #' @param formula For the formula interface, a formula with a continuous outcome
 #'   on the left-hand side and a single binary treatment indicator on the
@@ -22,7 +22,21 @@
 #'   `"real_line"` fits the existing Gaussian-mixture model on the real line,
 #'   while `"positive_real"` fits a Gamma-mixture model on the positive real
 #'   line and therefore requires all non-atom outcomes to be strictly
-#'   positive.
+#'   positive. `"bounded_continuous"` fits an experimental Beta-mixture model
+#'   for finely measured survivor outcomes inside `(score_min, score_max)`.
+#'   `"bounded_score"` fits an experimental discretized/heaped Beta-mixture
+#'   model for integer or grid-valued survivor scores in `[score_min,
+#'   score_max]`.
+#' @param score_min,score_max Finite numeric lower and upper bounds for the two
+#'   bounded Bayesian survivor models. Required when `continuous_support` is
+#'   `"bounded_continuous"` or `"bounded_score"`.
+#' @param score_step Positive score-grid spacing for
+#'   `continuous_support = "bounded_score"`. The default is `1`.
+#' @param heaping_grids Positive heaping grid widths for
+#'   `continuous_support = "bounded_score"`. Each value must be a multiple of
+#'   `score_step`; the default is `1`.
+#' @param heaping Whether bounded-score heaping proportions are shared across
+#'   arms (`"shared"`) or arm-specific (`"arm_specific"`).
 #' @param mixture_components Initial truncation level for the arm-specific
 #'   stick-breaking mixtures. Must be at least `2`. The default initial level
 #'   remains `10`.
@@ -45,7 +59,10 @@
 #'   `continuous_support = "real_line"`, the support-specific fields are
 #'   `mu_mean`, `mu_sd`, `sigma_meanlog`, and `sigma_sdlog`. For
 #'   `continuous_support = "positive_real"`, the support-specific fields are
-#'   `mean_meanlog`, `mean_sdlog`, `shape_meanlog`, and `shape_sdlog`.
+#'   `mean_meanlog`, `mean_sdlog`, `shape_meanlog`, and `shape_sdlog`. For the
+#'   bounded Beta-mixture models, the support-specific fields are `m_alpha`,
+#'   `m_beta`, `phi_meanlog`, and `phi_sdlog`; bounded-score fits also accept
+#'   `eta_prior`, either a scalar or one value per heaping grid.
 #' @param ... Additional arguments passed to [rstan::sampling()]. Covariate
 #'   adjustment is not supported in the Bayesian pathway.
 #' @return An object of class `"trunc_comp_bayes_fit"` containing the fitted
@@ -57,8 +74,9 @@
 #' The Bayesian pathway is experimental. It fits a two-part model with one atom
 #' probability per treatment arm and one truncated stick-breaking mixture per
 #' treatment arm for the non-atom outcomes. The continuous component can be
-#' modeled either with Gaussian kernels on the real line or with Gamma kernels
-#' on the positive real line. Likelihood-ratio statistics are not reported, but
+#' modeled with Gaussian kernels on the real line, Gamma kernels on the
+#' positive real line, or experimental bounded Beta-mixture kernels.
+#' Likelihood-ratio statistics are not reported, but
 #' discrepancy-based posterior predictive p-values are available through
 #' [posterior_predictive_pvalues()] and [posterior_predictive_check()] for model
 #' checking.
@@ -112,6 +130,9 @@ trunc_comp_bayes <- function(formula, ...) {
 
 trunc_comp_bayes_core <- function(y, a, r, atom, conf.level,
                                   continuous_support,
+                                  score_min, score_max,
+                                  score_step, heaping_grids, heaping,
+                                  support_supplied,
                                   mixture_components,
                                   auto_select_mixture_components,
                                   mixture_components_max,
@@ -142,6 +163,12 @@ trunc_comp_bayes_core <- function(y, a, r, atom, conf.level,
     atom = atom,
     conf.level = conf.level,
     continuous_support = continuous_support,
+    score_min = score_min,
+    score_max = score_max,
+    score_step = score_step,
+    heaping_grids = heaping_grids,
+    heaping = heaping,
+    support_supplied = support_supplied,
     mixture_components = mixture_components,
     auto_select_mixture_components = auto_select_mixture_components,
     mixture_components_max = mixture_components_max,
@@ -161,7 +188,17 @@ trunc_comp_bayes_core <- function(y, a, r, atom, conf.level,
 #' @export
 trunc_comp_bayes.formula <- function(formula, atom, data,
                                      conf.level = 0.95,
-                                     continuous_support = c("real_line", "positive_real"),
+                                     continuous_support = c(
+                                       "real_line",
+                                       "positive_real",
+                                       "bounded_continuous",
+                                       "bounded_score"
+                                     ),
+                                     score_min = NULL,
+                                     score_max = NULL,
+                                     score_step = 1,
+                                     heaping_grids = 1,
+                                     heaping = c("shared", "arm_specific"),
                                      mixture_components = 10,
                                      auto_select_mixture_components = TRUE,
                                      mixture_components_max = NULL,
@@ -183,6 +220,14 @@ trunc_comp_bayes.formula <- function(formula, atom, data,
 
   extra_args <- list(...)
   normalize_bayes_sampling_args(extra_args)
+  support_supplied <- bayes_support_supplied_defaults(
+    score_min = !missing(score_min),
+    score_max = !missing(score_max),
+    score_step = !missing(score_step),
+    heaping_grids = !missing(heaping_grids),
+    heaping = !missing(heaping)
+  )
+  heaping <- if(missing(heaping)) "shared" else match.arg(heaping)
 
   outcome_name <- all.vars(formula[[2]])
   treatment_name <- all.vars(formula[[3]])
@@ -223,6 +268,12 @@ trunc_comp_bayes.formula <- function(formula, atom, data,
     atom = as.numeric(atom),
     conf.level = conf.level,
     continuous_support = continuous_support,
+    score_min = score_min,
+    score_max = score_max,
+    score_step = score_step,
+    heaping_grids = heaping_grids,
+    heaping = heaping,
+    support_supplied = support_supplied,
     mixture_components = mixture_components,
     auto_select_mixture_components = auto_select_mixture_components,
     mixture_components_max = mixture_components_max,
@@ -242,7 +293,17 @@ trunc_comp_bayes.formula <- function(formula, atom, data,
 #' @exportS3Method trunc_comp_bayes default
 trunc_comp_bayes.default <- function(formula, a, r, atom = NULL,
                                      conf.level = 0.95,
-                                     continuous_support = c("real_line", "positive_real"),
+                                     continuous_support = c(
+                                       "real_line",
+                                       "positive_real",
+                                       "bounded_continuous",
+                                       "bounded_score"
+                                     ),
+                                     score_min = NULL,
+                                     score_max = NULL,
+                                     score_step = 1,
+                                     heaping_grids = 1,
+                                     heaping = c("shared", "arm_specific"),
                                      mixture_components = 10,
                                      auto_select_mixture_components = TRUE,
                                      mixture_components_max = NULL,
@@ -257,6 +318,14 @@ trunc_comp_bayes.default <- function(formula, a, r, atom = NULL,
   y <- formula
   extra_args <- list(...)
   normalize_bayes_sampling_args(extra_args)
+  support_supplied <- bayes_support_supplied_defaults(
+    score_min = !missing(score_min),
+    score_max = !missing(score_max),
+    score_step = !missing(score_step),
+    heaping_grids = !missing(heaping_grids),
+    heaping = !missing(heaping)
+  )
+  heaping <- if(missing(heaping)) "shared" else match.arg(heaping)
 
   if(length(y) != length(a) || length(y) != length(r)) {
     stop("y, a, and r must have the same length.")
@@ -290,6 +359,12 @@ trunc_comp_bayes.default <- function(formula, a, r, atom = NULL,
     atom = atom,
     conf.level = conf.level,
     continuous_support = continuous_support,
+    score_min = score_min,
+    score_max = score_max,
+    score_step = score_step,
+    heaping_grids = heaping_grids,
+    heaping = heaping,
+    support_supplied = support_supplied,
     mixture_components = mixture_components,
     auto_select_mixture_components = auto_select_mixture_components,
     mixture_components_max = mixture_components_max,

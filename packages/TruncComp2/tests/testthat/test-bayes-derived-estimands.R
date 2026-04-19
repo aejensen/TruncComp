@@ -49,3 +49,60 @@ test_that("Positive-support arm means agree with the Gamma-mixture draw-wise for
   expect_equal(mu_1_from_components, fit$draws$mu_1_c, tolerance = 1e-10)
   expect_equal(delta_from_parts, fit$draws$delta, tolerance = 1e-10)
 })
+
+test_that("Bounded-continuous arm means agree with the Beta-mixture formula", {
+  fit <- bayes_bounded_continuous_formula_fit(seed = 2401)
+  extracted <- posterior::as_draws_df(rstan::extract(
+    fit$fit,
+    pars = c("w", "m_comp"),
+    permuted = FALSE,
+    inc_warmup = FALSE
+  ))
+  component_index <- seq_len(fit$settings$mixture_components)
+  w_0 <- do.call(cbind, lapply(component_index, function(h) extracted[[sprintf("w[1,%d]", h)]]))
+  w_1 <- do.call(cbind, lapply(component_index, function(h) extracted[[sprintf("w[2,%d]", h)]]))
+  m_0 <- do.call(cbind, lapply(component_index, function(h) extracted[[sprintf("m_comp[1,%d]", h)]]))
+  m_1 <- do.call(cbind, lapply(component_index, function(h) extracted[[sprintf("m_comp[2,%d]", h)]]))
+
+  score_min <- fit$settings$score_min
+  score_range <- fit$settings$score_range
+  mu_0_from_components <- score_min + score_range * rowSums(w_0 * m_0)
+  mu_1_from_components <- score_min + score_range * rowSums(w_1 * m_1)
+  delta_from_parts <- (fit$atom * fit$draws$rho_1 + fit$draws$pi_1 * fit$draws$mu_1_c) -
+    (fit$atom * fit$draws$rho_0 + fit$draws$pi_0 * fit$draws$mu_0_c)
+
+  expect_equal(mu_0_from_components, fit$draws$mu_0_c, tolerance = 1e-10)
+  expect_equal(mu_1_from_components, fit$draws$mu_1_c, tolerance = 1e-10)
+  expect_equal(delta_from_parts, fit$draws$delta, tolerance = 1e-10)
+})
+
+test_that("Bounded-score arm means agree with the reported-score PMF formula", {
+  fit <- bayes_bounded_score_formula_fit(seed = 2402)
+  extracted <- posterior::as_draws_df(rstan::extract(
+    fit$fit,
+    pars = "survivor_score_pmf",
+    permuted = FALSE,
+    inc_warmup = FALSE
+  ))
+
+  score_values <- fit$settings$score_values
+  pmf_0 <- do.call(cbind, lapply(seq_along(score_values), function(j) {
+    extracted[[sprintf("survivor_score_pmf[1,%d]", j)]]
+  }))
+  pmf_1 <- do.call(cbind, lapply(seq_along(score_values), function(j) {
+    extracted[[sprintf("survivor_score_pmf[2,%d]", j)]]
+  }))
+  mu_0_from_pmf <- as.numeric(pmf_0 %*% score_values)
+  mu_1_from_pmf <- as.numeric(pmf_1 %*% score_values)
+  alpha_from_pi <- (fit$draws$pi_1 / (1 - fit$draws$pi_1)) /
+    (fit$draws$pi_0 / (1 - fit$draws$pi_0))
+  delta_from_parts <- (fit$atom * fit$draws$rho_1 + fit$draws$pi_1 * fit$draws$mu_1_c) -
+    (fit$atom * fit$draws$rho_0 + fit$draws$pi_0 * fit$draws$mu_0_c)
+
+  expect_equal(mu_0_from_pmf, fit$draws$mu_0_c, tolerance = 1e-10)
+  expect_equal(mu_1_from_pmf, fit$draws$mu_1_c, tolerance = 1e-10)
+  expect_equal(fit$draws$delta_atom, fit$draws$rho_1 - fit$draws$rho_0, tolerance = 1e-10)
+  expect_equal(fit$draws$mu_delta, fit$draws$mu_1_c - fit$draws$mu_0_c, tolerance = 1e-10)
+  expect_equal(fit$draws$alpha_delta, alpha_from_pi, tolerance = 1e-10)
+  expect_equal(fit$draws$delta, delta_from_parts, tolerance = 1e-10)
+})

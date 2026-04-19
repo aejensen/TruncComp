@@ -37,9 +37,13 @@ From the package root, regenerate those files with:
 Rscript -e 'rstantools::rstan_config()'
 ```
 
-That step needs to be rerun whenever either packaged Stan model changes,
-including the positive-support Gamma mixture model in
-`inst/stan/trunc_comp_bayes_positive.stan`.
+That step needs to be rerun whenever any packaged Stan model changes,
+including:
+
+- `inst/stan/trunc_comp_bayes.stan`
+- `inst/stan/trunc_comp_bayes_positive.stan`
+- `inst/stan/trunc_comp_bayes_bounded_continuous.stan`
+- `inst/stan/trunc_comp_bayes_bounded_score.stan`
 
 The primary user-facing fitting interface is now `trunc_comp()`. The older
 camelCase helpers remain only as deprecated compatibility wrappers and should

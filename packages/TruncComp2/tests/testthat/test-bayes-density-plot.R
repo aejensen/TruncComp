@@ -1,5 +1,7 @@
 bayes_density_plot_fit <- bayes_formula_fit(seed = 505)
 bayes_positive_density_plot_fit <- bayes_positive_formula_fit(seed = 1505)
+bayes_bounded_continuous_density_plot_fit <- bayes_bounded_continuous_formula_fit(seed = 2505)
+bayes_bounded_score_density_plot_fit <- bayes_bounded_score_formula_fit(seed = 2506)
 
 manual_bayes_density_matrix <- function(fit, x, arm_index) {
   support <- fit$settings$continuous_support
@@ -206,6 +208,40 @@ test_that("posterior_density_plot works for positive-support fits", {
     plot_data$density_data$density_mean[plot_data$density_data$arm_label == "Treatment"],
     colMeans(manual_treatment),
     tolerance = 1e-10
+  )
+})
+
+test_that("posterior_density_plot works for bounded-continuous fits", {
+  plot <- posterior_density_plot(bayes_bounded_continuous_density_plot_fit)
+  plot_data <- TruncComp2:::bayes_density_plot_data(
+    bayes_bounded_continuous_density_plot_fit,
+    x = NULL,
+    n = 50
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot_data$plot_type, "density")
+  expect_true(all(plot_data$x > 0 & plot_data$x < 100))
+  expect_equal(plot_data$x_limits, c(0, 100))
+  expect_true(all(is.finite(plot_data$density_data$density_mean)))
+})
+
+test_that("posterior_density_plot works for bounded-score mass plots", {
+  plot <- posterior_density_plot(bayes_bounded_score_density_plot_fit)
+  plot_data <- TruncComp2:::bayes_density_plot_data(
+    bayes_bounded_score_density_plot_fit,
+    n = 50
+  )
+
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot_data$plot_type, "mass")
+  expect_equal(plot$labels$x, "Reported score")
+  expect_equal(plot$labels$y, "Posterior predictive probability")
+  expect_true(all(plot_data$density_data$x %in% bayes_bounded_score_density_plot_fit$settings$score_values))
+  expect_true(all(plot_data$density_data$density_mean >= 0))
+  expect_error(
+    posterior_density_plot(bayes_bounded_score_density_plot_fit, x = c(0, 100)),
+    "x is not used"
   )
 })
 

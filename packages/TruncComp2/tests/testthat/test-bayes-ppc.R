@@ -1,5 +1,7 @@
 bayes_ppc_fit <- bayes_formula_fit(seed = 606)
 bayes_positive_ppc_fit <- bayes_positive_formula_fit(seed = 1606)
+bayes_bounded_continuous_ppc_fit <- bayes_bounded_continuous_formula_fit(seed = 2606)
+bayes_bounded_score_ppc_fit <- bayes_bounded_score_formula_fit(seed = 2607)
 
 test_that("posterior_predictive_check returns ggplots for the requested PPC type", {
   both_plots <- posterior_predictive_check(bayes_ppc_fit, seed = 1)
@@ -248,4 +250,63 @@ test_that("Positive-support PPC p-values use the log-scale continuous discrepanc
 
   expect_true(is.finite(manual_discrepancy))
   expect_equal(ppc_summary$table["continuous", "scale"], "log(Outcome)")
+})
+
+test_that("Bounded-continuous PPC draws are bounded and reproducible", {
+  first <- TruncComp2:::bayes_ppc_data(
+    bayes_bounded_continuous_ppc_fit,
+    ndraws = 6,
+    seed = 31
+  )
+  second <- TruncComp2:::bayes_ppc_data(
+    bayes_bounded_continuous_ppc_fit,
+    ndraws = 6,
+    seed = 31
+  )
+  ppc_table <- posterior_predictive_pvalues(
+    bayes_bounded_continuous_ppc_fit,
+    ndraws = 6,
+    seed = 31
+  )
+
+  expect_equal(first$yrep_cont, second$yrep_cont)
+  expect_true(all(first$yrep_cont >= 0))
+  expect_true(all(first$yrep_cont <= 100))
+  expect_true(all(ppc_table$p_value >= 0 & ppc_table$p_value <= 1))
+  expect_equal(ppc_table["continuous", "statistic"], "Maximum armwise bounded CDF discrepancy")
+  expect_equal(ppc_table["continuous", "scale"], "Bounded outcome")
+})
+
+test_that("Bounded-score PPC draws stay on reported support and use discrete labels", {
+  ppc_data <- TruncComp2:::bayes_ppc_data(
+    bayes_bounded_score_ppc_fit,
+    ndraws = 6,
+    seed = 41
+  )
+  ppc_data_again <- TruncComp2:::bayes_ppc_data(
+    bayes_bounded_score_ppc_fit,
+    ndraws = 6,
+    seed = 41
+  )
+  ppc_table <- posterior_predictive_pvalues(
+    bayes_bounded_score_ppc_fit,
+    ndraws = 6,
+    seed = 41
+  )
+  plot <- posterior_predictive_check(
+    bayes_bounded_score_ppc_fit,
+    type = "continuous",
+    ndraws = 6,
+    seed = 41
+  )
+
+  expect_equal(ppc_data$yrep_cont, ppc_data_again$yrep_cont)
+  expect_true(all(ppc_data$yrep_cont %in% bayes_bounded_score_ppc_fit$settings$score_values))
+  expect_true(all(ppc_data$yrep_cont >= 0 & ppc_data$yrep_cont <= 100))
+  expect_true(all(ppc_table$p_value >= 0 & ppc_table$p_value <= 1))
+  expect_equal(ppc_table["continuous", "statistic"], "Maximum armwise discrete CDF discrepancy")
+  expect_equal(ppc_table["continuous", "scale"], "Reported score")
+  expect_s3_class(plot, "ggplot")
+  expect_equal(plot$labels$x, "Reported score")
+  expect_equal(plot$labels$y, "Probability")
 })

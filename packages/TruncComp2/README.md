@@ -23,8 +23,8 @@ The currently supported scope is:
 - optional additive baseline-covariate adjustment for both `method = "lrt"` and `method = "splrt"` through `adjust = ~ ...`
 - adjusted `SPLRT` provides fitted tests and component confidence intervals, but not joint confidence regions or `delta` intervals
 - the Bayesian path is currently experimental, no-covariate only, and supports
-  either real-line non-atom outcomes or strictly positive non-atom outcomes via
-  `continuous_support = "positive_real"`
+  real-line, positive-real, bounded-continuous, and bounded reported-score
+  survivor outcomes through `continuous_support`
 
 To install the development version of TruncComp2 run the following commands from within R
 
@@ -61,15 +61,18 @@ The current Bayesian implementation:
 
 - uses packaged `rstan` models under `inst/stan/`
 - supports only the no-covariate model
-- supports `continuous_support = "real_line"` for Gaussian kernels and
+- supports `continuous_support = "real_line"` for Gaussian kernels,
   `continuous_support = "positive_real"` for Gamma kernels on the positive real
-  line
+  line, `continuous_support = "bounded_continuous"` for experimental
+  Beta-mixture kernels on `(score_min, score_max)`, and
+  `continuous_support = "bounded_score"` for experimental discretized/heaped
+  Beta-mixture score models on the reported score grid
 - reports posterior summaries and diagnostics rather than p-values or
   likelihood-ratio statistics
 - returns the combined-outcome contrast `delta` as the headline summary,
   alongside `delta_atom`, `mu_delta`, and `alpha_delta`
 - includes `posterior_density_plot()` for the arm-specific posterior outcome
-  densities implied by the fitted two-part DPMM
+  densities or score masses implied by the fitted two-part DPMM
 - includes `posterior_predictive_check()` for `bayesplot`-based posterior
   predictive checks of both the atom and continuous model parts
 
@@ -129,6 +132,11 @@ overlay on `log(Y)` so the visual diagnostic is not distorted by the boundary
 at zero, and the corresponding continuous posterior predictive p-value is
 computed on that same `log(Y)` scale.
 
+For bounded-score Bayesian fits, posterior predictive survivor replications are
+drawn on the same reported score support as the observed data. The continuous
+PPC row is retained for compatibility, but it uses a discrete armwise CDF
+discrepancy and a score-mass plot rather than a smooth density overlay.
+
 For both `method = "lrt"` and `method = "splrt"`, joint confidence-region
 surfaces are available for unadjusted fits through
 `confint(..., parameter = "joint")`. If `offset` is omitted, the default
@@ -184,6 +192,28 @@ fit_bayes_positive <- trunc_comp_bayes(
 
 posterior_predictive_pvalues(fit_bayes_positive)
 ```
+
+For bounded clinical scores such as EQ-VAS, use the experimental bounded-score
+model and provide the score grid and any heaping grids:
+
+```r
+fit_bayes_score <- trunc_comp_bayes(
+  Y ~ R,
+  atom = -1,
+  data = ist3,
+  continuous_support = "bounded_score",
+  score_min = 0,
+  score_max = 100,
+  score_step = 1,
+  heaping_grids = c(1, 5, 10),
+  heaping = "shared"
+)
+```
+
+For finely measured bounded outcomes where exact discreteness is not central,
+use `continuous_support = "bounded_continuous"` with `score_min` and
+`score_max`. Exact survivor values at the boundaries are rejected in the MVP;
+use the bounded-score model when endpoints are valid reported scores.
 
 # Confidence Intervals
 

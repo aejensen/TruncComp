@@ -57,3 +57,28 @@ test_that("Positive-support Bayesian fits return the expected object shape", {
   expect_true(all(is.finite(fit$ppc_table$p_value)))
   expect_true(all(c("core_ok", "truncation_ok", "truncation", "parameter_table") %in% names(fit$diagnostics)))
 })
+
+test_that("Bounded Bayesian fits return expected settings and draw names", {
+  continuous_fit <- bayes_bounded_continuous_formula_fit(seed = 2301)
+  score_fit <- bayes_bounded_score_formula_fit(seed = 2302)
+
+  expect_s3_class(continuous_fit, "trunc_comp_bayes_fit")
+  expect_s3_class(score_fit, "trunc_comp_bayes_fit")
+  expect_true(continuous_fit$success)
+  expect_true(score_fit$success)
+
+  expect_equal(continuous_fit$settings$continuous_support, "bounded_continuous")
+  expect_equal(score_fit$settings$continuous_support, "bounded_score")
+  expect_equal(continuous_fit$settings$score_min, 0)
+  expect_equal(continuous_fit$settings$score_max, 100)
+  expect_equal(score_fit$settings$score_step, 1)
+  expect_equal(score_fit$settings$heaping, "shared")
+  expect_true(all(c("score_values", "bin_lower", "bin_upper", "bin_valid") %in% names(score_fit$settings)))
+
+  expect_true(all(TruncComp2:::bayes_parameter_names("all") %in% names(continuous_fit$draws)))
+  expect_true(all(TruncComp2:::bayes_parameter_names("all") %in% names(score_fit$draws)))
+  expect_true(all(is.finite(continuous_fit$summary_table$estimate)))
+  expect_true(all(is.finite(score_fit$summary_table$estimate)))
+  expect_equal(rownames(continuous_fit$ppc_table), c("atom", "continuous"))
+  expect_equal(rownames(score_fit$ppc_table), c("atom", "continuous"))
+})

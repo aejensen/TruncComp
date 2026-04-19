@@ -75,7 +75,7 @@ Other approaches address truncated-by-death outcomes from different perspectives
 
 Our construction combines ideas from two-part models for semi-continuous outcomes \citep{aitchison1955distribution,cragg1971some} and empirical-likelihood inference for mean restrictions \citep{owen1988empirical,owen1991empirical,kitamura2001asymptotic}. We develop a factorized likelihood-ratio framework that yields a single prespecified p-value for the joint null together with interpretable component-wise effect estimates and confidence regions. We present both a parametric version, which is efficient under a credible model for the positive part, and a semi-parametric version, which relaxes that distributional commitment while retaining the same Bernoulli component. The resulting procedures preserve the clinically meaningful atom used in practice, but they test a sharper question than direct one-dimensional analyses of the combined outcome.
 
-Although we motivate the method by quality of life truncated by death, the same structure arises whenever one special value has a substantively different meaning than the remainder of an otherwise continuous scale. The target is an observed-data treatment contrast, not a principal-stratum causal estimand. The rest of the paper is organized as follows. Section~\ref{sec:method} introduces the statistical setup and the proposed tests. Section~\ref{sec:simulation-study} reports a simulation study, Section~\ref{sec:application} gives a clinical application, and Section~\ref{sec:discussion} concludes. Additional simulation results and a derivation of the empirical-likelihood component are collected in Appendix~\ref{app:supplementary-simulation-results} and Appendix~\ref{app:supplementary-derivation}.
+Although we motivate the method by quality of life truncated by death, the same structure arises whenever one special value has a substantively different meaning than the remainder of an otherwise continuous scale. The target is an observed-data treatment contrast, not a principal-stratum causal estimand. The rest of the paper is organized as follows. Section~\ref{sec:method} introduces the statistical setup and the proposed tests. Section~\ref{sec:simulation-study} reports a simulation study, Section~\ref{sec:application} gives a clinical application, and Section~\ref{sec:discussion} concludes. A secondary package-data application, additional simulation results, and a derivation of the empirical-likelihood component are collected in Appendix~\ref{app:joiner-liver-application}, Appendix~\ref{app:supplementary-simulation-results}, and Appendix~\ref{app:supplementary-derivation}.
 
 \section{Method}\label{sec:method}
 
@@ -1025,7 +1025,7 @@ The likelihood-ratio procedures test the joint null of no treatment effect on th
 
 Table~\ref{tab:ist3-delta-ci} illustrates three confidence intervals for $\Delta$ implemented in the software. The Welch interval is the direct interval for the atom-coded mean contrast. The profile interval constrains the full likelihood at a fixed $\Delta$, while the projected interval maps the joint confidence region for the component parameters into the implied combined mean contrast. In IST-3, the profile interval is nearly identical to the Welch interval, whereas the projected interval is wider because it preserves joint uncertainty in both the atom and survivor components.
 
-We also fit the experimental Bayesian two-part model in \texttt{TruncComp2}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors, and the continuous survivor EQ-VAS distribution used a two-component normal mixture on the internally standardized real-line scale with weakly informative component and concentration priors. The real-line model was used because some survivors had EQ-VAS equal to 0, so a positive-support model would be inappropriate. The Bayesian fit is cached with the generated application data; setting \texttt{TRUNCCOMP\_REFRESH\_IST3\_BAYES=true} regenerates it from the fixed-width file. Because this Bayesian implementation uses a practical finite truncation for the manuscript build, we report sampler and truncation diagnostics alongside the posterior summaries.
+We also fit the experimental Bayesian two-part model in \texttt{TruncComp2}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors, and the survivor EQ-VAS distribution used the bounded-score Beta-mixture model on the 0--100 reported score scale with heaping grids at 1, 5, and 10 points. This keeps posterior predictive survivor scores on the same reported support as the observed EQ-VAS values, including valid endpoint scores. The Bayesian fit is cached with the generated application data; setting \texttt{TRUNCCOMP\_REFRESH\_IST3\_BAYES=true} regenerates it from the fixed-width file. Because this Bayesian implementation uses a practical finite truncation for the manuscript build, we report sampler and truncation diagnostics alongside the posterior summaries.
 
 \input{build/tables/application-bayes-summary.tex}
 
@@ -1038,7 +1038,7 @@ The posterior summaries in Table~\ref{tab:ist3-bayes} separate the survival/atom
 \label{fig:application-posterior}
 \end{figure}
 
-Finally, we assessed whether the Bayesian model reproduced both parts of the endpoint. Table~\ref{tab:ist3-ppc} reports posterior predictive checks for the atom model and the survivor EQ-VAS distribution, and Figure~\ref{fig:application-ppc} displays the corresponding replicated data summaries. These checks are important because a model can match the death proportions while still misrepresenting the bounded and potentially skewed EQ-VAS distribution among survivors. In this application the atom component is reproduced well, whereas the continuous-component check is deliberately treated as a warning about the simple real-line mixture approximation to a bounded health-state score. The posterior predictive assessment is therefore used as a model check, not as evidence for treatment efficacy.
+Finally, we assessed whether the Bayesian model reproduced both parts of the endpoint. Table~\ref{tab:ist3-ppc} reports posterior predictive checks for the atom model and the survivor EQ-VAS distribution, and Figure~\ref{fig:application-ppc} displays the corresponding replicated data summaries. These checks are important because a model can match the death proportions while still misrepresenting the bounded, heaped, and potentially skewed EQ-VAS distribution among survivors. The survivor-score check uses a discrete armwise CDF discrepancy and replicated reported-score draws, rather than comparing heaped empirical scores with smooth real-valued replications. The posterior predictive assessment is therefore used as a model check, not as evidence for treatment efficacy.
 
 \input{build/tables/application-ppc.tex}
 
@@ -1063,6 +1063,67 @@ Software implementing both procedures, including the code used to generate the m
 
 \clearpage
 \appendix
+\section{Appendix application: joineR liver data}\label{app:joiner-liver-application}
+
+As a secondary example, we applied the same workflow to the liver cirrhosis trial data distributed with the \texttt{joineR} R package, version \LiverAppendixPackageVersion{} \citep{joineRPackage}. The data contain repeated prothrombin index measurements, survival time, censoring status, and the allocated treatment arm for \LiverAppendixRandomizedN{} participants from a controlled trial of prednisone in liver cirrhosis. The package documentation states that \texttt{treatment = 0} denotes placebo, \texttt{treatment = 1} denotes prednisone, and \texttt{cens = 1} denotes death; the data were analyzed by \citet{henderson2002identification} and are described as coming from \citet{andersen2003statistical}. We use this example as an appendix application because it is public and reproducible through an R package, but it requires a landmark construction and is therefore less direct than the IST-3 quality-of-life endpoint.
+
+The appendix endpoint uses a two-year landmark. Participants who died before or at two years are assigned the atom value 0. Participants known alive at two years are assigned their latest recorded prothrombin index at or before two years. Participants censored before two years are excluded because their two-year death status is not observed. Thus
+\[
+  Y =
+  \begin{cases}
+    0, & \text{death by 2 years},\\
+    \text{latest prothrombin index before 2 years}, & \text{known alive at 2 years},
+  \end{cases}
+  \qquad
+  A = \mathbbm{1}(Y \ne 0).
+\]
+We code $R=1$ for prednisone and $R=0$ for placebo, so all contrasts are prednisone minus placebo. Higher prothrombin index is treated as the favorable direction for the continuous component, and avoiding the death atom is favorable for the binary component. This left \LiverAppendixN{} participants for analysis after excluding \LiverAppendixExcludedCensored{} participants censored before the landmark (\LiverAppendixExcludedControl{} placebo and \LiverAppendixExcludedTreatment{} prednisone). No additional subject was excluded for lacking a prothrombin measurement before the landmark.
+
+\input{build/tables/appendix-liver-descriptives.tex}
+
+Figure~\ref{fig:appendix-liver} displays the endpoint components and the semiparametric likelihood-ratio region. The death atom was common in both arms: \LiverAppendixControlDeaths{} placebo participants (\LiverAppendixControlDeathPct{}) and \LiverAppendixTreatmentDeaths{} prednisone participants (\LiverAppendixTreatmentDeathPct{}) died by two years among the landmark analysis set. Among participants known alive at two years, the mean prothrombin index was \LiverAppendixControlMean{} in the placebo arm and \LiverAppendixTreatmentMean{} in the prednisone arm, giving $\hat\mu_\delta=\LiverAppendixMuDelta{}$. The fitted odds ratio for being in the non-atom component rather than at the death atom was $\hat\alpha_\delta=\LiverAppendixAlphaDelta{}$, and the combined mean contrast under the death-at-zero coding was $\hat\Delta=\LiverAppendixDelta{}$.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{appendix-liver.pdf}
+\caption{joineR liver appendix endpoint components and semiparametric likelihood-ratio region. The left panel shows death by two years and known-alive-with-prothrombin counts by treatment arm. The middle panel shows the prothrombin distribution among known two-year survivors. The right panel shows the semiparametric likelihood-ratio surface for $(\mu_\delta,\log\alpha_\delta)$ with reference lines at no prothrombin mean difference and no non-atom probability difference.}
+\label{fig:appendix-liver}
+\end{figure}
+
+Table~\ref{tab:liver-frequentist} compares standard analyses with the proposed likelihood-ratio tests. A Welch $t$-test applied to the atom-coded endpoint gave p-value \LiverAppendixTTestP{}, and the Wilcoxon rank-sum test gave p-value \LiverAppendixWilcoxP{}. As in the main application, the atom-coded $t$-test depends on the numerical atom value, whereas the Wilcoxon test treats deaths as tied at the bottom of the analyzed scale. Analyses restricted to the non-atom component gave p-values \LiverAppendixNonAtomTTestP{} for Welch's $t$-test and \LiverAppendixNonAtomWilcoxP{} for the Wilcoxon test, but those analyses condition on being known alive at the two-year landmark.
+
+\input{build/tables/appendix-liver-frequentist.tex}
+
+The parametric LRT statistic was \LiverAppendixLRTStatistic{} with p-value \LiverAppendixLRTP{}, and the semiparametric LRT statistic was \LiverAppendixSPLRTStatistic{} with p-value \LiverAppendixSPLRTP{}. Both tests target the joint null of no prednisone-placebo difference in death by two years and no difference in the prothrombin mean among known two-year survivors. In this appendix example, the joint result is driven primarily by the continuous prothrombin component, while the estimated non-atom odds ratio is close to one. The result should therefore be read as an illustration of the method on a public clinical data set, not as a definitive treatment conclusion.
+
+\input{build/tables/appendix-liver-delta-ci.tex}
+
+Table~\ref{tab:liver-delta-ci} gives the Welch, profile, and projected intervals for $\Delta$. The same interpretational caveat applies as in the IST-3 analysis: $\Delta$ is a mean of the numerical combined endpoint after assigning death the value 0, so changing the atom coding would change its scale. The component estimates $(\mu_\delta,\alpha_\delta)$ remain directly interpretable as a prothrombin mean difference and a non-atom odds ratio.
+
+We also fit the Bayesian two-part model in \texttt{TruncComp2}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. Because all non-atom prothrombin values are strictly positive, the continuous component used the positive-real mixture model with four components and weakly informative priors on the internally transformed scale. The fit is cached with the generated appendix data; setting \texttt{TRUNCCOMP\_REFRESH\_LIVER\_BAYES=true} regenerates it from the packaged \texttt{joineR::liver} data.
+
+\input{build/tables/appendix-liver-bayes-summary.tex}
+
+The Bayesian summaries in Table~\ref{tab:liver-bayes} again separate the atom and continuous components. Under the benefit-oriented coding used here, $\Pr(\Delta>0\mid\mathrm{data})=\LiverAppendixDeltaBenefitProbability{}$ summarizes the posterior probability that prednisone improves the combined two-year endpoint. The corresponding posterior probabilities for the component effects are $\Pr(\mu_\delta>0\mid\mathrm{data})=\LiverAppendixMuBenefitProbability{}$ for the prothrombin mean and $\Pr(\alpha_\delta>1\mid\mathrm{data})=\LiverAppendixAlphaBenefitProbability{}$ for avoiding the atom. Figure~\ref{fig:appendix-liver-posterior} shows these posterior contrasts.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{appendix-liver-posterior.pdf}
+\caption{Posterior distributions for the joineR liver appendix contrasts. Vertical dashed lines mark no prothrombin mean difference, no difference in the odds of being known alive with prothrombin observed, and no combined endpoint mean difference.}
+\label{fig:appendix-liver-posterior}
+\end{figure}
+
+Finally, Table~\ref{tab:liver-ppc} and Figure~\ref{fig:appendix-liver-ppc} report posterior predictive checks for the atom and continuous components. These checks are especially important here because the appendix endpoint uses a derived landmark biomarker summary rather than a trial-scheduled single assessment. The atom check assesses whether the model reproduces the two-year death proportions, while the continuous check assesses whether the positive-real mixture captures the skewness and spread of prothrombin among known two-year survivors. We report the sampler and truncation diagnostics in Table~\ref{tab:liver-bayes}; any remaining warnings should be interpreted as limitations of the experimental Bayesian mixture fit rather than as part of the frequentist likelihood-ratio analysis.
+
+\input{build/tables/appendix-liver-ppc.tex}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{appendix-liver-ppc.pdf}
+\caption{Posterior predictive checks for the joineR liver Bayesian model, separately for the two-year death atom and the prothrombin component among known two-year survivors.}
+\label{fig:appendix-liver-ppc}
+\end{figure}
+
 \section{Supplementary simulation results}\label{app:supplementary-simulation-results}
 
 This appendix collects the simulation figures and tables referenced in Section~\ref{sec:simulation-study}. It also records the exact simulation protocol implemented in \texttt{simulation-study/scripts/run-simulation-study.R} and \texttt{simulation-study/R/simulation-study.R}.

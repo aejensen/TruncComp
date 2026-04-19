@@ -24,6 +24,17 @@ The continuous component can be specified with:
 - `continuous_support = "real_line"` for Gaussian kernels on the real line
 - `continuous_support = "positive_real"` for Gamma kernels on the positive real
   line, requiring all non-atom outcomes to be strictly positive
+- `continuous_support = "bounded_continuous"` for an experimental
+  Beta-mixture survivor model on `(score_min, score_max)`
+- `continuous_support = "bounded_score"` for an experimental discretized/heaped
+  Beta-mixture survivor-score model on the reported grid in `[score_min,
+  score_max]`
+
+The bounded-score model keeps posterior predictive survivor outcomes on the
+same reported support as the observed scores. The bounded-continuous model is
+for genuinely continuous or finely measured bounded outcomes; exact survivor
+values at `score_min` or `score_max` are rejected in the MVP rather than handled
+with boundary inflation.
 
 Its primary posterior outputs are:
 

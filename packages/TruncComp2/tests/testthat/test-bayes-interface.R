@@ -126,3 +126,156 @@ test_that("positive_real support is stored and real_line remains the default", {
   expect_equal(real_line_fit$settings$continuous_support, "real_line")
   expect_equal(positive_fit$settings$continuous_support, "positive_real")
 })
+
+test_that("bounded Bayesian support dispatch and validation are explicit", {
+  continuous_data <- bayes_bounded_continuous_test_data()
+  score_data <- bayes_bounded_score_test_data()
+
+  expect_equal(
+    TruncComp2:::bayes_model_name("bounded_continuous"),
+    "trunc_comp_bayes_bounded_continuous"
+  )
+  expect_equal(
+    TruncComp2:::bayes_model_name("bounded_score"),
+    "trunc_comp_bayes_bounded_score"
+  )
+
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = -1,
+      data = continuous_data,
+      continuous_support = "bounded_continuous"
+    ),
+    "score_min"
+  )
+
+  boundary_data <- continuous_data
+  boundary_data$Y[which(boundary_data$A == 1L)[[1]]] <- 0
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = -1,
+      data = boundary_data,
+      continuous_support = "bounded_continuous",
+      score_min = 0,
+      score_max = 100
+    ),
+    "strictly inside"
+  )
+
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = -1,
+      data = continuous_data,
+      continuous_support = "bounded_continuous",
+      score_min = 0,
+      score_max = 100,
+      score_step = 1
+    ),
+    "only used with continuous_support = \"bounded_score\""
+  )
+
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = 0,
+      data = score_data,
+      continuous_support = "bounded_score",
+      score_min = 0,
+      score_max = 100
+    ),
+    "atom must not lie"
+  )
+
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = -1,
+      data = transform(score_data, Y = ifelse(A == 1L & Y == 35, 35.5, Y)),
+      continuous_support = "bounded_score",
+      score_min = 0,
+      score_max = 100,
+      score_step = 1
+    ),
+    "integers on the score grid"
+  )
+
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = -1,
+      data = score_data,
+      continuous_support = "bounded_score",
+      score_min = 0,
+      score_max = 100,
+      score_step = 0
+    ),
+    "score_step"
+  )
+
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = -1,
+      data = score_data,
+      continuous_support = "bounded_score",
+      score_min = 0,
+      score_max = 100,
+      heaping_grids = c(2.5, 5)
+    ),
+    "multiple of score_step"
+  )
+
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = -1,
+      data = score_data,
+      continuous_support = "bounded_score",
+      score_min = 0,
+      score_max = 100,
+      heaping = "bad"
+    ),
+    "should be one of"
+  )
+
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = -1,
+      data = score_data,
+      continuous_support = "bounded_score",
+      score_min = 0,
+      score_max = 100,
+      heaping_grids = 10
+    ),
+    "compatible with at least one heaping grid"
+  )
+
+  expect_error(
+    trunc_comp_bayes(
+      Y ~ R,
+      atom = -1,
+      data = score_data,
+      continuous_support = "bounded_score",
+      score_min = 0,
+      score_max = 100,
+      prior = list(eta_prior = c(1, NA))
+    ),
+    "eta_prior"
+  )
+})
+
+test_that("bounded_score accepts endpoint survivor scores on the reported grid", {
+  fit <- bayes_bounded_score_formula_fit(seed = 2201)
+
+  expect_true(fit$success)
+  expect_equal(fit$settings$continuous_support, "bounded_score")
+  expect_true(any(fit$data$Y[fit$data$A == 1L] %in% c(0, 100)))
+  expect_equal(fit$settings$score_min, 0)
+  expect_equal(fit$settings$score_max, 100)
+  expect_equal(fit$settings$score_step, 1)
+  expect_equal(fit$settings$heaping_grids, c(1, 5, 10))
+})

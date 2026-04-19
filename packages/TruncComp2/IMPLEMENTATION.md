@@ -41,11 +41,17 @@ The Stan model is pre-written and packaged. At a high level it fits:
   arm when `continuous_support = "real_line"`
 - a truncated stick-breaking Gamma mixture for the non-atom outcomes in each
   arm when `continuous_support = "positive_real"`
+- an experimental bounded-continuous Beta mixture when
+  `continuous_support = "bounded_continuous"`
+- an experimental bounded-score discretized/heaped Beta mixture when
+  `continuous_support = "bounded_score"`
 
 The R-side Bayesian helpers are responsible for:
 
 - validating the no-covariate input restrictions
 - standardizing the non-atom outcomes before sampling
+- validating bounded support metadata and building bounded score grids,
+  heaping bins, and reported-score PMFs where needed
 - choosing the packaged Stan model based on `continuous_support`
 - calling `rstan::sampling()` on the corresponding packaged Stan model
 - extracting posterior draws for stable arm-level and contrast summaries

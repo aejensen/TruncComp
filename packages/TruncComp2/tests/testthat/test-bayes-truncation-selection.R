@@ -153,11 +153,12 @@ test_that("Auto-selection stores the attempted truncation path and final retaine
 
   testthat::local_mocked_bindings(
     bayes_package_stanmodel = function(model_name) structure(list(name = model_name), class = "stanmodel"),
-    validate_bayes_support_data = function(data, continuous_support) invisible(TRUE),
+    validate_bayes_support_data = function(data, atom = NULL, continuous_support, support_options = NULL) invisible(TRUE),
     fit_trunc_comp_bayes_once = function(data, atom, conf.level, continuous_support,
                                          mixture_components, chains, iter_warmup,
                                          iter_sampling, seed, refresh, control,
-                                         prior, call, extra_args, model_object, settings) {
+                                         prior, call, extra_args, support_options,
+                                         model_object, settings) {
       fake_fit(
         mixture_components = mixture_components,
         settings = settings,

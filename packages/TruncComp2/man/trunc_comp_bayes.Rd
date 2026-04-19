@@ -13,7 +13,13 @@ trunc_comp_bayes(formula, ...)
   atom,
   data,
   conf.level = 0.95,
-  continuous_support = c("real_line", "positive_real"),
+  continuous_support = c("real_line", "positive_real", "bounded_continuous",
+    "bounded_score"),
+  score_min = NULL,
+  score_max = NULL,
+  score_step = 1,
+  heaping_grids = 1,
+  heaping = c("shared", "arm_specific"),
   mixture_components = 10,
   auto_select_mixture_components = TRUE,
   mixture_components_max = NULL,
@@ -33,7 +39,13 @@ trunc_comp_bayes(formula, ...)
   r,
   atom = NULL,
   conf.level = 0.95,
-  continuous_support = c("real_line", "positive_real"),
+  continuous_support = c("real_line", "positive_real", "bounded_continuous",
+    "bounded_score"),
+  score_min = NULL,
+  score_max = NULL,
+  score_step = 1,
+  heaping_grids = 1,
+  heaping = c("shared", "arm_specific"),
   mixture_components = 10,
   auto_select_mixture_components = TRUE,
   mixture_components_max = NULL,
@@ -68,7 +80,24 @@ exactly one unique finite value.}
 \code{"real_line"} fits the existing Gaussian-mixture model on the real line,
 while \code{"positive_real"} fits a Gamma-mixture model on the positive real
 line and therefore requires all non-atom outcomes to be strictly
-positive.}
+positive. \code{"bounded_continuous"} fits an experimental Beta-mixture model
+for finely measured survivor outcomes inside \verb{(score_min, score_max)}.
+\code{"bounded_score"} fits an experimental discretized/heaped Beta-mixture
+model for integer or grid-valued survivor scores in \verb{[score_min, score_max]}.}
+
+\item{score_min, score_max}{Finite numeric lower and upper bounds for the two
+bounded Bayesian survivor models. Required when \code{continuous_support} is
+\code{"bounded_continuous"} or \code{"bounded_score"}.}
+
+\item{score_step}{Positive score-grid spacing for
+\code{continuous_support = "bounded_score"}. The default is \code{1}.}
+
+\item{heaping_grids}{Positive heaping grid widths for
+\code{continuous_support = "bounded_score"}. Each value must be a multiple of
+\code{score_step}; the default is \code{1}.}
+
+\item{heaping}{Whether bounded-score heaping proportions are shared across
+arms (\code{"shared"}) or arm-specific (\code{"arm_specific"}).}
 
 \item{mixture_components}{Initial truncation level for the arm-specific
 stick-breaking mixtures. Must be at least \code{2}. The default initial level
@@ -101,7 +130,10 @@ fields are \code{rho_alpha}, \code{rho_beta}, \code{alpha_shape}, and \code{alph
 \code{continuous_support = "real_line"}, the support-specific fields are
 \code{mu_mean}, \code{mu_sd}, \code{sigma_meanlog}, and \code{sigma_sdlog}. For
 \code{continuous_support = "positive_real"}, the support-specific fields are
-\code{mean_meanlog}, \code{mean_sdlog}, \code{shape_meanlog}, and \code{shape_sdlog}.}
+\code{mean_meanlog}, \code{mean_sdlog}, \code{shape_meanlog}, and \code{shape_sdlog}. For the
+bounded Beta-mixture models, the support-specific fields are \code{m_alpha},
+\code{m_beta}, \code{phi_meanlog}, and \code{phi_sdlog}; bounded-score fits also accept
+\code{eta_prior}, either a scalar or one value per heaping grid.}
 
 \item{a}{Binary indicator for whether the continuous outcome is observed in
 the default interface.}
@@ -119,15 +151,16 @@ and the matched call. Failed fits return the same class with
 Fits an explicit two-part Bayesian model for a binary treatment comparison
 with a distinguished atom value representing an undefined or unobserved
 outcome. The current implementation supports only the no-covariate model,
-with either real-line non-atom outcomes or strictly positive non-atom
-outcomes.
+with real-line, strictly positive, bounded continuous, or bounded reported
+score non-atom outcomes. The bounded models are experimental MVPs.
 }
 \details{
 The Bayesian pathway is experimental. It fits a two-part model with one atom
 probability per treatment arm and one truncated stick-breaking mixture per
 treatment arm for the non-atom outcomes. The continuous component can be
-modeled either with Gaussian kernels on the real line or with Gamma kernels
-on the positive real line. Likelihood-ratio statistics are not reported, but
+modeled with Gaussian kernels on the real line, Gamma kernels on the
+positive real line, or experimental bounded Beta-mixture kernels.
+Likelihood-ratio statistics are not reported, but
 discrepancy-based posterior predictive p-values are available through
 \code{\link[=posterior_predictive_pvalues]{posterior_predictive_pvalues()}} and \code{\link[=posterior_predictive_check]{posterior_predictive_check()}} for model
 checking.

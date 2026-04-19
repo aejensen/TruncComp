@@ -137,7 +137,7 @@ application_delta_intervals <- function(model, resolution = 45) {
 }
 
 application_bayes_cache_path <- function(manuscript_dir) {
-  file.path(.application_data_dir(manuscript_dir), "ist3-bayes-cache.rds")
+  file.path(.application_data_dir(manuscript_dir), "ist3-bayes-bounded-score-cache.rds")
 }
 
 application_bayes_settings <- function() {
@@ -148,7 +148,12 @@ application_bayes_settings <- function() {
   }
 
   list(
-    continuous_support = "real_line",
+    continuous_support = "bounded_score",
+    score_min = 0,
+    score_max = 100,
+    score_step = 1,
+    heaping_grids = c(1, 5, 10),
+    heaping = "shared",
     mixture_components = as_int("TRUNCCOMP_IST3_BAYES_COMPONENTS", 2L),
     auto_select_mixture_components = FALSE,
     chains = as_int("TRUNCCOMP_IST3_BAYES_CHAINS", 4L),
@@ -159,12 +164,13 @@ application_bayes_settings <- function() {
     prior = list(
       rho_alpha = 1,
       rho_beta = 1,
-      mu_mean = 0,
-      mu_sd = 2.5,
-      sigma_meanlog = -0.5,
-      sigma_sdlog = 0.5,
       alpha_shape = 2,
-      alpha_rate = 1
+      alpha_rate = 1,
+      m_alpha = 1,
+      m_beta = 1,
+      phi_meanlog = log(20),
+      phi_sdlog = 1,
+      eta_prior = 1
     )
   )
 }
@@ -208,6 +214,11 @@ fit_or_load_application_bayes <- function(d, metadata, manuscript_dir) {
       atom = metadata$atom,
       data = d,
       continuous_support = settings$continuous_support,
+      score_min = settings$score_min,
+      score_max = settings$score_max,
+      score_step = settings$score_step,
+      heaping_grids = settings$heaping_grids,
+      heaping = settings$heaping,
       mixture_components = settings$mixture_components,
       auto_select_mixture_components = settings$auto_select_mixture_components,
       chains = settings$chains,
@@ -303,4 +314,276 @@ analyze_application_data <- function(application_data, manuscript_dir) {
 
 compute_application_results <- function(manuscript_dir) {
   analyze_application_data(load_application_data(manuscript_dir), manuscript_dir)
+}
+
+liver_appendix_summary_stats <- function(d, metadata) {
+  groups <- 0:1
+  out <- lapply(groups, function(r) {
+    arm <- d[d$R == r, , drop = FALSE]
+    non_atom <- arm[arm$A == 1L, , drop = FALSE]
+    q <- stats::quantile(non_atom$Y, probs = c(0.25, 0.75), names = FALSE, type = 2)
+    lag_q <- stats::quantile(non_atom$measurement_lag, probs = c(0.25, 0.75), names = FALSE, type = 2)
+
+    data.frame(
+      R = r,
+      group = metadata$group_labels[[r + 1L]],
+      n = nrow(arm),
+      atom_n = sum(arm$A == 0L),
+      atom_prop = mean(arm$A == 0L),
+      non_atom_n = nrow(non_atom),
+      non_atom_prop = mean(arm$A == 1L),
+      survivor_mean = mean(non_atom$Y),
+      survivor_sd = stats::sd(non_atom$Y),
+      survivor_median = stats::median(non_atom$Y),
+      survivor_q1 = q[[1]],
+      survivor_q3 = q[[2]],
+      survivor_min = min(non_atom$Y),
+      survivor_max = max(non_atom$Y),
+      lag_mean = mean(non_atom$measurement_lag),
+      lag_sd = stats::sd(non_atom$measurement_lag),
+      lag_median = stats::median(non_atom$measurement_lag),
+      lag_q1 = lag_q[[1]],
+      lag_q3 = lag_q[[2]],
+      lag_min = min(non_atom$measurement_lag),
+      lag_max = max(non_atom$measurement_lag),
+      combined_mean = mean(arm$Y),
+      stringsAsFactors = FALSE
+    )
+  })
+
+  do.call(rbind, out)
+}
+
+liver_appendix_contrasts <- function(summary_stats) {
+  control <- summary_stats[summary_stats$R == 0L, , drop = FALSE]
+  treatment <- summary_stats[summary_stats$R == 1L, , drop = FALSE]
+
+  data.frame(
+    contrast = c(
+      "Death risk difference",
+      "Non-atom probability difference",
+      "Prothrombin mean difference",
+      "Combined mean contrast Delta"
+    ),
+    estimate = c(
+      treatment$atom_prop - control$atom_prop,
+      treatment$non_atom_prop - control$non_atom_prop,
+      treatment$survivor_mean - control$survivor_mean,
+      treatment$combined_mean - control$combined_mean
+    ),
+    interpretation = c(
+      "prednisone minus placebo probability of death by 2 years",
+      "prednisone minus placebo probability of being known alive at 2 years with prothrombin observed",
+      "prednisone minus placebo mean prothrombin index among known 2-year survivors",
+      "prednisone minus placebo mean of the death-coded two-year endpoint"
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+run_standard_liver_appendix_tests <- function(d) {
+  non_atom <- d[d$A == 1L, , drop = FALSE]
+  atom_tab <- table(factor(d$R, levels = 0:1), factor(d$A == 0L, levels = c(FALSE, TRUE)))
+
+  data.frame(
+    analysis = c(
+      "Combined endpoint",
+      "Combined endpoint",
+      "Non-atom component",
+      "Non-atom component",
+      "Death atom"
+    ),
+    method = c(
+      "Welch t-test",
+      "Wilcoxon rank-sum",
+      "Welch t-test",
+      "Wilcoxon rank-sum",
+      "Fisher exact test"
+    ),
+    statistic = c(
+      unname(stats::t.test(Y ~ R, data = d)$statistic),
+      unname(suppressWarnings(stats::wilcox.test(Y ~ R, data = d)$statistic)),
+      unname(stats::t.test(Y ~ R, data = non_atom)$statistic),
+      unname(suppressWarnings(stats::wilcox.test(Y ~ R, data = non_atom)$statistic)),
+      NA_real_
+    ),
+    p_value = c(
+      stats::t.test(Y ~ R, data = d)$p.value,
+      suppressWarnings(stats::wilcox.test(Y ~ R, data = d)$p.value),
+      stats::t.test(Y ~ R, data = non_atom)$p.value,
+      suppressWarnings(stats::wilcox.test(Y ~ R, data = non_atom)$p.value),
+      stats::fisher.test(atom_tab)$p.value
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+liver_appendix_bayes_cache_path <- function(manuscript_dir) {
+  file.path(.application_data_dir(manuscript_dir), "liver-appendix-bayes-cache.rds")
+}
+
+liver_appendix_bayes_settings <- function() {
+  as_int <- function(name, default) {
+    value <- Sys.getenv(name, as.character(default))
+    out <- suppressWarnings(as.integer(value))
+    if (is.na(out)) default else out
+  }
+
+  list(
+    continuous_support = "positive_real",
+    mixture_components = as_int("TRUNCCOMP_LIVER_BAYES_COMPONENTS", 4L),
+    auto_select_mixture_components = FALSE,
+    chains = as_int("TRUNCCOMP_LIVER_BAYES_CHAINS", 4L),
+    iter_warmup = as_int("TRUNCCOMP_LIVER_BAYES_WARMUP", 300L),
+    iter_sampling = as_int("TRUNCCOMP_LIVER_BAYES_SAMPLING", 300L),
+    seed = as_int("TRUNCCOMP_LIVER_BAYES_SEED", 20260420L),
+    control = list(adapt_delta = 0.99, max_treedepth = 12L),
+    prior = list(
+      rho_alpha = 1,
+      rho_beta = 1,
+      alpha_shape = 2,
+      alpha_rate = 1,
+      mean_meanlog = 0,
+      mean_sdlog = 0.5,
+      shape_meanlog = log(2),
+      shape_sdlog = 0.5
+    )
+  )
+}
+
+fit_or_load_liver_appendix_bayes <- function(d, metadata, manuscript_dir) {
+  cache_path <- liver_appendix_bayes_cache_path(manuscript_dir)
+  refresh <- identical(tolower(Sys.getenv("TRUNCCOMP_REFRESH_LIVER_BAYES", "false")), "true")
+  skip <- identical(tolower(Sys.getenv("TRUNCCOMP_SKIP_LIVER_BAYES", "false")), "true")
+
+  if (file.exists(cache_path) && !refresh) {
+    cached <- readRDS(cache_path)
+    cached$cache_path <- cache_path
+    cached$from_cache <- TRUE
+    return(cached)
+  }
+  if (skip) {
+    return(list(
+      success = FALSE,
+      error = "Bayesian fitting skipped because TRUNCCOMP_SKIP_LIVER_BAYES=true.",
+      cache_path = cache_path,
+      from_cache = FALSE
+    ))
+  }
+
+  if (!requireNamespace("rstan", quietly = TRUE)) {
+    return(list(
+      success = FALSE,
+      error = "The rstan package is not available.",
+      cache_path = cache_path,
+      from_cache = FALSE
+    ))
+  }
+
+  settings <- liver_appendix_bayes_settings()
+  options(mc.cores = min(settings$chains, max(1L, parallel::detectCores(logical = FALSE))))
+  rstan::rstan_options(auto_write = TRUE)
+
+  fit <- tryCatch(
+    TruncComp2::trunc_comp_bayes(
+      Y ~ R,
+      atom = metadata$atom,
+      data = d,
+      continuous_support = settings$continuous_support,
+      mixture_components = settings$mixture_components,
+      auto_select_mixture_components = settings$auto_select_mixture_components,
+      chains = settings$chains,
+      iter_warmup = settings$iter_warmup,
+      iter_sampling = settings$iter_sampling,
+      seed = settings$seed,
+      refresh = 0,
+      control = settings$control,
+      prior = settings$prior
+    ),
+    error = function(e) e
+  )
+
+  if (inherits(fit, "error")) {
+    out <- list(
+      success = FALSE,
+      error = conditionMessage(fit),
+      settings = settings,
+      cache_path = cache_path,
+      from_cache = FALSE
+    )
+    saveRDS(out, cache_path)
+    return(out)
+  }
+
+  ppc <- tryCatch(
+    TruncComp2::posterior_predictive_pvalues(fit, ndraws = 200, seed = settings$seed + 1L),
+    error = function(e) e
+  )
+  draws <- fit$draws
+  probabilities <- if (isTRUE(fit$success)) {
+    c(
+      delta_gt_0 = mean(draws$delta > 0),
+      mu_delta_gt_0 = mean(draws$mu_delta > 0),
+      alpha_delta_gt_1 = mean(draws$alpha_delta > 1),
+      death_risk_reduction = mean(draws$delta_atom < 0),
+      non_atom_probability_increase = mean((draws$pi_1 - draws$pi_0) > 0)
+    )
+  } else {
+    rep(NA_real_, 5)
+  }
+
+  out <- list(
+    success = isTRUE(fit$success),
+    fit = fit,
+    summary_table = fit$summary_table,
+    arm_table = fit$arm_table,
+    diagnostics = fit$diagnostics,
+    ppc_table = if (inherits(ppc, "error")) NULL else ppc,
+    ppc_error = if (inherits(ppc, "error")) conditionMessage(ppc) else NULL,
+    probabilities = probabilities,
+    settings = settings,
+    cache_path = cache_path,
+    from_cache = FALSE
+  )
+  saveRDS(out, cache_path)
+  out
+}
+
+analyze_liver_appendix_data <- function(liver_data, manuscript_dir) {
+  d <- liver_data$data
+  metadata <- liver_data$metadata
+  atom <- metadata$atom
+
+  model_lrt <- TruncComp2::trunc_comp(Y ~ R, atom = atom, data = d, method = "lrt")
+  model_splrt <- TruncComp2::trunc_comp(Y ~ R, atom = atom, data = d, method = "splrt")
+  surface <- suppressMessages(stats::confint(
+    model_splrt,
+    parameter = "joint",
+    resolution = metadata$surface_resolution,
+    plot = FALSE
+  ))
+  delta_intervals <- application_delta_intervals(model_splrt, resolution = metadata$surface_resolution)
+  summary_stats <- liver_appendix_summary_stats(d, metadata)
+  contrasts <- liver_appendix_contrasts(summary_stats)
+  standard_tests <- run_standard_liver_appendix_tests(d)
+  bayes <- fit_or_load_liver_appendix_bayes(d, metadata, manuscript_dir)
+
+  list(
+    data = d,
+    raw = liver_data$raw,
+    subjects = liver_data$subjects,
+    metadata = metadata,
+    summary_stats = summary_stats,
+    contrasts = contrasts,
+    standard_tests = standard_tests,
+    model_lrt = model_lrt,
+    model_splrt = model_splrt,
+    surface = surface,
+    delta_intervals = delta_intervals,
+    bayes = bayes
+  )
+}
+
+compute_liver_appendix_results <- function(manuscript_dir) {
+  analyze_liver_appendix_data(load_liver_appendix_data(manuscript_dir), manuscript_dir)
 }

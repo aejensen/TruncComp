@@ -43,6 +43,25 @@ bayes_density_grid <- function(object,
 
   continuous_support <- bayes_continuous_support(continuous_support)
 
+  if(identical(continuous_support, "bounded_continuous")) {
+    score_min <- object$settings$score_min
+    score_max <- object$settings$score_max
+    if(!(length(score_min) == 1L && length(score_max) == 1L &&
+         is.finite(score_min) && is.finite(score_max) && score_min < score_max)) {
+      stop("Bounded Bayesian fit settings are missing score_min and score_max.")
+    }
+    eps <- max(.Machine$double.eps^0.25, (score_max - score_min) * 1e-6)
+    return(seq(score_min + eps, score_max - eps, length.out = n))
+  }
+
+  if(identical(continuous_support, "bounded_score")) {
+    score_values <- object$settings$score_values
+    if(!(is.numeric(score_values) && length(score_values) >= 1L && all(is.finite(score_values)))) {
+      stop("Bounded-score Bayesian fit settings are missing score_values.")
+    }
+    return(as.numeric(score_values))
+  }
+
   if(identical(continuous_support, "positive_real") && !is.null(x_limits)) {
     lower <- bayes_positive_grid_lower(object, x_limits)
     upper <- x_limits[2]
@@ -168,6 +187,21 @@ bayes_density_default_limits_positive_real <- function(object, means, shapes, we
   c(min(object$atom, max(0, lower - pad)), upper + pad)
 }
 
+bayes_density_default_limits_bounded <- function(object) {
+  score_min <- object$settings$score_min
+  score_max <- object$settings$score_max
+
+  if(!(length(score_min) == 1L &&
+       length(score_max) == 1L &&
+       is.finite(score_min) &&
+       is.finite(score_max) &&
+       score_min < score_max)) {
+    stop("Bounded Bayesian fit settings are missing score_min and score_max.")
+  }
+
+  c(score_min, score_max)
+}
+
 bayes_density_component_draws <- function(object) {
   if(!inherits(object, "trunc_comp_bayes_fit")) {
     stop("object must be a trunc_comp_bayes_fit returned by trunc_comp_bayes().")
@@ -185,7 +219,9 @@ bayes_density_component_draws <- function(object) {
   pars <- switch(
     continuous_support,
     real_line = c("w", "mu_comp", "sigma_comp", "rho"),
-    positive_real = c("w", "mean_comp", "shape_comp", "rho")
+    positive_real = c("w", "mean_comp", "shape_comp", "rho"),
+    bounded_continuous = c("w", "m_comp", "phi_comp", "rho"),
+    bounded_score = c("w", "m_comp", "phi_comp", "eta", "rho")
   )
 
   extracted <- tryCatch(
@@ -233,6 +269,43 @@ bayes_density_component_draws <- function(object) {
     ))
   }
 
+  if(identical(continuous_support, "bounded_continuous")) {
+    return(list(
+      support = continuous_support,
+      weights = extracted$w,
+      rho = extracted$rho,
+      observed_prob = 1 - extracted$rho,
+      m_comp = extracted$m_comp,
+      phi_comp = extracted$phi_comp,
+      score_min = object$settings$score_min,
+      score_max = object$settings$score_max,
+      score_range = object$settings$score_range
+    ))
+  }
+
+  if(identical(continuous_support, "bounded_score")) {
+    return(list(
+      support = continuous_support,
+      weights = extracted$w,
+      rho = extracted$rho,
+      observed_prob = 1 - extracted$rho,
+      m_comp = extracted$m_comp,
+      phi_comp = extracted$phi_comp,
+      eta = extracted$eta,
+      score_min = object$settings$score_min,
+      score_max = object$settings$score_max,
+      score_range = object$settings$score_range,
+      score_values = object$settings$score_values,
+      heaping_grids = object$settings$heaping_grids,
+      heaping = object$settings$heaping,
+      eta_groups = object$settings$eta_groups,
+      eta_group_by_arm = object$settings$eta_group_by_arm,
+      bin_lower = object$settings$bin_lower,
+      bin_upper = object$settings$bin_upper,
+      bin_valid = object$settings$bin_valid
+    ))
+  }
+
   list(
     support = continuous_support,
     weights = extracted$w,
@@ -250,9 +323,26 @@ bayes_positive_kernel_density <- function(x, mean, shape) {
   out
 }
 
-bayes_observed_density <- function(x, weights, means, pi,
-                                   continuous_support = c("real_line", "positive_real"),
-                                   sds = NULL, shapes = NULL) {
+bayes_bounded_kernel_density <- function(x, m, phi, score_min, score_max) {
+  score_range <- score_max - score_min
+  x_unit <- (x - score_min) / score_range
+  in_bounds <- x_unit >= 0 & x_unit <= 1
+  x_eval <- pmin(pmax(x_unit, .Machine$double.eps^0.25), 1 - .Machine$double.eps^0.25)
+  out <- stats::dbeta(x_eval, shape1 = m * phi, shape2 = (1 - m) * phi) / score_range
+  out[!in_bounds] <- 0
+  out
+}
+
+bayes_observed_density <- function(x, weights, means = NULL, pi,
+                                   continuous_support = c(
+                                     "real_line",
+                                     "positive_real",
+                                     "bounded_continuous",
+                                     "bounded_score"
+                                   ),
+                                   sds = NULL, shapes = NULL,
+                                   m_comp = NULL, phi_comp = NULL,
+                                   score_min = NULL, score_max = NULL) {
   continuous_support <- bayes_continuous_support(continuous_support)
 
   kernels <- vapply(
@@ -262,12 +352,106 @@ bayes_observed_density <- function(x, weights, means, pi,
         return(stats::dnorm(x, mean = means[h], sd = sds[h]))
       }
 
+      if(identical(continuous_support, "bounded_continuous")) {
+        return(bayes_bounded_kernel_density(
+          x = x,
+          m = m_comp[h],
+          phi = phi_comp[h],
+          score_min = score_min,
+          score_max = score_max
+        ))
+      }
+
       bayes_positive_kernel_density(x, mean = means[h], shape = shapes[h])
     },
     numeric(length(x))
   )
 
   as.numeric(pi * (kernels %*% weights))
+}
+
+bayes_score_density_plot_data <- function(object, extracted, conf.level) {
+  score_values <- extracted$score_values
+  n_draws <- dim(extracted$weights)[1]
+  arm_labels <- c("Control", "Treatment")
+  density_rows <- vector("list", 2)
+  max_upper <- numeric(2)
+
+  for(r in 1:2) {
+    mass_matrix <- t(vapply(
+      seq_len(n_draws),
+      function(draw) {
+        eta_group <- extracted$eta_group_by_arm[[r]]
+        pmf <- bayes_score_pmf(
+          weights = extracted$weights[draw, r, ],
+          m_comp = extracted$m_comp[draw, r, ],
+          phi_comp = extracted$phi_comp[draw, r, ],
+          eta = extracted$eta[draw, eta_group, ],
+          bin_lower = extracted$bin_lower,
+          bin_upper = extracted$bin_upper,
+          bin_valid = extracted$bin_valid
+        )
+        extracted$observed_prob[draw, r] * pmf
+      },
+      numeric(length(score_values))
+    ))
+
+    intervals <- t(vapply(
+      seq_along(score_values),
+      function(index) bayes_equal_tail_interval(mass_matrix[, index], conf.level),
+      numeric(2)
+    ))
+
+    density_rows[[r]] <- data.frame(
+      arm = r - 1L,
+      arm_label = factor(arm_labels[r], levels = arm_labels),
+      x = score_values,
+      density_mean = colMeans(mass_matrix),
+      conf.low = intervals[, 1],
+      conf.high = intervals[, 2],
+      row.names = NULL
+    )
+
+    max_upper[r] <- max(intervals[, 2], na.rm = TRUE)
+  }
+
+  density_data <- do.call(rbind, density_rows)
+  x_limits <- range(c(score_values, object$atom))
+  x_span <- diff(x_limits)
+  if(!(is.finite(x_span) && x_span > 0)) {
+    x_span <- 1
+  }
+  x_limits <- x_limits + c(-0.03, 0.03) * x_span
+
+  atom_mass <- colMeans(extracted$rho)
+  spike_height <- pmax(atom_mass, 1.05 * max_upper, 0.05)
+  panel_upper <- spike_height + 0.14 * pmax(spike_height, 0.05)
+  midpoint <- mean(x_limits)
+  label_offset <- 0.035 * diff(x_limits)
+  place_right <- object$atom <= midpoint
+  atom_data <- data.frame(
+    arm = 0:1,
+    arm_label = factor(arm_labels, levels = arm_labels),
+    atom = rep(object$atom, 2),
+    atom_mass = atom_mass,
+    y_start = rep(0, 2),
+    y_end = spike_height,
+    x_label = ifelse(place_right, object$atom + label_offset, object$atom - label_offset),
+    y_label = pmin(spike_height + 0.06 * panel_upper, 0.96 * panel_upper),
+    hjust = ifelse(place_right, 0, 1),
+    label = sprintf("Atom mass = %.2f", atom_mass),
+    row.names = NULL
+  )
+
+  list(
+    plot_type = "mass",
+    density_data = density_data,
+    atom_data = atom_data,
+    x = score_values,
+    x_limits = x_limits,
+    y_limits = c(0, max(panel_upper, na.rm = TRUE)),
+    conf.level = conf.level
+  )
 }
 
 bayes_density_plot_data <- function(object,
@@ -284,11 +468,23 @@ bayes_density_plot_data <- function(object,
 
   conf.level <- validateConfidenceLevel(conf.level)
   extracted <- bayes_density_component_draws(object)
+  continuous_support <- extracted$support
+
+  if(identical(continuous_support, "bounded_score")) {
+    if(!is.null(x)) {
+      stop("x is not used for bounded-score posterior mass plots.")
+    }
+    validate_bayes_positive_integer(n, "n", min_value = 2L)
+    return(bayes_score_density_plot_data(
+      object = object,
+      extracted = extracted,
+      conf.level = conf.level
+    ))
+  }
 
   weights <- extracted$weights
   means <- extracted$means
   observed_prob <- extracted$observed_prob
-  continuous_support <- extracted$support
   n_grid <- if(is.null(x)) validate_bayes_positive_integer(n, "n", min_value = 2L) else NULL
 
   if(is.null(x)) {
@@ -299,13 +495,15 @@ bayes_density_plot_data <- function(object,
         sds = extracted$sds,
         weights = weights
       )
-    } else {
+    } else if(identical(continuous_support, "positive_real")) {
       bayes_density_default_limits_positive_real(
         object = object,
         means = means,
         shapes = extracted$shapes,
         weights = weights
       )
+    } else {
+      bayes_density_default_limits_bounded(object)
     }
 
     grid <- bayes_density_grid(
@@ -335,6 +533,19 @@ bayes_density_plot_data <- function(object,
       )
     }
   }
+  if(identical(continuous_support, "bounded_continuous")) {
+    density_grid <- grid[
+      grid >= extracted$score_min &
+        grid <= extracted$score_max
+    ]
+
+    if(length(density_grid) < 2L) {
+      stop(
+        "For bounded-continuous Bayesian density plots, x must contain at least two grid points inside [score_min, score_max]."
+      )
+    }
+    x_limits <- bayes_density_default_limits_bounded(object)
+  }
 
   n_draws <- dim(weights)[1]
   arm_labels <- c("Control", "Treatment")
@@ -348,11 +559,15 @@ bayes_density_plot_data <- function(object,
         bayes_observed_density(
           x = density_grid,
           weights = weights[draw, r, ],
-          means = means[draw, r, ],
+          means = if(identical(continuous_support, "bounded_continuous")) NULL else means[draw, r, ],
           pi = observed_prob[draw, r],
           continuous_support = continuous_support,
           sds = if(identical(continuous_support, "real_line")) extracted$sds[draw, r, ] else NULL,
-          shapes = if(identical(continuous_support, "positive_real")) extracted$shapes[draw, r, ] else NULL
+          shapes = if(identical(continuous_support, "positive_real")) extracted$shapes[draw, r, ] else NULL,
+          m_comp = if(identical(continuous_support, "bounded_continuous")) extracted$m_comp[draw, r, ] else NULL,
+          phi_comp = if(identical(continuous_support, "bounded_continuous")) extracted$phi_comp[draw, r, ] else NULL,
+          score_min = if(identical(continuous_support, "bounded_continuous")) extracted$score_min else NULL,
+          score_max = if(identical(continuous_support, "bounded_continuous")) extracted$score_max else NULL
         )
       },
       numeric(length(density_grid))
@@ -404,6 +619,7 @@ bayes_density_plot_data <- function(object,
   )
 
   list(
+    plot_type = "density",
     density_data = density_data,
     atom_data = atom_data,
     x = grid,
@@ -413,17 +629,19 @@ bayes_density_plot_data <- function(object,
   )
 }
 
-#' Plot posterior outcome densities from a Bayesian truncated-comparison fit
+#' Plot posterior outcome densities or masses from a Bayesian fit
 #'
 #' Visualizes the arm-specific posterior mean continuous densities implied by a
-#' fitted `"trunc_comp_bayes_fit"` object. The plotted densities correspond to
-#' the continuous part of the observed-outcome law, so each density is weighted
-#' by the posterior probability of being observed away from the atom. The atom
-#' itself is shown separately as a solid vertical spike with an arrowhead,
-#' annotated with the posterior mean atom probability in each treatment arm.
-#' Fits created with `continuous_support = "real_line"` use Gaussian kernels,
-#' while fits created with `continuous_support = "positive_real"` use Gamma
-#' kernels on the positive real line.
+#' fitted `"trunc_comp_bayes_fit"` object, or posterior mean reported-score
+#' masses for `continuous_support = "bounded_score"`. The plotted survivor
+#' distribution is weighted by the posterior probability of being observed away
+#' from the atom. The atom itself is shown separately as a solid vertical spike
+#' with an arrowhead, annotated with the posterior mean atom probability in each
+#' treatment arm. Fits created with `continuous_support = "real_line"` use
+#' Gaussian kernels, `continuous_support = "positive_real"` uses Gamma kernels,
+#' `continuous_support = "bounded_continuous"` uses Beta kernels with the
+#' outcome-scale Jacobian, and `continuous_support = "bounded_score"` uses a
+#' discrete posterior predictive mass plot.
 #'
 #' @param object A successful `"trunc_comp_bayes_fit"` object returned by
 #'   [trunc_comp_bayes()].
@@ -434,9 +652,9 @@ bayes_density_plot_data <- function(object,
 #' @param n Number of grid points used when `x` is omitted. Must be an integer
 #'   greater than or equal to `2`.
 #' @param conf.level Pointwise credible level for the density ribbon.
-#' @return A `ggplot2` plot showing the arm-specific posterior mean densities,
-#'   pointwise credible ribbons, and a solid atom spike with its posterior mean
-#'   atom mass.
+#' @return A `ggplot2` plot showing the arm-specific posterior mean densities
+#'   or score masses, pointwise credible intervals, and a solid atom spike with
+#'   its posterior mean atom mass.
 #' @examples
 #' \dontrun{
 #' data("trunc_comp_example", package = "TruncComp2")
@@ -467,6 +685,50 @@ posterior_density_plot <- function(object,
     Control = "#1b9e77",
     Treatment = "#d95f02"
   )
+
+  if(identical(plot_data$plot_type, "mass")) {
+    return(ggplot2::ggplot() +
+      ggplot2::geom_linerange(
+        data = plot_data$density_data,
+        ggplot2::aes(x = x, ymin = conf.low, ymax = conf.high, color = arm_label),
+        linewidth = 0.45,
+        show.legend = FALSE
+      ) +
+      ggplot2::geom_point(
+        data = plot_data$density_data,
+        ggplot2::aes(x = x, y = density_mean, color = arm_label),
+        size = 1.5,
+        show.legend = FALSE
+      ) +
+      ggplot2::geom_segment(
+        data = plot_data$atom_data,
+        ggplot2::aes(x = atom, xend = atom, y = y_start, yend = y_end),
+        inherit.aes = FALSE,
+        linewidth = 0.7,
+        lineend = "round",
+        arrow = grid::arrow(
+          type = "closed",
+          angle = 20,
+          length = grid::unit(0.11, "inches")
+        ),
+        color = "grey30"
+      ) +
+      ggplot2::geom_text(
+        data = plot_data$atom_data,
+        ggplot2::aes(x = x_label, y = y_label, label = label, hjust = hjust),
+        inherit.aes = FALSE,
+        vjust = 0,
+        size = 3.3
+      ) +
+      ggplot2::facet_wrap(ggplot2::vars(arm_label), scales = "fixed") +
+      ggplot2::labs(
+        x = "Reported score",
+        y = "Posterior predictive probability"
+      ) +
+      ggplot2::scale_color_manual(values = arm_colors) +
+      ggplot2::coord_cartesian(xlim = plot_data$x_limits, ylim = plot_data$y_limits) +
+      ggplot2::theme_minimal())
+  }
 
   ggplot2::ggplot() +
     ggplot2::geom_ribbon(

@@ -117,25 +117,45 @@ validate_bayes_control <- function(control) {
   out
 }
 
-bayes_continuous_support <- function(continuous_support = c("real_line", "positive_real")) {
+bayes_continuous_support <- function(continuous_support = c(
+  "real_line",
+  "positive_real",
+  "bounded_continuous",
+  "bounded_score"
+)) {
   if(length(continuous_support) == 0L || is.null(continuous_support)) {
     continuous_support <- "real_line"
   }
 
-  match.arg(continuous_support, c("real_line", "positive_real"))
+  match.arg(
+    continuous_support,
+    c("real_line", "positive_real", "bounded_continuous", "bounded_score")
+  )
 }
 
-bayes_model_name <- function(continuous_support = c("real_line", "positive_real")) {
+bayes_model_name <- function(continuous_support = c(
+  "real_line",
+  "positive_real",
+  "bounded_continuous",
+  "bounded_score"
+)) {
   continuous_support <- bayes_continuous_support(continuous_support)
 
   switch(
     continuous_support,
     real_line = "trunc_comp_bayes",
-    positive_real = "trunc_comp_bayes_positive"
+    positive_real = "trunc_comp_bayes_positive",
+    bounded_continuous = "trunc_comp_bayes_bounded_continuous",
+    bounded_score = "trunc_comp_bayes_bounded_score"
   )
 }
 
-bayes_default_prior <- function(continuous_support = c("real_line", "positive_real")) {
+bayes_default_prior <- function(continuous_support = c(
+  "real_line",
+  "positive_real",
+  "bounded_continuous",
+  "bounded_score"
+)) {
   continuous_support <- bayes_continuous_support(continuous_support)
 
   common <- list(
@@ -158,6 +178,19 @@ bayes_default_prior <- function(continuous_support = c("real_line", "positive_re
       mean_sdlog = 0.5,
       shape_meanlog = log(2),
       shape_sdlog = 0.5
+    ),
+    bounded_continuous = list(
+      m_alpha = 1,
+      m_beta = 1,
+      phi_meanlog = log(20),
+      phi_sdlog = 1
+    ),
+    bounded_score = list(
+      m_alpha = 1,
+      m_beta = 1,
+      phi_meanlog = log(20),
+      phi_sdlog = 1,
+      eta_prior = 1
     )
   )
 
@@ -165,7 +198,12 @@ bayes_default_prior <- function(continuous_support = c("real_line", "positive_re
 }
 
 normalize_bayes_prior <- function(prior,
-                                  continuous_support = c("real_line", "positive_real")) {
+                                  continuous_support = c(
+                                    "real_line",
+                                    "positive_real",
+                                    "bounded_continuous",
+                                    "bounded_score"
+                                  )) {
   continuous_support <- bayes_continuous_support(continuous_support)
   defaults <- bayes_default_prior(continuous_support)
 
@@ -193,9 +231,12 @@ normalize_bayes_prior <- function(prior,
   if(identical(continuous_support, "real_line")) {
     positive_names <- c(positive_names, "mu_sd", "sigma_sdlog")
     finite_names <- c("mu_mean", "sigma_meanlog")
-  } else {
+  } else if(identical(continuous_support, "positive_real")) {
     positive_names <- c(positive_names, "mean_sdlog", "shape_sdlog")
     finite_names <- c("mean_meanlog", "shape_meanlog")
+  } else {
+    positive_names <- c(positive_names, "m_alpha", "m_beta", "phi_sdlog")
+    finite_names <- c("phi_meanlog")
   }
 
   for(name in positive_names) {
@@ -210,6 +251,17 @@ normalize_bayes_prior <- function(prior,
     if(!(length(value) == 1 && is.numeric(value) && is.finite(value))) {
       stop("prior$", name, " must be a single finite numeric value.")
     }
+  }
+
+  if(identical(continuous_support, "bounded_score")) {
+    value <- out$eta_prior
+    if(!(is.numeric(value) &&
+         length(value) >= 1L &&
+         all(is.finite(value)) &&
+         all(value > 0))) {
+      stop("prior$eta_prior must contain positive finite numeric values.")
+    }
+    out$eta_prior <- as.numeric(value)
   }
 
   out
@@ -240,7 +292,12 @@ normalize_bayes_sampling_args <- function(extra_args) {
 }
 
 bayes_outcome_center_scale <- function(y,
-                                       continuous_support = c("real_line", "positive_real")) {
+                                       continuous_support = c(
+                                         "real_line",
+                                         "positive_real",
+                                         "bounded_continuous",
+                                         "bounded_score"
+                                       )) {
   continuous_support <- bayes_continuous_support(continuous_support)
 
   if(identical(continuous_support, "positive_real")) {
@@ -281,10 +338,25 @@ bayes_outcome_center_scale <- function(y,
 }
 
 validate_bayes_support_data <- function(data,
-                                        continuous_support = c("real_line", "positive_real")) {
+                                        atom = NULL,
+                                        continuous_support = c(
+                                          "real_line",
+                                          "positive_real",
+                                          "bounded_continuous",
+                                          "bounded_score"
+                                        ),
+                                        support_options = NULL) {
   continuous_support <- bayes_continuous_support(continuous_support)
 
-  if(!identical(continuous_support, "positive_real")) {
+  if(identical(continuous_support, "real_line")) {
+    return(invisible(TRUE))
+  }
+
+  if(bayes_is_bounded_support(continuous_support)) {
+    if(is.null(support_options)) {
+      stop("Bounded Bayesian support settings are missing.")
+    }
+    bayes_validate_bounded_data(data = data, atom = atom, support_options = support_options)
     return(invisible(TRUE))
   }
 
@@ -376,10 +448,27 @@ bayes_truncation_thresholds <- function(data) {
 }
 
 build_bayes_standata <- function(data, atom, mixture_components, prior,
-                                 continuous_support = c("real_line", "positive_real")) {
+                                 continuous_support = c(
+                                   "real_line",
+                                   "positive_real",
+                                   "bounded_continuous",
+                                   "bounded_score"
+                                 ),
+                                 support_options = NULL) {
   continuous_support <- bayes_continuous_support(continuous_support)
   observed <- droplevels(data[data$A == 1, c("Y", "R"), drop = FALSE])
-  scaling <- bayes_outcome_center_scale(observed$Y, continuous_support = continuous_support)
+  scaling <- if(bayes_is_bounded_support(continuous_support)) {
+    if(is.null(support_options)) {
+      stop("Bounded Bayesian support settings are missing.")
+    }
+
+    list(
+      center = as.numeric(support_options$score_min),
+      scale = as.numeric(support_options$score_range)
+    )
+  } else {
+    bayes_outcome_center_scale(observed$Y, continuous_support = continuous_support)
+  }
 
   common_data <- list(
     N = nrow(data),
@@ -409,6 +498,64 @@ build_bayes_standata <- function(data, atom, mixture_components, prior,
           mu_prior_sd = as.numeric(prior$mu_sd),
           sigma_prior_meanlog = as.numeric(prior$sigma_meanlog),
           sigma_prior_sdlog = as.numeric(prior$sigma_sdlog)
+        )
+      ),
+      scaling = scaling,
+      model_name = bayes_model_name(continuous_support)
+    ))
+  }
+
+  if(identical(continuous_support, "bounded_continuous")) {
+    x_obs <- (observed$Y - support_options$score_min) / support_options$score_range
+
+    return(list(
+      stan_data = c(
+        common_data,
+        list(
+          x_obs = as.numeric(x_obs),
+          score_min = as.numeric(support_options$score_min),
+          score_max = as.numeric(support_options$score_max),
+          m_prior_alpha = as.numeric(prior$m_alpha),
+          m_prior_beta = as.numeric(prior$m_beta),
+          phi_prior_meanlog = as.numeric(prior$phi_meanlog),
+          phi_prior_sdlog = as.numeric(prior$phi_sdlog)
+        )
+      ),
+      scaling = scaling,
+      model_name = bayes_model_name(continuous_support)
+    ))
+  }
+
+  if(identical(continuous_support, "bounded_score")) {
+    y_obs_index <- bayes_score_grid_index(
+      observed$Y,
+      score_min = support_options$score_min,
+      score_max = support_options$score_max,
+      score_step = support_options$score_step
+    )
+    eta_prior <- bayes_validate_eta_prior(
+      prior$eta_prior,
+      k = length(support_options$heaping_grids)
+    )
+
+    return(list(
+      stan_data = c(
+        common_data,
+        list(
+          y_obs_index = as.integer(y_obs_index),
+          J = as.integer(length(support_options$score_values)),
+          score_value = as.numeric(support_options$score_values),
+          K = as.integer(length(support_options$heaping_grids)),
+          bin_lower = support_options$bin_lower,
+          bin_upper = support_options$bin_upper,
+          bin_valid = support_options$bin_valid,
+          eta_groups = as.integer(support_options$eta_groups),
+          eta_group_by_arm = as.integer(support_options$eta_group_by_arm),
+          m_prior_alpha = as.numeric(prior$m_alpha),
+          m_prior_beta = as.numeric(prior$m_beta),
+          phi_prior_meanlog = as.numeric(prior$phi_meanlog),
+          phi_prior_sdlog = as.numeric(prior$phi_sdlog),
+          eta_prior = eta_prior
         )
       ),
       scaling = scaling,
@@ -784,13 +931,19 @@ bayes_finalize_trunc_comp_bayes_fit <- function(fit_object) {
 }
 
 fit_trunc_comp_bayes_once <- function(data, atom, conf.level = 0.95,
-                                      continuous_support = c("real_line", "positive_real"),
+                                      continuous_support = c(
+                                        "real_line",
+                                        "positive_real",
+                                        "bounded_continuous",
+                                        "bounded_score"
+                                      ),
                                       mixture_components = 10,
                                       chains = 4, iter_warmup = 1000,
                                       iter_sampling = 1000, seed = NULL,
                                       refresh = 0, control = list(adapt_delta = 0.95, max_treedepth = 12),
                                       prior = NULL, call = NULL,
                                       extra_args = list(),
+                                      support_options = NULL,
                                       model_object = NULL,
                                       settings = NULL) {
   standata <- build_bayes_standata(
@@ -798,7 +951,8 @@ fit_trunc_comp_bayes_once <- function(data, atom, conf.level = 0.95,
     atom,
     mixture_components,
     prior,
-    continuous_support = continuous_support
+    continuous_support = continuous_support,
+    support_options = support_options
   )
 
   settings$mixture_components <- as.integer(mixture_components)
@@ -887,7 +1041,12 @@ fit_trunc_comp_bayes_once <- function(data, atom, conf.level = 0.95,
 }
 
 fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
-                                 continuous_support = c("real_line", "positive_real"),
+                                 continuous_support = c(
+                                   "real_line",
+                                   "positive_real",
+                                   "bounded_continuous",
+                                   "bounded_score"
+                                 ),
                                  mixture_components = 10,
                                  auto_select_mixture_components = TRUE,
                                  mixture_components_max = NULL,
@@ -895,9 +1054,24 @@ fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
                                  iter_sampling = 1000, seed = NULL,
                                  refresh = 0, control = list(adapt_delta = 0.95, max_treedepth = 12),
                                  prior = NULL, call = NULL,
+                                 score_min = NULL,
+                                 score_max = NULL,
+                                 score_step = 1,
+                                 heaping_grids = 1,
+                                 heaping = "shared",
+                                 support_supplied = bayes_support_supplied_defaults(),
                                  extra_args = list()) {
   conf.level <- validateConfidenceLevel(conf.level)
   continuous_support <- bayes_continuous_support(continuous_support)
+  support_options <- bayes_normalize_support_options(
+    continuous_support = continuous_support,
+    score_min = score_min,
+    score_max = score_max,
+    score_step = score_step,
+    heaping_grids = heaping_grids,
+    heaping = heaping,
+    supplied = support_supplied
+  )
   mixture_components <- validate_bayes_positive_integer(
     mixture_components,
     "mixture_components",
@@ -919,6 +1093,12 @@ fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
   refresh <- validate_bayes_refresh(refresh)
   control <- validate_bayes_control(control)
   prior <- normalize_bayes_prior(prior, continuous_support = continuous_support)
+  if(identical(continuous_support, "bounded_score")) {
+    prior$eta_prior <- bayes_validate_eta_prior(
+      prior$eta_prior,
+      k = length(support_options$heaping_grids)
+    )
+  }
   extra_args <- normalize_bayes_sampling_args(extra_args)
   model_name <- bayes_model_name(continuous_support)
 
@@ -944,6 +1124,10 @@ fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
     prior = prior,
     experimental = TRUE
   )
+  settings <- c(
+    settings,
+    support_options[setdiff(names(support_options), "continuous_support")]
+  )
 
   if(!isDataOkay(data)) {
     return(new_failed_trunc_comp_bayes_fit(
@@ -956,7 +1140,12 @@ fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
     ))
   }
 
-  validate_bayes_support_data(data, continuous_support = continuous_support)
+  validate_bayes_support_data(
+    data,
+    atom = atom,
+    continuous_support = continuous_support,
+    support_options = support_options
+  )
 
   model_object <- bayes_package_stanmodel(model_name)
   if(is.null(model_object)) {
@@ -1004,6 +1193,7 @@ fit_trunc_comp_bayes <- function(data, atom, conf.level = 0.95,
       prior = prior,
       call = call,
       extra_args = extra_args,
+      support_options = support_options,
       model_object = model_object,
       settings = candidate_settings
     )

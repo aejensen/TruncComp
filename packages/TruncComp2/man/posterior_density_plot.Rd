@@ -2,7 +2,7 @@
 % Please edit documentation in R/bayesDensityPlot.R
 \name{posterior_density_plot}
 \alias{posterior_density_plot}
-\title{Plot posterior outcome densities from a Bayesian truncated-comparison fit}
+\title{Plot posterior outcome densities or masses from a Bayesian fit}
 \usage{
 posterior_density_plot(
   object,
@@ -26,20 +26,22 @@ greater than or equal to \code{2}.}
 \item{conf.level}{Pointwise credible level for the density ribbon.}
 }
 \value{
-A \code{ggplot2} plot showing the arm-specific posterior mean densities,
-pointwise credible ribbons, and a solid atom spike with its posterior mean
-atom mass.
+A \code{ggplot2} plot showing the arm-specific posterior mean densities
+or score masses, pointwise credible intervals, and a solid atom spike with
+its posterior mean atom mass.
 }
 \description{
 Visualizes the arm-specific posterior mean continuous densities implied by a
-fitted \code{"trunc_comp_bayes_fit"} object. The plotted densities correspond to
-the continuous part of the observed-outcome law, so each density is weighted
-by the posterior probability of being observed away from the atom. The atom
-itself is shown separately as a solid vertical spike with an arrowhead,
-annotated with the posterior mean atom probability in each treatment arm.
-Fits created with \code{continuous_support = "real_line"} use Gaussian kernels,
-while fits created with \code{continuous_support = "positive_real"} use Gamma
-kernels on the positive real line.
+fitted \code{"trunc_comp_bayes_fit"} object, or posterior mean reported-score
+masses for \code{continuous_support = "bounded_score"}. The plotted survivor
+distribution is weighted by the posterior probability of being observed away
+from the atom. The atom itself is shown separately as a solid vertical spike
+with an arrowhead, annotated with the posterior mean atom probability in each
+treatment arm. Fits created with \code{continuous_support = "real_line"} use
+Gaussian kernels, \code{continuous_support = "positive_real"} uses Gamma kernels,
+\code{continuous_support = "bounded_continuous"} uses Beta kernels with the
+outcome-scale Jacobian, and \code{continuous_support = "bounded_score"} uses a
+discrete posterior predictive mass plot.
 }
 \examples{
 \dontrun{

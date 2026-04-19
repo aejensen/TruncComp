@@ -92,7 +92,7 @@ in the package. In the current implementation:
 
 - the atom is modeled separately in each arm
 - the non-atom outcomes are modeled with arm-specific truncated stick-breaking
-  Gaussian mixtures
+  mixtures chosen by `continuous_support`
 - covariate adjustment is not yet supported
 
 ```{r fit-bayes, message = FALSE, warning = FALSE}
@@ -314,4 +314,33 @@ posterior_probabilities_positive <- c(
 )
 
 posterior_probabilities_positive
+```
+
+## Bounded survivor outcomes
+
+Two experimental bounded survivor models are also available. Use
+`continuous_support = "bounded_continuous"` for genuinely continuous or finely
+measured bounded outcomes with survivor values strictly inside the supplied
+range. Use `continuous_support = "bounded_score"` for integer or grid-valued
+clinical scores; posterior predictive survivor replications are then sampled on
+the same reported score support as the observed data.
+
+```{r bounded-score-example, eval=FALSE}
+fit_bayes_score <- trunc_comp_bayes(
+  Y ~ R,
+  atom = -1,
+  data = ist3,
+  continuous_support = "bounded_score",
+  score_min = 0,
+  score_max = 100,
+  score_step = 1,
+  heaping_grids = c(1, 5, 10),
+  heaping = "shared",
+  chains = 4,
+  iter_warmup = 500,
+  iter_sampling = 1000,
+  refresh = 0
+)
+
+posterior_predictive_check(fit_bayes_score, type = "continuous")
 ```

@@ -68,25 +68,42 @@ load_local_trunccomp2 <- function(repo_root) {
   invisible(TRUE)
 }
 
-simulation_study_default_config <- function(reps = 10000L,
-                                            n_seq = seq.int(50L, 500L, by = 50L),
+simulation_study_default_config <- function(reps = 25000L,
+                                            n_seq = c(50L, 100L, 150L, 200L, 300L, 400L, 500L),
                                             effect_levels = 0:3,
                                             alpha = 0.05,
                                             atom = 0,
                                             base_seed = 20260416L,
-                                            power_effect_n = 250L) {
+                                            power_effect_n = 150L) {
+  n_seq <- as.integer(n_seq)
+  power_effect_n <- simulation_study_select_power_effect_n(n_seq, preferred = power_effect_n)
+
   list(
     version = "trunccomp2-simulation-study-v1",
     reps = as.integer(reps),
-    n_seq = as.integer(n_seq),
+    n_seq = n_seq,
     effect_levels = as.integer(effect_levels),
     alpha = alpha,
     atom = atom,
     base_seed = as.integer(base_seed),
-    power_effect_n = as.integer(power_effect_n),
+    power_effect_n = power_effect_n,
     main_text_scenarios = c("S2", "S3", "S5", "S6"),
     supplementary_scenarios = c("S1", "S4")
   )
+}
+
+simulation_study_select_power_effect_n <- function(n_seq,
+                                                   preferred = simulation_study_default_config()$power_effect_n) {
+  n_seq <- sort(unique(as.integer(n_seq)))
+  if (!length(n_seq)) {
+    stop("n_seq must contain at least one sample size.", call. = FALSE)
+  }
+
+  if (preferred %in% n_seq) {
+    return(as.integer(preferred))
+  }
+
+  as.integer(n_seq[[ceiling(length(n_seq) / 2)]])
 }
 
 .simulation_study_contaminated_shift <- function(n, shift) {
@@ -161,13 +178,13 @@ simulation_study_scenarios <- function() {
       purpose = paste(
         "Signature case where survival and survivor means move in opposite directions while the combined-outcome mean stays constant."
       ),
-      atom_latex = "$\\pi_0 = 0.50$, $\\pi_1 \\in \\{0.50, 0.55, 0.60, 0.65\\}$",
+      atom_latex = "$\\pi_0 = 0.50$, $\\pi_1 \\in \\{0.50, 0.525, 0.55, 0.60\\}$",
       survivor_latex = paste(
         "$Y \\mid A = 1, R = 0 \\sim N(3, 1)$,",
         "$Y \\mid A = 1, R = 1 \\sim N(1.5 / \\pi_1, 1)$"
       ),
       effect_parameters = function(h) {
-        pi1_values <- c(0.50, 0.55, 0.60, 0.65)
+        pi1_values <- c(0.50, 0.525, 0.55, 0.60)
         pi1 <- pi1_values[[h + 1L]]
         treatment_mean <- 1.5 / pi1
         list(
@@ -175,7 +192,7 @@ simulation_study_scenarios <- function() {
           pi1 = pi1,
           f0 = function(n) stats::rnorm(n, 3, 1),
           f1 = function(n) stats::rnorm(n, treatment_mean, 1),
-          effect_text = sprintf("$\\\\pi_1 = %.2f$, $E[Y \\\\mid A = 1, R = 1] = %.3f$", pi1, treatment_mean),
+          effect_text = sprintf("$\\\\pi_1 = %.3f$, $\\\\mu_0 + \\\\mu_\\\\delta = %.3f$", pi1, treatment_mean),
           survivor_mean0 = 3,
           survivor_mean1 = treatment_mean,
           expected_combined_delta = 0
@@ -204,7 +221,7 @@ simulation_study_scenarios <- function() {
           pi1 = pi1,
           f0 = function(n) stats::rnorm(n, 3, 1),
           f1 = function(n) stats::rnorm(n, treatment_mean, 1),
-          effect_text = sprintf("$\\\\pi_1 = %.2f$, $E[Y \\\\mid A = 1, R = 1] = %.2f$", pi1, treatment_mean),
+          effect_text = sprintf("$\\\\pi_1 = %.2f$, $\\\\mu_0 + \\\\mu_\\\\delta = %.2f$", pi1, treatment_mean),
           survivor_mean0 = 3,
           survivor_mean1 = treatment_mean,
           expected_combined_delta = pi1 * treatment_mean - 1.5
@@ -235,7 +252,7 @@ simulation_study_scenarios <- function() {
           pi1 = 0.65,
           f0 = function(n) stats::rgamma(n, shape = 9, scale = 3 / 9),
           f1 = function(n) stats::rgamma(n, shape = shape1, scale = mean1 / shape1),
-          effect_text = sprintf("$k_1 = %.1f$, $E[Y \\\\mid A = 1, R = 1] = %.1f$", shape1, mean1),
+          effect_text = sprintf("$k_1 = %.1f$, $\\\\mu_0 + \\\\mu_\\\\delta = %.1f$", shape1, mean1),
           survivor_mean0 = 3,
           survivor_mean1 = mean1,
           expected_combined_delta = 0.65 * (mean1 - 3)
@@ -254,10 +271,10 @@ simulation_study_scenarios <- function() {
       survivor_latex = paste(
         "$Y \\mid A = 1, R = r$ is",
         "$0.95 N(3 + \\delta_h r, 0.35^2) + 0.05 N(10 + \\delta_h r, 0.5^2)$,",
-        "$\\delta_h \\in \\{0, 0.10, 0.20, 0.35\\}$"
+        "$\\delta_h \\in \\{0, 0.15, 0.25, 0.35\\}$"
       ),
       effect_parameters = function(h) {
-        delta_values <- c(0, 0.10, 0.20, 0.35)
+        delta_values <- c(0, 0.15, 0.25, 0.35)
         delta <- delta_values[[h + 1L]]
         list(
           pi0 = 0.80,
@@ -342,8 +359,37 @@ simulation_study_cell_path <- function(output_dir, cell) {
   )
 }
 
+.simulation_study_scalar_equal <- function(x, y) {
+  if (is.numeric(x) || is.integer(x) || is.numeric(y) || is.integer(y)) {
+    return(isTRUE(all.equal(as.numeric(x), as.numeric(y), tolerance = 0)))
+  }
+
+  identical(as.character(x), as.character(y))
+}
+
+simulation_study_cell_file_matches <- function(path, cell) {
+  if (!file.exists(path)) {
+    return(FALSE)
+  }
+
+  existing <- tryCatch(readRDS(path), error = function(e) NULL)
+  if (is.null(existing$cell_summary) || nrow(existing$cell_summary) != 1L) {
+    return(FALSE)
+  }
+
+  summary <- existing$cell_summary[1, , drop = FALSE]
+  fields <- c("scenario_id", "n", "h", "reps", "alpha", "atom", "seed")
+  if (!all(fields %in% names(summary)) || !all(fields %in% names(cell))) {
+    return(FALSE)
+  }
+
+  all(vapply(fields, function(field) {
+    .simulation_study_scalar_equal(summary[[field]][[1]], cell[[field]][[1]])
+  }, logical(1)))
+}
+
 simulation_study_prepare_run <- function(output_dir,
-                                         reps = 10000L,
+                                         reps = 25000L,
                                          scenario_ids = NULL,
                                          n_seq = NULL,
                                          effect_levels = NULL,
@@ -352,6 +398,7 @@ simulation_study_prepare_run <- function(output_dir,
   if (!is.null(n_seq)) {
     config$n_seq <- as.integer(n_seq)
   }
+  config$power_effect_n <- simulation_study_select_power_effect_n(config$n_seq)
   if (!is.null(effect_levels)) {
     config$effect_levels <- as.integer(effect_levels)
   }
@@ -376,7 +423,10 @@ simulation_study_prepare_run <- function(output_dir,
 
   pending_design <- design
   if (!overwrite) {
-    pending_design <- pending_design[!file.exists(target_paths), , drop = FALSE]
+    reusable <- vapply(seq_len(nrow(design)), function(index) {
+      simulation_study_cell_file_matches(target_paths[[index]], design[index, , drop = FALSE])
+    }, logical(1))
+    pending_design <- pending_design[!reusable, , drop = FALSE]
   }
 
   list(
@@ -560,12 +610,7 @@ simulation_study_infer_config_from_cells <- function(output_dir) {
     atom = as.numeric(atom[[1]])
   )
 
-  default_power_n <- simulation_study_default_config()$power_effect_n
-  if (default_power_n %in% config$n_seq) {
-    config$power_effect_n <- as.integer(default_power_n)
-  } else {
-    config$power_effect_n <- as.integer(config$n_seq[[ceiling(length(config$n_seq) / 2)]])
-  }
+  config$power_effect_n <- simulation_study_select_power_effect_n(config$n_seq)
 
   config
 }
@@ -654,7 +699,7 @@ simulation_study_publish_manuscript_results <- function(repo_root, simulation_re
 
 run_simulation_study <- function(repo_root,
                                  output_dir,
-                                 reps = 10000L,
+                                 reps = 25000L,
                                  workers = 1L,
                                  scenario_ids = NULL,
                                  n_seq = NULL,

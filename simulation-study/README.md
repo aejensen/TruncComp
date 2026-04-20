@@ -3,6 +3,14 @@
 This directory contains the Monte Carlo study used to build the manuscript
 simulation figures and tables.
 
+For proposed companion validation studies, see:
+
+- [`CONFIDENCE-INTERVAL-STUDY.md`](CONFIDENCE-INTERVAL-STUDY.md) for component
+  interval, joint confidence-region, and `delta` interval coverage.
+- [`BAYESIAN-SIMULATION-STUDY.md`](BAYESIAN-SIMULATION-STUDY.md) for posterior
+  calibration, posterior predictive checks, and MCMC diagnostics for
+  `trunc_comp_bayes()`.
+
 ## Local execution
 
 Run the existing local driver from the repository root:

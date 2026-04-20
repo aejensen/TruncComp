@@ -640,7 +640,7 @@ The three intervals therefore describe related but distinct targets. The Welch i
 
 The preceding likelihood-based development admits a natural Bayesian counterpart. We again suppress $X_i$ and work in the no-covariate setting, because this is the clearest setting in which to formulate the two-part observed-data law itself. Let $\widetilde{Y}_i^{(e_0)} = c_{e_0}(\widetilde{Y}_i)$ denote the numerical representation of the combined outcome for a fixed atom value $e_0 \in \mathbb{R}$. In the two-group comparison without covariates, the primary objects are the arm-specific observed-data laws. It is therefore more natural to fit treatment-stratified models than to impose a common mixture across treatment arms. A common mixture with only arm-specific shifts or scales would encode a priori similarity in distributional shape across arms, whereas in the present setting treatment may affect both the atom probability and the shape of the continuous non-atom distribution. Separate arm-specific mixtures align directly with the scientific question of whether the full observed-data law differs between treatment groups.
 
-Let $\mathcal{C} \subseteq \mathbb{R}$ denote the support of the continuous non-atom outcomes on the chosen numerical scale. In the two implementations considered below, $\mathcal{C} = \mathbb{R}$ or $\mathcal{C} = (0,\infty)$. Let $\lambda_{\mathcal{C}}$ denote Lebesgue measure on $\mathcal{C}$, and define the dominating measure
+Let $\mathcal{C} \subseteq \mathbb{R}$ denote the support of the continuous non-atom outcomes on the chosen numerical scale. For continuous-support models, the examples below use $\mathcal{C} = \mathbb{R}$ or $\mathcal{C} = (0,\infty)$; bounded reported-score models replace the continuous conditional density by a probability mass function on a finite score set. Let $\lambda_{\mathcal{C}}$ denote Lebesgue measure on $\mathcal{C}$, and define the dominating measure
 \[
   \nu_{e_0} = \delta_{e_0} + \lambda_{\mathcal{C}}.
 \]
@@ -690,9 +690,51 @@ with
   \qquad
   \theta_{rh} \stackrel{\mathrm{iid}}{\sim} G_0.
 \]
-For computation we use the standard finite truncated approximation \citep{ishwaran2001gibbs}, retaining $H$ mixture components and assigning the remaining stick mass to the last retained component. This is the approximation used in the practical implementation.
+For computation we use the standard finite truncated approximation \citep{ishwaran2001gibbs}, retaining $H$ mixture components and assigning the remaining stick mass to the last retained component. This approximation gives a finite-dimensional posterior computation while retaining the stick-breaking interpretation.
 
-Writing $\widetilde{Y}_i^{(e_0)} = e_0$ when $A_i = 0$ and $\widetilde{Y}_i^{(e_0)} = Y_i$ when $A_i = 1$, the implemented no-covariate model may be expressed hierarchically as
+The same two-part construction accommodates several choices of non-atom support by changing only the kernel $K(\cdot\mid\theta)$ and its base distribution. On the full real line one may use Normal kernels; on the positive real line, Gamma kernels parameterized by their component means; and on a bounded interval $[a,b]$, kernels defined after the affine transformation $x=(y-a)/(b-a)\in(0,1)$. For a continuously observed bounded outcome this gives a density on the original scale through the usual Jacobian. For a reported score outcome, let $\mathcal{S}=\{s_1,\ldots,s_J\}\subset[a,b]$ be the possible reported scores and let $q_\ell$, $\ell=1,\ldots,L$, denote candidate reporting-grid widths, such as one-, five-, or ten-point grids. If score $s_j$ is admissible on grid $\ell$, define the unit-scale interval
+\[
+  I_{\ell j}
+  =
+  [l_{\ell j},u_{\ell j}]
+  =
+  \left[
+    \frac{\max(a,s_j-q_\ell/2)-a}{b-a},
+    \frac{\min(b,s_j+q_\ell/2)-a}{b-a}
+  \right],
+\]
+and set $c_{\ell j}=1$ for admissible score-grid pairs and $c_{\ell j}=0$ otherwise. Let $G_\theta$ be the CDF of a unit-interval kernel, for example a Beta CDF $G_\theta(x)=I_x\{m\phi,(1-m)\phi\}$ or a logit-Normal CDF $G_\theta(x)=\Phi\{(\operatorname{logit}x-\mu)/\sigma\}$. The component probability of observing score $s_j$ under reporting grid $\ell$ is then
+\[
+  q_{rh\ell j}(\theta_{rh})
+  =
+  c_{\ell j}
+  \left\{
+    G_{\theta_{rh}}(u_{\ell j}) - G_{\theta_{rh}}(l_{\ell j})
+  \right\},
+\]
+with endpoint intervals truncated to $[0,1]$ and CDF values at 0 and 1 interpreted by continuity. If $\eta_{r\ell}$ are the reporting-grid weights in arm $r$, the arm-specific score probability is
+\[
+  p_{rj}(\vartheta)
+  =
+  \sum_{h=1}^{H} w_{rh}
+  \sum_{\ell=1}^{L}\eta_{r\ell} q_{rh\ell j}(\theta_{rh}),
+  \qquad
+  \sum_{j=1}^{J}p_{rj}(\vartheta)=1.
+\]
+Thus, writing $d_r$ for the number of atom observations in arm $r$, $m_r$ for the number of non-atom observations, and $n_{rj}$ for the number of reported non-atom scores equal to $s_j$, the concrete likelihood for the heaped reported-score model is, up to multinomial constants,
+\[
+  L_{\mathrm{score}}(\vartheta)
+  \propto
+  \prod_{r=0}^{1}
+  \rho_r^{d_r}\pi_r^{m_r}
+  \prod_{j=1}^{J}
+  p_{rj}(\vartheta)^{n_{rj}},
+  \qquad
+  \pi_r=1-\rho_r.
+\]
+The reporting-grid weights may be constrained to be common across arms, $\eta_{0\ell}=\eta_{1\ell}$, or allowed to vary by arm; either way the atom probability, mixture weights, and unit-interval kernel parameters retain the same interpretation.
+
+Writing $\widetilde{Y}_i^{(e_0)} = e_0$ when $A_i = 0$ and $\widetilde{Y}_i^{(e_0)} = Y_i$ when $A_i = 1$, the no-covariate model may be expressed hierarchically as
 \begin{align}
   A_i \mid R_i = r
   &\sim \Bernoulli(\pi_r),
@@ -749,23 +791,37 @@ Writing $\widetilde{Y}_i^{(e_0)} = e_0$ when $A_i = 0$ and $\widetilde{Y}_i^{(e_
   \qquad
   a_{rh} \sim \mathrm{Lognormal}(m_a,s_a^2),
   \nonumber\\
-  K(\{s_j\}\mid \theta_{rh},\eta)
+  K(\{s_j\}\mid \theta_{rh},\eta_r)
   &=
-  \sum_{\ell=1}^{L}\eta_\ell
-  \int_{b_{\ell j}^-}^{b_{\ell j}^+}
-    \mathrm{Beta}\{x;m_{rh}\phi_{rh},(1-m_{rh})\phi_{rh}\}\,dx,
+  \sum_{\ell=1}^{L}\eta_{r\ell}
+  c_{\ell j}\{G_{\theta_{rh}}(u_{\ell j})-G_{\theta_{rh}}(l_{\ell j})\},
   \qquad
   \mathcal{C}=\{s_1,\ldots,s_J\},
+  \nonumber\\
+  G_{\theta_{rh}}(x)
+  &=
+  I_x\{m_{rh}\phi_{rh},(1-m_{rh})\phi_{rh}\},
   \nonumber\\
   m_{rh}
   &\sim \Beta(a_m,b_m),
   \qquad
   \phi_{rh}\sim \mathrm{Lognormal}(m_\phi,s_\phi^2),
+  \nonumber\\
+  G_{\theta_{rh}}(x)
+  &=
+  \Phi\{(\operatorname{logit}x-\mu_{rh})/\sigma_{rh}\},
   \qquad
-  \eta \sim \mathrm{Dirichlet}(\zeta).
+  \mu_{r1}<\cdots<\mu_{rH},
+  \qquad
+  \sigma_{rh}>0,
+  \nonumber\\
+  \log\sigma_{rh}
+  &\sim N(m_\sigma,s_\sigma^2),
+  \qquad
+  \eta_r \sim \mathrm{Dirichlet}(\zeta).
   \nonumber
 \end{align}
-where $\phi(\cdot; m,s^2)$ denotes the Normal density with mean $m$ and variance $s^2$, and $g(\cdot; a,b)$ denotes the Gamma density with shape $a$ and rate $b$. Thus the full-real-line version uses Normal kernels, whereas the positive-support version uses Gamma kernels parameterized so that $m_{rh}$ is the component mean. The latter formulation requires all non-atom outcomes to be strictly positive. For bounded reported scores, the implementation maps scores $s_j$ to the unit interval, integrates Beta kernels over score bins $(b_{kj}^-,b_{kj}^+)$, and mixes over possible reporting or heaping grids with weights $\eta$ that may be shared across arms or arm-specific. In all versions, the mixture is arm-specific, the atom probability is explicit, and the scientific summaries remain directly interpretable despite the flexibility of the non-atom component.
+where $\phi(\cdot; m,s^2)$ denotes the Normal density with mean $m$ and variance $s^2$, and $g(\cdot; a,b)$ denotes the Gamma density with shape $a$ and rate $b$. Thus the full-real-line member uses Normal kernels, whereas the positive-support member uses Gamma kernels parameterized so that $m_{rh}$ is the component mean. The latter formulation requires all non-atom outcomes to be strictly positive. For bounded outcomes, the unit-interval kernel may be either Beta or logit-Normal; for reported scores, the observed score probabilities are obtained by integrating the unit-interval kernel over the reporting intervals and averaging over the reporting grids. In all versions, the mixture is arm-specific, the atom probability is explicit, and the scientific summaries remain directly interpretable despite the flexibility of the non-atom component.
 
 \paragraph{Posterior inference.}
 Let $\mathcal{D}_n = \{(\widetilde{Y}_i^{(e_0)},A_i,R_i):i=1,\ldots,n\}$ denote the observed data, and let $\vartheta$ collect all unknown quantities in Equation~(\ref{eq:bayes-hierarchy}). For arm $r$, the posterior predictive distribution of a future numerical combined outcome $\widetilde{Y}_{r,\mathrm{new}}^{(e_0)}$ is
@@ -790,7 +846,7 @@ is the arm-specific non-atom mixture density for continuous-support fits, with t
   \mu_r^{c,(m)}
   = \int_{\mathcal{C}} y f_r^c(y \mid \vartheta^{(m)})\,\lambda_{\mathcal{C}}(dy),
 \]
-with the integral replaced by $\sum_j s_j p_{rj}^{(m)}$ for bounded-score fits. Under the Normal and Gamma kernels this reduces to the weighted component-mean average $\mu_r^{c,(m)} = \sum_{h=1}^{H} w_{rh}^{(m)} m_{rh}^{(m)}$. The package reports the arm-specific summaries $\rho_r$, $\pi_r$, and $\mu_r^c$ together with the treatment contrasts
+with the integral replaced by $\sum_j s_j p_{rj}^{(m)}$ for bounded-score fits. Under the Normal and Gamma kernels this reduces to the weighted component-mean average $\mu_r^{c,(m)} = \sum_{h=1}^{H} w_{rh}^{(m)} m_{rh}^{(m)}$. The analysis reports the arm-specific summaries $\rho_r$, $\pi_r$, and $\mu_r^c$ together with the treatment contrasts
 \begin{align}
   \Delta_{\mathrm{atom}}
   &= \rho_1 - \rho_0,
@@ -810,7 +866,7 @@ with the integral replaced by $\sum_j s_j p_{rj}^{(m)}$ for bounded-score fits. 
 \end{align}
 For the atom-at-zero representation used elsewhere in the manuscript, $\Delta = \Delta^{(0)} = \pi_1\mu_1^c - \pi_0\mu_0^c$. Thus the Bayesian analysis reports, on a common posterior scale, the atom probability in each arm, the mean among non-atom outcomes in each arm, the atom-probability contrast, the contrast in non-atom means, the odds-ratio summary $\alpha_{\delta}$ for escaping the atom, and the induced contrast on the numerical combined-outcome scale.
 
-All of these functionals are computed draw-by-draw from the posterior sample and are then summarized by posterior medians or means, equal-tail credible intervals, and directional posterior probabilities. In the present implementation the default point summaries are posterior medians, with equal-tail credible intervals. Because several scientifically relevant quantities are nonlinear functions of $(\rho_r,\pi_r,\mu_r^c)$, it is important to compute them at each posterior draw rather than by plugging posterior means into the formulas in Equation~(\ref{eq:bayes-estimands}). Directional summaries such as $\Pr(\Delta_{\mathrm{atom}} < 0 \mid \mathcal{D}_n)$, $\Pr(\mu_{\delta} > 0 \mid \mathcal{D}_n)$, $\Pr(\alpha_{\delta} > 1 \mid \mathcal{D}_n)$, or $\Pr(\Delta^{(e_0)} > 0 \mid \mathcal{D}_n)$ are then immediate from the posterior draws, with the relevant direction chosen according to whether larger or smaller outcomes are clinically preferred.
+All of these functionals are computed draw-by-draw from the posterior sample and are then summarized by posterior medians or means, equal-tail credible intervals, and directional posterior probabilities. In the analyses below the default point summaries are posterior medians, with equal-tail credible intervals. Because several scientifically relevant quantities are nonlinear functions of $(\rho_r,\pi_r,\mu_r^c)$, it is important to compute them at each posterior draw rather than by plugging posterior means into the formulas in Equation~(\ref{eq:bayes-estimands}). Directional summaries such as $\Pr(\Delta_{\mathrm{atom}} < 0 \mid \mathcal{D}_n)$, $\Pr(\mu_{\delta} > 0 \mid \mathcal{D}_n)$, $\Pr(\alpha_{\delta} > 1 \mid \mathcal{D}_n)$, or $\Pr(\Delta^{(e_0)} > 0 \mid \mathcal{D}_n)$ are then immediate from the posterior draws, with the relevant direction chosen according to whether larger or smaller outcomes are clinically preferred.
 
 \paragraph{Posterior predictive checks and model assessment.}
 Model adequacy is assessed through posterior predictive checks in the sense of \citet{gelman1996posterior}. These are Bayesian diagnostics based on the posterior predictive distribution, not frequentist goodness-of-fit tests. For each posterior draw $\vartheta^{(m)}$, one generates a replicated data set by first drawing

@@ -18,6 +18,10 @@
     )
 }
 
+.simulation_table_method_labels <- function() {
+  c("Wilcoxon", "T-test", "LRT", "SPLRT")
+}
+
 .simulation_power_data_all_scenarios <- function(simulation_results) {
   strongest_h <- max(simulation_results$config$effect_levels)
   simulation_results$method_metrics[
@@ -141,12 +145,12 @@ simulation_study_write_kable_table <- function(table_object, path) {
   )]
   names(out) <- c(
     "n", "h", "Effect", "Expected $\\Delta$",
-    unname(simulation_study_method_labels()),
+    .simulation_table_method_labels(),
     "Max fail"
   )
   out <- out[order(out$h, out$n), , drop = FALSE]
   out$Effect <- gsub("\\\\", intToUtf8(92), out$Effect, fixed = TRUE)
-  out[, unname(simulation_study_method_labels())] <- out[, unname(simulation_study_method_labels())] * 100
+  out[, .simulation_table_method_labels()] <- out[, .simulation_table_method_labels()] * 100
   out$`Max fail` <- out$`Max fail` * 100
   out
 }
@@ -170,11 +174,11 @@ simulation_study_write_kable_table <- function(table_object, path) {
   )]
   names(out) <- c(
     "Scenario", "Label", "n",
-    unname(simulation_study_method_labels()),
+    .simulation_table_method_labels(),
     "Max fail"
   )
   out <- out[order(out$Scenario, out$n), , drop = FALSE]
-  out[, unname(simulation_study_method_labels())] <- out[, unname(simulation_study_method_labels())] * 100
+  out[, .simulation_table_method_labels()] <- out[, .simulation_table_method_labels()] * 100
   out$`Max fail` <- out$`Max fail` * 100
   out
 }

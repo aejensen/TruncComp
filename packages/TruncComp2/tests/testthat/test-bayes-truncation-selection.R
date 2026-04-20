@@ -13,74 +13,36 @@ test_that("Bayesian mixture-component ladder doubles up to the requested maximum
   )
 })
 
-test_that("Bayesian truncation thresholds use min(0.02, 1 / n_obs)", {
-  data <- data.frame(
-    Y = c(rep(1, 100), rep(0, 4), rep(1, 3), rep(0, 2)),
-    A = c(rep(1L, 100), rep(0L, 4), rep(1L, 3), rep(0L, 2)),
-    R = c(rep(0L, 104), rep(1L, 5))
-  )
-
-  thresholds <- TruncComp2:::bayes_truncation_thresholds(data)
-
-  expect_equal(thresholds$n_obs, c(n_obs_0 = 100L, n_obs_1 = 3L))
-  expect_equal(thresholds$thresholds, c(threshold_0 = 0.01, threshold_1 = 0.02))
-})
-
-test_that("Omitted-tail draws are computed from alpha and the final retained stick weight", {
-  raw_draws <- data.frame(
-    "alpha[1]" = c(1, 3),
-    "alpha[2]" = c(2, 4),
-    "w[1,10]" = c(0.1, 0.2),
-    "w[2,10]" = c(0.3, 0.4),
-    .chain = c(1, 1),
-    .iteration = c(1, 2),
-    .draw = c(1, 2),
-    check.names = FALSE
-  )
-
-  truncation_draws <- TruncComp2:::bayes_compute_omitted_tail_draws(
-    draws = raw_draws,
-    mixture_components = 10
-  )
-
-  expect_equal(truncation_draws$omitted_tail_mass_0, c(0.05, 0.15))
-  expect_equal(truncation_draws$omitted_tail_mass_1, c(0.2, 0.32))
-  expect_equal(truncation_draws$.draw, raw_draws$.draw)
-})
-
-test_that("Truncation acceptance requires small omitted tails and clean diagnostics", {
+test_that("Truncation acceptance requires clean sampler diagnostics", {
   expect_true(TruncComp2:::bayes_truncation_ok(
-    q95 = c(0.01, 0.015),
-    thresholds = c(0.02, 0.02),
     convergence_ok = TRUE,
     divergences = 0L
   ))
 
   expect_false(TruncComp2:::bayes_truncation_ok(
-    q95 = c(0.03, 0.015),
-    thresholds = c(0.02, 0.02),
-    convergence_ok = TRUE,
-    divergences = 0L
-  ))
-
-  expect_false(TruncComp2:::bayes_truncation_ok(
-    q95 = c(0.01, 0.015),
-    thresholds = c(0.02, 0.02),
     convergence_ok = FALSE,
     divergences = 0L
   ))
 
   expect_false(TruncComp2:::bayes_truncation_ok(
-    q95 = c(0.01, 0.015),
-    thresholds = c(0.02, 0.02),
     convergence_ok = TRUE,
     divergences = 1L
   ))
 })
 
+test_that("Truncation parameter names select alpha and final retained stick weights", {
+  expect_equal(
+    TruncComp2:::bayes_truncation_parameter_names(10),
+    c("alpha[1]", "alpha[2]", "w[1,10]", "w[2,10]")
+  )
+})
+
 test_that("Auto-selection stores the attempted truncation path and final retained H", {
   fake_fit <- function(mixture_components, settings, diagnostic_ok) {
     truncation_ok <- diagnostic_ok
+    truncation_variables <- TruncComp2:::bayes_truncation_parameter_names(
+      mixture_components
+    )
     diagnostics <- list(
       divergences = 0L,
       max_rhat = 1,
@@ -102,18 +64,12 @@ test_that("Auto-selection stores the attempted truncation path and final retaine
       ),
       core_ok = TRUE,
       truncation = list(
-        n_obs = c(n_obs_0 = 8L, n_obs_1 = 9L),
-        thresholds = c(threshold_0 = 0.02, threshold_1 = 0.02),
-        q95 = c(
-          q95_tail_0 = if(diagnostic_ok) 0.01 else 0.03,
-          q95_tail_1 = if(diagnostic_ok) 0.01 else 0.03
-        ),
         parameter_table = data.frame(
-          variable = c("omitted_tail_mass_0", "omitted_tail_mass_1"),
-          rhat = c(1, 1),
-          ess_bulk = c(500, 500),
-          ess_tail = c(500, 500),
-          row.names = c("omitted_tail_mass_0", "omitted_tail_mass_1")
+          variable = truncation_variables,
+          rhat = rep(1, length(truncation_variables)),
+          ess_bulk = rep(500, length(truncation_variables)),
+          ess_tail = rep(500, length(truncation_variables)),
+          row.names = truncation_variables
         ),
         max_rhat = 1,
         min_bulk_ess = 500,
@@ -155,10 +111,11 @@ test_that("Auto-selection stores the attempted truncation path and final retaine
     bayes_package_stanmodel = function(model_name) structure(list(name = model_name), class = "stanmodel"),
     validate_bayes_support_data = function(data, atom = NULL, continuous_support, support_options = NULL) invisible(TRUE),
     fit_trunc_comp_bayes_once = function(data, atom, conf.level, continuous_support,
-                                         mixture_components, chains, iter_warmup,
-                                         iter_sampling, seed, refresh, control,
-                                         prior, call, extra_args, support_options,
-                                         model_object, settings) {
+                                         bounded_kernel, mixture_components,
+                                         chains, iter_warmup, iter_sampling,
+                                         seed, refresh, control, prior, call,
+                                         extra_args, support_options, model_object,
+                                         settings) {
       fake_fit(
         mixture_components = mixture_components,
         settings = settings,

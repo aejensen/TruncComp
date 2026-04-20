@@ -25,7 +25,11 @@ probability contrast, the non-atom mean contrast, and the combined-outcome
 contrast. The packaged example uses the default `continuous_support =
 "real_line"` pathway, but the same interface also supports
 `continuous_support = "positive_real"` when all non-atom outcomes are strictly
-positive.
+positive, and experimental bounded models through
+`continuous_support = "bounded_continuous"` or
+`continuous_support = "bounded_score"`. The bounded models use Beta mixture
+kernels by default and can instead use logit-normal mixture kernels with
+`bounded_kernel = "logit_normal"`.
 
 The example data set is intentionally small, but the Stan fit below uses
 `4` chains with `500` warmup iterations and `1000` post-warmup iterations per
@@ -93,6 +97,8 @@ in the package. In the current implementation:
 - the atom is modeled separately in each arm
 - the non-atom outcomes are modeled with arm-specific truncated stick-breaking
   mixtures chosen by `continuous_support`
+- bounded continuous and bounded score supports can use either Beta kernels or
+  logit-normal kernels
 - covariate adjustment is not yet supported
 
 ```{r fit-bayes, message = FALSE, warning = FALSE}
@@ -219,9 +225,15 @@ data.frame(
   max_rhat = fit_bayes$diagnostics$max_rhat,
   min_bulk_ess = fit_bayes$diagnostics$min_bulk_ess,
   min_tail_ess = fit_bayes$diagnostics$min_tail_ess,
+  core_ok = fit_bayes$diagnostics$core_ok,
+  truncation_ok = fit_bayes$diagnostics$truncation_ok,
   diagnostic_ok = fit_bayes$diagnostics$diagnostic_ok
 )
 ```
+
+For truncated stick-breaking mixtures, `truncation_ok` is based on ordinary
+sampler diagnostics for the concentration parameters and the final retained
+stick weights.
 
 Because this vignette still uses a small packaged example data set, these
 diagnostics should be interpreted as an illustration of the workflow rather
@@ -316,14 +328,23 @@ posterior_probabilities_positive <- c(
 posterior_probabilities_positive
 ```
 
-## Bounded survivor outcomes
+## Bounded Outcomes
 
-Two experimental bounded survivor models are also available. Use
+Two experimental bounded models are also available. Use
 `continuous_support = "bounded_continuous"` for genuinely continuous or finely
-measured bounded outcomes with survivor values strictly inside the supplied
+measured bounded outcomes with non-atom values strictly inside the supplied
 range. Use `continuous_support = "bounded_score"` for integer or grid-valued
-clinical scores; posterior predictive survivor replications are then sampled on
+clinical scores; posterior predictive non-atom replications are then sampled on
 the same reported score support as the observed data.
+
+The bounded models keep support and kernel separate. The default
+`bounded_kernel = "beta"` uses the original bounded Beta mixture. Setting
+`bounded_kernel = "logit_normal"` uses ordered component locations on the logit
+scale with logit-normal kernels. For bounded-score outcomes, the heaping grids
+describe possible reporting resolutions. For example, `heaping_grids = c(1, 5,
+10)` means the reported score may arise from exact integer reporting, rounding
+to a multiple of five, or rounding to a multiple of ten; the heaping weights are
+estimated from the data.
 
 ```{r bounded-score-example, eval=FALSE}
 fit_bayes_score <- trunc_comp_bayes(
@@ -331,16 +352,35 @@ fit_bayes_score <- trunc_comp_bayes(
   atom = -1,
   data = ist3,
   continuous_support = "bounded_score",
+  bounded_kernel = "logit_normal",
   score_min = 0,
   score_max = 100,
   score_step = 1,
   heaping_grids = c(1, 5, 10),
   heaping = "shared",
+  mixture_components = 2,
   chains = 4,
-  iter_warmup = 500,
-  iter_sampling = 1000,
+  iter_warmup = 300,
+  iter_sampling = 300,
+  control = list(adapt_delta = 0.99, max_treedepth = 12),
+  prior = list(
+    rho_alpha = 1,
+    rho_beta = 1,
+    alpha_shape = 4,
+    alpha_rate = 4,
+    mu_logit_mean = 0,
+    mu_logit_sd = 2,
+    sigma_logit_meanlog = log(1.2),
+    sigma_logit_sdlog = 0.5,
+    eta_prior = c(2, 2, 2)
+  ),
   refresh = 0
 )
+
+fit_bayes_score$diagnostics[c(
+  "divergences", "max_rhat", "min_bulk_ess", "min_tail_ess",
+  "core_ok", "truncation_ok", "diagnostic_ok"
+)]
 
 posterior_predictive_check(fit_bayes_score, type = "continuous")
 ```

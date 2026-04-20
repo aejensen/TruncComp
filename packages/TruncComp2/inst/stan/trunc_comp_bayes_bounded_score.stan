@@ -24,14 +24,14 @@ functions {
 }
 
 data {
-  int<lower=1> N;
-  int<lower=0, upper=1> A[N];
-  int<lower=1, upper=2> arm[N];
   int<lower=2> H;
-  int<lower=1> N_obs;
-  int<lower=1, upper=2> arm_obs[N_obs];
   int<lower=1> J;
-  int<lower=1, upper=J> y_obs_index[N_obs];
+  int<lower=0> n_arm[2];
+  int<lower=0> n_obs_arm[2];
+  int<lower=1> N_score_cells;
+  int<lower=1, upper=2> score_cell_arm[N_score_cells];
+  int<lower=1, upper=J> score_cell_index[N_score_cells];
+  int<lower=1> score_cell_count[N_score_cells];
   vector[J] score_value;
   int<lower=1> K;
   matrix[K, J] bin_lower;
@@ -93,23 +93,25 @@ model {
     eta[g] ~ dirichlet(eta_prior);
   }
 
-  for (n in 1:N) {
-    A[n] ~ bernoulli(pi[arm[n]]);
+  for (r in 1:2) {
+    n_obs_arm[r] ~ binomial(n_arm[r], pi[r]);
   }
 
-  for (n in 1:N_obs) {
+  for (c in 1:N_score_cells) {
     vector[H] component_lp;
+    int r;
     int j;
     int eta_group;
-    j = y_obs_index[n];
-    eta_group = eta_group_by_arm[arm_obs[n]];
+    r = score_cell_arm[c];
+    j = score_cell_index[c];
+    eta_group = eta_group_by_arm[r];
 
     for (h in 1:H) {
       vector[K] grid_lp;
       real beta_a;
       real beta_b;
-      beta_a = m_comp[arm_obs[n]][h] * phi_comp[arm_obs[n]][h];
-      beta_b = (1 - m_comp[arm_obs[n]][h]) * phi_comp[arm_obs[n]][h];
+      beta_a = m_comp[r][h] * phi_comp[r][h];
+      beta_b = (1 - m_comp[r][h]) * phi_comp[r][h];
 
       for (k in 1:K) {
         if (bin_valid[k, j] == 1) {
@@ -121,10 +123,10 @@ model {
         }
       }
 
-      component_lp[h] = log(w[arm_obs[n]][h]) + log_sum_exp(grid_lp);
+      component_lp[h] = log(w[r][h]) + log_sum_exp(grid_lp);
     }
 
-    target += log_sum_exp(component_lp);
+    target += score_cell_count[c] * log_sum_exp(component_lp);
   }
 }
 
@@ -133,7 +135,7 @@ generated quantities {
   real rho_1;
   real pi_0;
   real pi_1;
-  matrix[2, J] survivor_score_pmf;
+  matrix[2, J] score_pmf;
   real mu_0_c;
   real mu_1_c;
   real delta_atom;
@@ -173,15 +175,15 @@ generated quantities {
         component_lp[h] = log(w[r][h]) + log_sum_exp(grid_lp);
       }
 
-      survivor_score_pmf[r, j] = exp(log_sum_exp(component_lp));
+      score_pmf[r, j] = exp(log_sum_exp(component_lp));
     }
   }
 
   mu_0_c = 0;
   mu_1_c = 0;
   for (j in 1:J) {
-    mu_0_c = mu_0_c + score_value[j] * survivor_score_pmf[1, j];
-    mu_1_c = mu_1_c + score_value[j] * survivor_score_pmf[2, j];
+    mu_0_c = mu_0_c + score_value[j] * score_pmf[1, j];
+    mu_1_c = mu_1_c + score_value[j] * score_pmf[2, j];
   }
 
   delta_atom = rho_1 - rho_0;

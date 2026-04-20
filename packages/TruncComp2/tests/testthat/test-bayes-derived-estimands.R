@@ -80,17 +80,17 @@ test_that("Bounded-score arm means agree with the reported-score PMF formula", {
   fit <- bayes_bounded_score_formula_fit(seed = 2402)
   extracted <- posterior::as_draws_df(rstan::extract(
     fit$fit,
-    pars = "survivor_score_pmf",
+    pars = "score_pmf",
     permuted = FALSE,
     inc_warmup = FALSE
   ))
 
   score_values <- fit$settings$score_values
   pmf_0 <- do.call(cbind, lapply(seq_along(score_values), function(j) {
-    extracted[[sprintf("survivor_score_pmf[1,%d]", j)]]
+    extracted[[sprintf("score_pmf[1,%d]", j)]]
   }))
   pmf_1 <- do.call(cbind, lapply(seq_along(score_values), function(j) {
-    extracted[[sprintf("survivor_score_pmf[2,%d]", j)]]
+    extracted[[sprintf("score_pmf[2,%d]", j)]]
   }))
   mu_0_from_pmf <- as.numeric(pmf_0 %*% score_values)
   mu_1_from_pmf <- as.numeric(pmf_1 %*% score_values)

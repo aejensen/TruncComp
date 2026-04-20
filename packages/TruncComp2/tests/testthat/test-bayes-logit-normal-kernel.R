@@ -163,17 +163,17 @@ test_that("bounded-score logit-normal means agree with generated score PMFs", {
   fit <- bayes_bounded_score_logit_fit
   extracted <- posterior::as_draws_df(rstan::extract(
     fit$fit,
-    pars = "survivor_score_pmf",
+    pars = "score_pmf",
     permuted = FALSE,
     inc_warmup = FALSE
   ))
 
   score_values <- fit$settings$score_values
   pmf_0 <- do.call(cbind, lapply(seq_along(score_values), function(j) {
-    extracted[[sprintf("survivor_score_pmf[1,%d]", j)]]
+    extracted[[sprintf("score_pmf[1,%d]", j)]]
   }))
   pmf_1 <- do.call(cbind, lapply(seq_along(score_values), function(j) {
-    extracted[[sprintf("survivor_score_pmf[2,%d]", j)]]
+    extracted[[sprintf("score_pmf[2,%d]", j)]]
   }))
 
   expect_equal(rowSums(pmf_0), rep(1, nrow(pmf_0)), tolerance = 1e-8)

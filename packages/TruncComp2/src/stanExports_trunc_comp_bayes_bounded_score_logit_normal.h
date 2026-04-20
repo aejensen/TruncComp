@@ -42,7 +42,7 @@ static constexpr std::array<const char*, 163> locations_array__ =
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 119, column 2 to column 13)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 120, column 2 to column 12)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 121, column 2 to column 12)",
-  " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 122, column 2 to column 34)",
+  " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 122, column 2 to column 25)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 123, column 2 to column 14)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 124, column 2 to column 14)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 125, column 2 to column 18)",
@@ -80,15 +80,15 @@ static constexpr std::array<const char*, 163> locations_array__ =
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 154, column 8 to column 62)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 138, column 21 to line 155, column 7)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 138, column 6 to line 155, column 7)",
-  " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 156, column 6 to column 64)",
+  " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 156, column 6 to column 55)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 136, column 19 to line 157, column 5)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 136, column 4 to line 157, column 5)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 133, column 17 to line 158, column 3)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 133, column 2 to line 158, column 3)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 159, column 2 to column 13)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 160, column 2 to column 13)",
-  " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 162, column 4 to column 64)",
-  " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 163, column 4 to column 64)",
+  " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 162, column 4 to column 55)",
+  " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 163, column 4 to column 55)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 161, column 17 to line 164, column 3)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 161, column 2 to line 164, column 3)",
   " (in 'trunc_comp_bayes_bounded_score_logit_normal', line 165, column 2 to column 29)",
@@ -659,7 +659,7 @@ public:
       current_statement__ = 147;
       stan::math::validate_non_negative_index("sigma_logit_comp", "H", H);
       current_statement__ = 148;
-      stan::math::validate_non_negative_index("survivor_score_pmf", "J", J);
+      stan::math::validate_non_negative_index("score_pmf", "J", J);
     } catch (const std::exception& e) {
       stan::lang::rethrow_located(e, locations_array__[current_statement__]);
     }
@@ -1094,7 +1094,7 @@ public:
       double rho_1 = std::numeric_limits<double>::quiet_NaN();
       double pi_0 = std::numeric_limits<double>::quiet_NaN();
       double pi_1 = std::numeric_limits<double>::quiet_NaN();
-      Eigen::Matrix<double,-1,-1> survivor_score_pmf =
+      Eigen::Matrix<double,-1,-1> score_pmf =
         Eigen::Matrix<double,-1,-1>::Constant(2, J,
           std::numeric_limits<double>::quiet_NaN());
       double mu_0_c = std::numeric_limits<double>::quiet_NaN();
@@ -1176,10 +1176,10 @@ public:
               "assigning variable component_lp", stan::model::index_uni(h));
           }
           current_statement__ = 52;
-          stan::model::assign(survivor_score_pmf,
+          stan::model::assign(score_pmf,
             stan::math::exp(stan::math::log_sum_exp(component_lp)),
-            "assigning variable survivor_score_pmf",
-            stan::model::index_uni(r), stan::model::index_uni(j));
+            "assigning variable score_pmf", stan::model::index_uni(r),
+            stan::model::index_uni(j));
         }
       }
       current_statement__ = 57;
@@ -1193,14 +1193,14 @@ public:
           (stan::model::rvalue(score_value, "score_value",
              stan::model::index_uni(j))
           *
-          stan::model::rvalue(survivor_score_pmf, "survivor_score_pmf",
+          stan::model::rvalue(score_pmf, "score_pmf",
             stan::model::index_uni(1), stan::model::index_uni(j))));
         current_statement__ = 60;
         mu_1_c = (mu_1_c +
           (stan::model::rvalue(score_value, "score_value",
              stan::model::index_uni(j))
           *
-          stan::model::rvalue(survivor_score_pmf, "survivor_score_pmf",
+          stan::model::rvalue(score_pmf, "score_pmf",
             stan::model::index_uni(2), stan::model::index_uni(j))));
       }
       current_statement__ = 63;
@@ -1216,7 +1216,7 @@ public:
       out__.write(rho_1);
       out__.write(pi_0);
       out__.write(pi_1);
-      out__.write(survivor_score_pmf);
+      out__.write(score_pmf);
       out__.write(mu_0_c);
       out__.write(mu_1_c);
       out__.write(delta_atom);
@@ -1499,9 +1499,8 @@ public:
     }
     if (emit_generated_quantities__) {
       std::vector<std::string>
-        temp{"rho_0", "rho_1", "pi_0", "pi_1", "survivor_score_pmf",
-             "mu_0_c", "mu_1_c", "delta_atom", "mu_delta", "alpha_delta",
-             "delta"};
+        temp{"rho_0", "rho_1", "pi_0", "pi_1", "score_pmf", "mu_0_c",
+             "mu_1_c", "delta_atom", "mu_delta", "alpha_delta", "delta"};
       names__.reserve(names__.size() + temp.size());
       names__.insert(names__.end(), temp.begin(), temp.end());
     }
@@ -1605,8 +1604,8 @@ public:
       param_names__.emplace_back(std::string() + "pi_1");
       for (int sym1__ = 1; sym1__ <= J; ++sym1__) {
         for (int sym2__ = 1; sym2__ <= 2; ++sym2__) {
-          param_names__.emplace_back(std::string() + "survivor_score_pmf" +
-            '.' + std::to_string(sym2__) + '.' + std::to_string(sym1__));
+          param_names__.emplace_back(std::string() + "score_pmf" + '.' +
+            std::to_string(sym2__) + '.' + std::to_string(sym1__));
         }
       }
       param_names__.emplace_back(std::string() + "mu_0_c");
@@ -1678,8 +1677,8 @@ public:
       param_names__.emplace_back(std::string() + "pi_1");
       for (int sym1__ = 1; sym1__ <= J; ++sym1__) {
         for (int sym2__ = 1; sym2__ <= 2; ++sym2__) {
-          param_names__.emplace_back(std::string() + "survivor_score_pmf" +
-            '.' + std::to_string(sym2__) + '.' + std::to_string(sym1__));
+          param_names__.emplace_back(std::string() + "score_pmf" + '.' +
+            std::to_string(sym2__) + '.' + std::to_string(sym1__));
         }
       }
       param_names__.emplace_back(std::string() + "mu_0_c");
@@ -1691,10 +1690,10 @@ public:
     }
   }
   inline std::string get_constrained_sizedtypes() const {
-    return std::string("[{\"name\":\"v\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(v_2dim__) + "}},\"block\":\"parameters\"},{\"name\":\"mu_logit_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"log_sigma_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"alpha\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"rho\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"eta\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(eta_groups) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(K) + "}},\"block\":\"parameters\"},{\"name\":\"w\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"sigma_logit_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"pi\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"transformed_parameters\"},{\"name\":\"rho_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"rho_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"survivor_score_pmf\",\"type\":{\"name\":\"matrix\",\"rows\":" + std::to_string(2) + ",\"cols\":" + std::to_string(J) + "},\"block\":\"generated_quantities\"},{\"name\":\"mu_0_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_1_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta_atom\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"alpha_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"}]");
+    return std::string("[{\"name\":\"v\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(v_2dim__) + "}},\"block\":\"parameters\"},{\"name\":\"mu_logit_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"log_sigma_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"alpha\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"rho\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"eta\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(eta_groups) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(K) + "}},\"block\":\"parameters\"},{\"name\":\"w\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"sigma_logit_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"pi\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"transformed_parameters\"},{\"name\":\"rho_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"rho_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"score_pmf\",\"type\":{\"name\":\"matrix\",\"rows\":" + std::to_string(2) + ",\"cols\":" + std::to_string(J) + "},\"block\":\"generated_quantities\"},{\"name\":\"mu_0_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_1_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta_atom\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"alpha_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"}]");
   }
   inline std::string get_unconstrained_sizedtypes() const {
-    return std::string("[{\"name\":\"v\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(v_2dim__) + "}},\"block\":\"parameters\"},{\"name\":\"mu_logit_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"log_sigma_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"alpha\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"rho\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"eta\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(eta_groups) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string((K -1)) + "}},\"block\":\"parameters\"},{\"name\":\"w\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string((H -1)) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"sigma_logit_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"pi\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"transformed_parameters\"},{\"name\":\"rho_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"rho_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"survivor_score_pmf\",\"type\":{\"name\":\"matrix\",\"rows\":" + std::to_string(2) + ",\"cols\":" + std::to_string(J) + "},\"block\":\"generated_quantities\"},{\"name\":\"mu_0_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_1_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta_atom\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"alpha_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"}]");
+    return std::string("[{\"name\":\"v\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(v_2dim__) + "}},\"block\":\"parameters\"},{\"name\":\"mu_logit_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"log_sigma_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"alpha\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"rho\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"eta\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(eta_groups) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string((K -1)) + "}},\"block\":\"parameters\"},{\"name\":\"w\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string((H -1)) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"sigma_logit_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"pi\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"transformed_parameters\"},{\"name\":\"rho_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"rho_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"score_pmf\",\"type\":{\"name\":\"matrix\",\"rows\":" + std::to_string(2) + ",\"cols\":" + std::to_string(J) + "},\"block\":\"generated_quantities\"},{\"name\":\"mu_0_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_1_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta_atom\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"alpha_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"}]");
   }
   // Begin method overload boilerplate
   template <typename RNG> inline void

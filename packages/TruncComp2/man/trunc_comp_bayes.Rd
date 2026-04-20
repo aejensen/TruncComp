@@ -83,15 +83,15 @@ exactly one unique finite value.}
 while \code{"positive_real"} fits a Gamma-mixture model on the positive real
 line and therefore requires all non-atom outcomes to be strictly
 positive. \code{"bounded_continuous"} fits an experimental Beta-mixture model
-by default for finely measured survivor outcomes inside
+by default for finely measured bounded outcomes inside
 \verb{(score_min, score_max)}. \code{"bounded_score"} fits an experimental
 discretized/heaped Beta-mixture model by default for integer or grid-valued
-survivor scores in \verb{[score_min, score_max]}. The bounded models can
+non-atom scores in \verb{[score_min, score_max]}. The bounded models can
 instead use logit-normal mixture kernels via
 \code{bounded_kernel = "logit_normal"}.}
 
 \item{score_min, score_max}{Finite numeric lower and upper bounds for the two
-bounded Bayesian survivor models. Required when \code{continuous_support} is
+bounded Bayesian models. Required when \code{continuous_support} is
 \code{"bounded_continuous"} or \code{"bounded_score"}.}
 
 \item{score_step}{Positive score-grid spacing for
@@ -104,7 +104,7 @@ bounded Bayesian survivor models. Required when \code{continuous_support} is
 \item{heaping}{Whether bounded-score heaping proportions are shared across
 arms (\code{"shared"}) or arm-specific (\code{"arm_specific"}).}
 
-\item{bounded_kernel}{Kernel family for bounded Bayesian survivor models.
+\item{bounded_kernel}{Kernel family for bounded Bayesian models.
 \code{"beta"} keeps the existing bounded Beta-mixture models and is the
 default. \code{"logit_normal"} uses logit-normal mixture kernels for
 \code{continuous_support = "bounded_continuous"} and
@@ -116,8 +116,8 @@ remains \code{10}.}
 
 \item{auto_select_mixture_components}{Logical flag indicating whether the
 Bayesian fit should automatically increase the truncation level by
-doubling it until the omitted-tail diagnostic is acceptable or the maximum
-level is reached.}
+doubling it until sampler diagnostics pass or the maximum level is
+reached.}
 
 \item{mixture_components_max}{Optional maximum truncation level used when
 \code{auto_select_mixture_components = TRUE}. If left \code{NULL}, the effective
@@ -182,13 +182,11 @@ checking.
 The \code{mixture_components} argument now controls the initial finite
 stick-breaking approximation level. When
 \code{auto_select_mixture_components = TRUE}, the package fits the requested
-initial level, computes an omitted-tail diagnostic based on the posterior
-draws of the final retained stick weight and the concentration parameter in
-each arm, and accepts the current level only when those omitted-tail draws
-are sufficiently small and the usual sampler diagnostics also pass. If not,
-the truncation level is doubled and the model is refit until an acceptable
-level is found or \code{mixture_components_max} is reached. The smallest accepted
-level is retained as the final fit.
+initial level and accepts the current level when the usual sampler
+diagnostics pass. If sampler diagnostics fail, the truncation level is
+doubled and the model is refit until an acceptable level is found or
+\code{mixture_components_max} is reached. The smallest accepted level is retained
+as the final fit.
 
 In the stored posterior draws and summaries:
 \itemize{

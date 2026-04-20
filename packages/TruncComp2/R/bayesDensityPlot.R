@@ -696,7 +696,7 @@ bayes_density_plot_data <- function(object,
 #'
 #' Visualizes the arm-specific posterior mean continuous densities implied by a
 #' fitted `"trunc_comp_bayes_fit"` object, or posterior mean reported-score
-#' masses for `continuous_support = "bounded_score"`. The plotted survivor
+#' masses for `continuous_support = "bounded_score"`. The plotted non-atom
 #' distribution is weighted by the posterior probability of being observed away
 #' from the atom. The atom itself is shown separately as a solid vertical spike
 #' with an arrowhead, annotated with the posterior mean atom probability in each

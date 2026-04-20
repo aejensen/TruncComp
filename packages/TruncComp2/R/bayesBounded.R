@@ -86,11 +86,11 @@ bayes_score_grid_index <- function(y, score_min, score_max, score_step) {
   if(any(!valid)) {
     if(isTRUE(all.equal(score_step, 1))) {
       stop(
-        "For continuous_support = \"bounded_score\" with score_step = 1, all observed survivor scores must be integers on the score grid."
+        "For continuous_support = \"bounded_score\" with score_step = 1, all observed non-atom scores must be integers on the score grid."
       )
     }
 
-    stop("For continuous_support = \"bounded_score\", all observed survivor scores must lie exactly on the score grid.")
+    stop("For continuous_support = \"bounded_score\", all observed non-atom scores must lie exactly on the score grid.")
   }
 
   index
@@ -105,7 +105,7 @@ bayes_score_cell_counts <- function(arm_obs, y_obs_index, j_count) {
     stop("arm_obs and y_obs_index must have the same length.")
   }
   if(length(arm_obs) == 0L) {
-    stop("At least one observed survivor score is required.")
+    stop("At least one observed non-atom score is required.")
   }
   if(any(is.na(arm_obs)) || any(!arm_obs %in% 1:2)) {
     stop("arm_obs must contain arm indices 1 or 2.")
@@ -315,20 +315,20 @@ bayes_validate_bounded_data <- function(data, atom, support_options) {
 
   if(score_min <= atom && atom <= score_max) {
     stop(
-      "For bounded Bayesian models, atom must not lie on the survivor outcome support."
+      "For bounded Bayesian models, atom must not lie on the non-atom outcome support."
     )
   }
 
   if(any(observed < score_min | observed > score_max)) {
     stop(
-      "For bounded Bayesian models, all observed survivor outcomes must lie in [score_min, score_max]."
+      "For bounded Bayesian models, all observed non-atom outcomes must lie in [score_min, score_max]."
     )
   }
 
   if(identical(support_options$continuous_support, "bounded_continuous")) {
     if(any(observed <= score_min | observed >= score_max)) {
       stop(
-        "For continuous_support = \"bounded_continuous\", observed survivor outcomes must be strictly inside (score_min, score_max). Boundary survivor values require the bounded_score model in this MVP."
+        "For continuous_support = \"bounded_continuous\", observed non-atom outcomes must be strictly inside (score_min, score_max). Boundary values require the bounded_score model in this MVP."
       )
     }
 
@@ -350,7 +350,7 @@ bayes_validate_bounded_data <- function(data, atom, support_options) {
   )
 
   if(any(colSums(compatible) == 0L)) {
-    stop("Every observed survivor score must be compatible with at least one heaping grid.")
+    stop("Every observed non-atom score must be compatible with at least one heaping grid.")
   }
 
   invisible(TRUE)

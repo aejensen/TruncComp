@@ -27,7 +27,7 @@ namespace model_trunc_comp_bayes_bounded_score_namespace {
 using stan::model::model_base_crtp;
 using namespace stan::math;
 stan::math::profile_map profiles__;
-static constexpr std::array<const char*, 167> locations_array__ =
+static constexpr std::array<const char*, 168> locations_array__ =
   {" (found before start of program)",
   " (in 'trunc_comp_bayes_bounded_score', line 49, column 2 to column 39)",
   " (in 'trunc_comp_bayes_bounded_score', line 50, column 2 to column 50)",
@@ -37,17 +37,17 @@ static constexpr std::array<const char*, 167> locations_array__ =
   " (in 'trunc_comp_bayes_bounded_score', line 54, column 2 to column 29)",
   " (in 'trunc_comp_bayes_bounded_score', line 57, column 2 to column 18)",
   " (in 'trunc_comp_bayes_bounded_score', line 58, column 2 to column 33)",
-  " (in 'trunc_comp_bayes_bounded_score', line 113, column 2 to column 13)",
-  " (in 'trunc_comp_bayes_bounded_score', line 114, column 2 to column 13)",
-  " (in 'trunc_comp_bayes_bounded_score', line 115, column 2 to column 12)",
-  " (in 'trunc_comp_bayes_bounded_score', line 116, column 2 to column 12)",
-  " (in 'trunc_comp_bayes_bounded_score', line 117, column 2 to column 34)",
-  " (in 'trunc_comp_bayes_bounded_score', line 118, column 2 to column 14)",
-  " (in 'trunc_comp_bayes_bounded_score', line 119, column 2 to column 14)",
-  " (in 'trunc_comp_bayes_bounded_score', line 120, column 2 to column 18)",
-  " (in 'trunc_comp_bayes_bounded_score', line 121, column 2 to column 16)",
-  " (in 'trunc_comp_bayes_bounded_score', line 122, column 2 to column 19)",
-  " (in 'trunc_comp_bayes_bounded_score', line 123, column 2 to column 13)",
+  " (in 'trunc_comp_bayes_bounded_score', line 115, column 2 to column 13)",
+  " (in 'trunc_comp_bayes_bounded_score', line 116, column 2 to column 13)",
+  " (in 'trunc_comp_bayes_bounded_score', line 117, column 2 to column 12)",
+  " (in 'trunc_comp_bayes_bounded_score', line 118, column 2 to column 12)",
+  " (in 'trunc_comp_bayes_bounded_score', line 119, column 2 to column 25)",
+  " (in 'trunc_comp_bayes_bounded_score', line 120, column 2 to column 14)",
+  " (in 'trunc_comp_bayes_bounded_score', line 121, column 2 to column 14)",
+  " (in 'trunc_comp_bayes_bounded_score', line 122, column 2 to column 18)",
+  " (in 'trunc_comp_bayes_bounded_score', line 123, column 2 to column 16)",
+  " (in 'trunc_comp_bayes_bounded_score', line 124, column 2 to column 19)",
+  " (in 'trunc_comp_bayes_bounded_score', line 125, column 2 to column 13)",
   " (in 'trunc_comp_bayes_bounded_score', line 60, column 4 to column 19)",
   " (in 'trunc_comp_bayes_bounded_score', line 61, column 4 to column 18)",
   " (in 'trunc_comp_bayes_bounded_score', line 63, column 6 to column 36)",
@@ -58,45 +58,45 @@ static constexpr std::array<const char*, 167> locations_array__ =
   " (in 'trunc_comp_bayes_bounded_score', line 67, column 4 to column 23)",
   " (in 'trunc_comp_bayes_bounded_score', line 59, column 17 to line 68, column 3)",
   " (in 'trunc_comp_bayes_bounded_score', line 59, column 2 to line 68, column 3)",
-  " (in 'trunc_comp_bayes_bounded_score', line 124, column 2 to column 17)",
-  " (in 'trunc_comp_bayes_bounded_score', line 125, column 2 to column 17)",
-  " (in 'trunc_comp_bayes_bounded_score', line 126, column 2 to column 15)",
-  " (in 'trunc_comp_bayes_bounded_score', line 127, column 2 to column 15)",
-  " (in 'trunc_comp_bayes_bounded_score', line 129, column 4 to column 18)",
-  " (in 'trunc_comp_bayes_bounded_score', line 130, column 4 to column 36)",
-  " (in 'trunc_comp_bayes_bounded_score', line 132, column 13 to column 14)",
-  " (in 'trunc_comp_bayes_bounded_score', line 132, column 6 to column 29)",
-  " (in 'trunc_comp_bayes_bounded_score', line 134, column 15 to column 16)",
-  " (in 'trunc_comp_bayes_bounded_score', line 134, column 8 to column 26)",
-  " (in 'trunc_comp_bayes_bounded_score', line 135, column 8 to column 20)",
-  " (in 'trunc_comp_bayes_bounded_score', line 136, column 8 to column 20)",
-  " (in 'trunc_comp_bayes_bounded_score', line 137, column 8 to column 47)",
-  " (in 'trunc_comp_bayes_bounded_score', line 138, column 8 to column 53)",
-  " (in 'trunc_comp_bayes_bounded_score', line 145, column 12 to column 45)",
-  " (in 'trunc_comp_bayes_bounded_score', line 144, column 17 to line 146, column 11)",
-  " (in 'trunc_comp_bayes_bounded_score', line 141, column 12 to line 143, column 82)",
-  " (in 'trunc_comp_bayes_bounded_score', line 140, column 36 to line 144, column 11)",
-  " (in 'trunc_comp_bayes_bounded_score', line 140, column 10 to line 146, column 11)",
-  " (in 'trunc_comp_bayes_bounded_score', line 139, column 23 to line 147, column 9)",
-  " (in 'trunc_comp_bayes_bounded_score', line 139, column 8 to line 147, column 9)",
-  " (in 'trunc_comp_bayes_bounded_score', line 148, column 8 to column 62)",
-  " (in 'trunc_comp_bayes_bounded_score', line 133, column 21 to line 149, column 7)",
-  " (in 'trunc_comp_bayes_bounded_score', line 133, column 6 to line 149, column 7)",
-  " (in 'trunc_comp_bayes_bounded_score', line 150, column 6 to column 64)",
-  " (in 'trunc_comp_bayes_bounded_score', line 131, column 19 to line 151, column 5)",
-  " (in 'trunc_comp_bayes_bounded_score', line 131, column 4 to line 151, column 5)",
-  " (in 'trunc_comp_bayes_bounded_score', line 128, column 17 to line 152, column 3)",
-  " (in 'trunc_comp_bayes_bounded_score', line 128, column 2 to line 152, column 3)",
-  " (in 'trunc_comp_bayes_bounded_score', line 153, column 2 to column 13)",
-  " (in 'trunc_comp_bayes_bounded_score', line 154, column 2 to column 13)",
-  " (in 'trunc_comp_bayes_bounded_score', line 156, column 4 to column 64)",
-  " (in 'trunc_comp_bayes_bounded_score', line 157, column 4 to column 64)",
-  " (in 'trunc_comp_bayes_bounded_score', line 155, column 17 to line 158, column 3)",
-  " (in 'trunc_comp_bayes_bounded_score', line 155, column 2 to line 158, column 3)",
-  " (in 'trunc_comp_bayes_bounded_score', line 159, column 2 to column 29)",
-  " (in 'trunc_comp_bayes_bounded_score', line 160, column 2 to column 29)",
-  " (in 'trunc_comp_bayes_bounded_score', line 161, column 2 to column 58)",
-  " (in 'trunc_comp_bayes_bounded_score', line 162, column 2 to line 164, column 35)",
+  " (in 'trunc_comp_bayes_bounded_score', line 126, column 2 to column 17)",
+  " (in 'trunc_comp_bayes_bounded_score', line 127, column 2 to column 17)",
+  " (in 'trunc_comp_bayes_bounded_score', line 128, column 2 to column 15)",
+  " (in 'trunc_comp_bayes_bounded_score', line 129, column 2 to column 15)",
+  " (in 'trunc_comp_bayes_bounded_score', line 131, column 4 to column 18)",
+  " (in 'trunc_comp_bayes_bounded_score', line 132, column 4 to column 36)",
+  " (in 'trunc_comp_bayes_bounded_score', line 134, column 13 to column 14)",
+  " (in 'trunc_comp_bayes_bounded_score', line 134, column 6 to column 29)",
+  " (in 'trunc_comp_bayes_bounded_score', line 136, column 15 to column 16)",
+  " (in 'trunc_comp_bayes_bounded_score', line 136, column 8 to column 26)",
+  " (in 'trunc_comp_bayes_bounded_score', line 137, column 8 to column 20)",
+  " (in 'trunc_comp_bayes_bounded_score', line 138, column 8 to column 20)",
+  " (in 'trunc_comp_bayes_bounded_score', line 139, column 8 to column 47)",
+  " (in 'trunc_comp_bayes_bounded_score', line 140, column 8 to column 53)",
+  " (in 'trunc_comp_bayes_bounded_score', line 147, column 12 to column 45)",
+  " (in 'trunc_comp_bayes_bounded_score', line 146, column 17 to line 148, column 11)",
+  " (in 'trunc_comp_bayes_bounded_score', line 143, column 12 to line 145, column 82)",
+  " (in 'trunc_comp_bayes_bounded_score', line 142, column 36 to line 146, column 11)",
+  " (in 'trunc_comp_bayes_bounded_score', line 142, column 10 to line 148, column 11)",
+  " (in 'trunc_comp_bayes_bounded_score', line 141, column 23 to line 149, column 9)",
+  " (in 'trunc_comp_bayes_bounded_score', line 141, column 8 to line 149, column 9)",
+  " (in 'trunc_comp_bayes_bounded_score', line 150, column 8 to column 62)",
+  " (in 'trunc_comp_bayes_bounded_score', line 135, column 21 to line 151, column 7)",
+  " (in 'trunc_comp_bayes_bounded_score', line 135, column 6 to line 151, column 7)",
+  " (in 'trunc_comp_bayes_bounded_score', line 152, column 6 to column 55)",
+  " (in 'trunc_comp_bayes_bounded_score', line 133, column 19 to line 153, column 5)",
+  " (in 'trunc_comp_bayes_bounded_score', line 133, column 4 to line 153, column 5)",
+  " (in 'trunc_comp_bayes_bounded_score', line 130, column 17 to line 154, column 3)",
+  " (in 'trunc_comp_bayes_bounded_score', line 130, column 2 to line 154, column 3)",
+  " (in 'trunc_comp_bayes_bounded_score', line 155, column 2 to column 13)",
+  " (in 'trunc_comp_bayes_bounded_score', line 156, column 2 to column 13)",
+  " (in 'trunc_comp_bayes_bounded_score', line 158, column 4 to column 55)",
+  " (in 'trunc_comp_bayes_bounded_score', line 159, column 4 to column 55)",
+  " (in 'trunc_comp_bayes_bounded_score', line 157, column 17 to line 160, column 3)",
+  " (in 'trunc_comp_bayes_bounded_score', line 157, column 2 to line 160, column 3)",
+  " (in 'trunc_comp_bayes_bounded_score', line 161, column 2 to column 29)",
+  " (in 'trunc_comp_bayes_bounded_score', line 162, column 2 to column 29)",
+  " (in 'trunc_comp_bayes_bounded_score', line 163, column 2 to column 58)",
+  " (in 'trunc_comp_bayes_bounded_score', line 164, column 2 to line 166, column 35)",
   " (in 'trunc_comp_bayes_bounded_score', line 72, column 4 to column 51)",
   " (in 'trunc_comp_bayes_bounded_score', line 73, column 4 to column 58)",
   " (in 'trunc_comp_bayes_bounded_score', line 75, column 6 to column 34)",
@@ -109,46 +109,47 @@ static constexpr std::array<const char*, 167> locations_array__ =
   " (in 'trunc_comp_bayes_bounded_score', line 81, column 4 to column 34)",
   " (in 'trunc_comp_bayes_bounded_score', line 80, column 26 to line 82, column 3)",
   " (in 'trunc_comp_bayes_bounded_score', line 80, column 2 to line 82, column 3)",
-  " (in 'trunc_comp_bayes_bounded_score', line 84, column 4 to column 33)",
+  " (in 'trunc_comp_bayes_bounded_score', line 84, column 4 to column 45)",
   " (in 'trunc_comp_bayes_bounded_score', line 83, column 17 to line 85, column 3)",
   " (in 'trunc_comp_bayes_bounded_score', line 83, column 2 to line 85, column 3)",
   " (in 'trunc_comp_bayes_bounded_score', line 87, column 11 to column 12)",
   " (in 'trunc_comp_bayes_bounded_score', line 87, column 4 to column 27)",
   " (in 'trunc_comp_bayes_bounded_score', line 88, column 4 to column 10)",
-  " (in 'trunc_comp_bayes_bounded_score', line 89, column 4 to column 18)",
-  " (in 'trunc_comp_bayes_bounded_score', line 90, column 4 to column 23)",
-  " (in 'trunc_comp_bayes_bounded_score', line 91, column 4 to column 45)",
-  " (in 'trunc_comp_bayes_bounded_score', line 93, column 13 to column 14)",
-  " (in 'trunc_comp_bayes_bounded_score', line 93, column 6 to column 24)",
-  " (in 'trunc_comp_bayes_bounded_score', line 94, column 6 to column 18)",
-  " (in 'trunc_comp_bayes_bounded_score', line 95, column 6 to column 18)",
-  " (in 'trunc_comp_bayes_bounded_score', line 96, column 6 to column 63)",
-  " (in 'trunc_comp_bayes_bounded_score', line 97, column 6 to column 69)",
-  " (in 'trunc_comp_bayes_bounded_score', line 104, column 10 to column 43)",
-  " (in 'trunc_comp_bayes_bounded_score', line 103, column 15 to line 105, column 9)",
-  " (in 'trunc_comp_bayes_bounded_score', line 100, column 10 to line 102, column 80)",
-  " (in 'trunc_comp_bayes_bounded_score', line 99, column 34 to line 103, column 9)",
-  " (in 'trunc_comp_bayes_bounded_score', line 99, column 8 to line 105, column 9)",
-  " (in 'trunc_comp_bayes_bounded_score', line 98, column 21 to line 106, column 7)",
-  " (in 'trunc_comp_bayes_bounded_score', line 98, column 6 to line 106, column 7)",
-  " (in 'trunc_comp_bayes_bounded_score', line 107, column 6 to column 69)",
-  " (in 'trunc_comp_bayes_bounded_score', line 92, column 19 to line 108, column 5)",
-  " (in 'trunc_comp_bayes_bounded_score', line 92, column 4 to line 108, column 5)",
-  " (in 'trunc_comp_bayes_bounded_score', line 109, column 4 to column 40)",
-  " (in 'trunc_comp_bayes_bounded_score', line 86, column 21 to line 110, column 3)",
-  " (in 'trunc_comp_bayes_bounded_score', line 86, column 2 to line 110, column 3)",
+  " (in 'trunc_comp_bayes_bounded_score', line 89, column 4 to column 10)",
+  " (in 'trunc_comp_bayes_bounded_score', line 90, column 4 to column 18)",
+  " (in 'trunc_comp_bayes_bounded_score', line 91, column 4 to column 26)",
+  " (in 'trunc_comp_bayes_bounded_score', line 92, column 4 to column 28)",
+  " (in 'trunc_comp_bayes_bounded_score', line 93, column 4 to column 36)",
+  " (in 'trunc_comp_bayes_bounded_score', line 95, column 13 to column 14)",
+  " (in 'trunc_comp_bayes_bounded_score', line 95, column 6 to column 24)",
+  " (in 'trunc_comp_bayes_bounded_score', line 96, column 6 to column 18)",
+  " (in 'trunc_comp_bayes_bounded_score', line 97, column 6 to column 18)",
+  " (in 'trunc_comp_bayes_bounded_score', line 98, column 6 to column 45)",
+  " (in 'trunc_comp_bayes_bounded_score', line 99, column 6 to column 51)",
+  " (in 'trunc_comp_bayes_bounded_score', line 106, column 10 to column 43)",
+  " (in 'trunc_comp_bayes_bounded_score', line 105, column 15 to line 107, column 9)",
+  " (in 'trunc_comp_bayes_bounded_score', line 102, column 10 to line 104, column 80)",
+  " (in 'trunc_comp_bayes_bounded_score', line 101, column 34 to line 105, column 9)",
+  " (in 'trunc_comp_bayes_bounded_score', line 101, column 8 to line 107, column 9)",
+  " (in 'trunc_comp_bayes_bounded_score', line 100, column 21 to line 108, column 7)",
+  " (in 'trunc_comp_bayes_bounded_score', line 100, column 6 to line 108, column 7)",
+  " (in 'trunc_comp_bayes_bounded_score', line 109, column 6 to column 60)",
+  " (in 'trunc_comp_bayes_bounded_score', line 94, column 19 to line 110, column 5)",
+  " (in 'trunc_comp_bayes_bounded_score', line 94, column 4 to line 110, column 5)",
+  " (in 'trunc_comp_bayes_bounded_score', line 111, column 4 to column 62)",
+  " (in 'trunc_comp_bayes_bounded_score', line 86, column 29 to line 112, column 3)",
+  " (in 'trunc_comp_bayes_bounded_score', line 86, column 2 to line 112, column 3)",
   " (in 'trunc_comp_bayes_bounded_score', line 22, column 2 to column 17)",
-  " (in 'trunc_comp_bayes_bounded_score', line 23, column 26 to column 27)",
-  " (in 'trunc_comp_bayes_bounded_score', line 23, column 2 to column 29)",
-  " (in 'trunc_comp_bayes_bounded_score', line 24, column 28 to column 29)",
-  " (in 'trunc_comp_bayes_bounded_score', line 24, column 2 to column 31)",
-  " (in 'trunc_comp_bayes_bounded_score', line 25, column 2 to column 17)",
-  " (in 'trunc_comp_bayes_bounded_score', line 26, column 2 to column 21)",
-  " (in 'trunc_comp_bayes_bounded_score', line 27, column 32 to column 37)",
-  " (in 'trunc_comp_bayes_bounded_score', line 27, column 2 to column 39)",
-  " (in 'trunc_comp_bayes_bounded_score', line 28, column 2 to column 17)",
-  " (in 'trunc_comp_bayes_bounded_score', line 29, column 36 to column 41)",
-  " (in 'trunc_comp_bayes_bounded_score', line 29, column 2 to column 43)",
+  " (in 'trunc_comp_bayes_bounded_score', line 23, column 2 to column 17)",
+  " (in 'trunc_comp_bayes_bounded_score', line 24, column 2 to column 24)",
+  " (in 'trunc_comp_bayes_bounded_score', line 25, column 2 to column 28)",
+  " (in 'trunc_comp_bayes_bounded_score', line 26, column 2 to column 29)",
+  " (in 'trunc_comp_bayes_bounded_score', line 27, column 39 to column 52)",
+  " (in 'trunc_comp_bayes_bounded_score', line 27, column 2 to column 54)",
+  " (in 'trunc_comp_bayes_bounded_score', line 28, column 41 to column 54)",
+  " (in 'trunc_comp_bayes_bounded_score', line 28, column 2 to column 56)",
+  " (in 'trunc_comp_bayes_bounded_score', line 29, column 32 to column 45)",
+  " (in 'trunc_comp_bayes_bounded_score', line 29, column 2 to column 47)",
   " (in 'trunc_comp_bayes_bounded_score', line 30, column 9 to column 10)",
   " (in 'trunc_comp_bayes_bounded_score', line 30, column 2 to column 24)",
   " (in 'trunc_comp_bayes_bounded_score', line 31, column 2 to column 17)",
@@ -180,7 +181,7 @@ static constexpr std::array<const char*, 167> locations_array__ =
   " (in 'trunc_comp_bayes_bounded_score', line 54, column 17 to column 27)",
   " (in 'trunc_comp_bayes_bounded_score', line 54, column 10 to column 11)",
   " (in 'trunc_comp_bayes_bounded_score', line 57, column 10 to column 11)",
-  " (in 'trunc_comp_bayes_bounded_score', line 117, column 12 to column 13)",
+  " (in 'trunc_comp_bayes_bounded_score', line 119, column 12 to column 13)",
   " (in 'trunc_comp_bayes_bounded_score', line 4, column 6 to column 33)",
   " (in 'trunc_comp_bayes_bounded_score', line 3, column 24 to line 5, column 5)",
   " (in 'trunc_comp_bayes_bounded_score', line 3, column 4 to line 5, column 5)",
@@ -219,28 +220,28 @@ beta_interval_log(const T0__& lower, const T1__& upper, const T2__& beta_a,
   // suppress unused var warning
   (void) DUMMY_VAR__;
   try {
-    current_statement__ = 155;
+    current_statement__ = 156;
     if (stan::math::logical_lte(upper, lower)) {
-      current_statement__ = 153;
+      current_statement__ = 154;
       return stan::math::negative_infinity();
     }
-    current_statement__ = 158;
+    current_statement__ = 159;
     if ((stan::math::primitive_value(stan::math::logical_lte(lower, 0)) &&
         stan::math::primitive_value(stan::math::logical_gte(upper, 1)))) {
-      current_statement__ = 156;
+      current_statement__ = 157;
       return 0;
     }
-    current_statement__ = 161;
+    current_statement__ = 162;
     if (stan::math::logical_lte(lower, 0)) {
-      current_statement__ = 159;
+      current_statement__ = 160;
       return stan::math::beta_lcdf(upper, beta_a, beta_b);
     }
-    current_statement__ = 164;
+    current_statement__ = 165;
     if (stan::math::logical_gte(upper, 1)) {
-      current_statement__ = 162;
+      current_statement__ = 163;
       return stan::math::beta_lccdf(lower, beta_a, beta_b);
     }
-    current_statement__ = 165;
+    current_statement__ = 166;
     return stan::math::log_diff_exp(
              stan::math::beta_lcdf(upper, beta_a, beta_b),
              stan::math::beta_lcdf(lower, beta_a, beta_b));
@@ -251,14 +252,14 @@ beta_interval_log(const T0__& lower, const T1__& upper, const T2__& beta_a,
 #include <stan_meta_header.hpp>
 class model_trunc_comp_bayes_bounded_score final : public model_base_crtp<model_trunc_comp_bayes_bounded_score> {
 private:
-  int N;
-  std::vector<int> A;
-  std::vector<int> arm;
   int H;
-  int N_obs;
-  std::vector<int> arm_obs;
   int J;
-  std::vector<int> y_obs_index;
+  std::vector<int> n_arm;
+  std::vector<int> n_obs_arm;
+  int N_score_cells;
+  std::vector<int> score_cell_arm;
+  std::vector<int> score_cell_index;
+  std::vector<int> score_cell_count;
   Eigen::Matrix<double,-1,1> score_value_data__;
   int K;
   Eigen::Matrix<double,-1,-1> bin_lower_data__;
@@ -303,91 +304,96 @@ public:
     try {
       int pos__ = std::numeric_limits<int>::min();
       pos__ = 1;
-      current_statement__ = 109;
-      context__.validate_dims("data initialization", "N", "int",
-        std::vector<size_t>{});
-      N = std::numeric_limits<int>::min();
-      current_statement__ = 109;
-      N = context__.vals_i("N")[(1 - 1)];
-      current_statement__ = 109;
-      stan::math::check_greater_or_equal(function__, "N", N, 1);
-      current_statement__ = 110;
-      stan::math::validate_non_negative_index("A", "N", N);
       current_statement__ = 111;
-      context__.validate_dims("data initialization", "A", "int",
-        std::vector<size_t>{static_cast<size_t>(N)});
-      A = std::vector<int>(N, std::numeric_limits<int>::min());
-      current_statement__ = 111;
-      A = context__.vals_i("A");
-      current_statement__ = 111;
-      stan::math::check_greater_or_equal(function__, "A", A, 0);
-      current_statement__ = 111;
-      stan::math::check_less_or_equal(function__, "A", A, 1);
-      current_statement__ = 112;
-      stan::math::validate_non_negative_index("arm", "N", N);
-      current_statement__ = 113;
-      context__.validate_dims("data initialization", "arm", "int",
-        std::vector<size_t>{static_cast<size_t>(N)});
-      arm = std::vector<int>(N, std::numeric_limits<int>::min());
-      current_statement__ = 113;
-      arm = context__.vals_i("arm");
-      current_statement__ = 113;
-      stan::math::check_greater_or_equal(function__, "arm", arm, 1);
-      current_statement__ = 113;
-      stan::math::check_less_or_equal(function__, "arm", arm, 2);
-      current_statement__ = 114;
       context__.validate_dims("data initialization", "H", "int",
         std::vector<size_t>{});
       H = std::numeric_limits<int>::min();
-      current_statement__ = 114;
+      current_statement__ = 111;
       H = context__.vals_i("H")[(1 - 1)];
-      current_statement__ = 114;
+      current_statement__ = 111;
       stan::math::check_greater_or_equal(function__, "H", H, 2);
-      current_statement__ = 115;
-      context__.validate_dims("data initialization", "N_obs", "int",
-        std::vector<size_t>{});
-      N_obs = std::numeric_limits<int>::min();
-      current_statement__ = 115;
-      N_obs = context__.vals_i("N_obs")[(1 - 1)];
-      current_statement__ = 115;
-      stan::math::check_greater_or_equal(function__, "N_obs", N_obs, 1);
-      current_statement__ = 116;
-      stan::math::validate_non_negative_index("arm_obs", "N_obs", N_obs);
-      current_statement__ = 117;
-      context__.validate_dims("data initialization", "arm_obs", "int",
-        std::vector<size_t>{static_cast<size_t>(N_obs)});
-      arm_obs = std::vector<int>(N_obs, std::numeric_limits<int>::min());
-      current_statement__ = 117;
-      arm_obs = context__.vals_i("arm_obs");
-      current_statement__ = 117;
-      stan::math::check_greater_or_equal(function__, "arm_obs", arm_obs, 1);
-      current_statement__ = 117;
-      stan::math::check_less_or_equal(function__, "arm_obs", arm_obs, 2);
-      current_statement__ = 118;
+      current_statement__ = 112;
       context__.validate_dims("data initialization", "J", "int",
         std::vector<size_t>{});
       J = std::numeric_limits<int>::min();
-      current_statement__ = 118;
+      current_statement__ = 112;
       J = context__.vals_i("J")[(1 - 1)];
-      current_statement__ = 118;
+      current_statement__ = 112;
       stan::math::check_greater_or_equal(function__, "J", J, 1);
+      current_statement__ = 113;
+      context__.validate_dims("data initialization", "n_arm", "int",
+        std::vector<size_t>{static_cast<size_t>(2)});
+      n_arm = std::vector<int>(2, std::numeric_limits<int>::min());
+      current_statement__ = 113;
+      n_arm = context__.vals_i("n_arm");
+      current_statement__ = 113;
+      stan::math::check_greater_or_equal(function__, "n_arm", n_arm, 0);
+      current_statement__ = 114;
+      context__.validate_dims("data initialization", "n_obs_arm", "int",
+        std::vector<size_t>{static_cast<size_t>(2)});
+      n_obs_arm = std::vector<int>(2, std::numeric_limits<int>::min());
+      current_statement__ = 114;
+      n_obs_arm = context__.vals_i("n_obs_arm");
+      current_statement__ = 114;
+      stan::math::check_greater_or_equal(function__, "n_obs_arm", n_obs_arm,
+        0);
+      current_statement__ = 115;
+      context__.validate_dims("data initialization", "N_score_cells", "int",
+        std::vector<size_t>{});
+      N_score_cells = std::numeric_limits<int>::min();
+      current_statement__ = 115;
+      N_score_cells = context__.vals_i("N_score_cells")[(1 - 1)];
+      current_statement__ = 115;
+      stan::math::check_greater_or_equal(function__, "N_score_cells",
+        N_score_cells, 1);
+      current_statement__ = 116;
+      stan::math::validate_non_negative_index("score_cell_arm",
+        "N_score_cells", N_score_cells);
+      current_statement__ = 117;
+      context__.validate_dims("data initialization", "score_cell_arm", "int",
+        std::vector<size_t>{static_cast<size_t>(N_score_cells)});
+      score_cell_arm = std::vector<int>(N_score_cells,
+                         std::numeric_limits<int>::min());
+      current_statement__ = 117;
+      score_cell_arm = context__.vals_i("score_cell_arm");
+      current_statement__ = 117;
+      stan::math::check_greater_or_equal(function__, "score_cell_arm",
+        score_cell_arm, 1);
+      current_statement__ = 117;
+      stan::math::check_less_or_equal(function__, "score_cell_arm",
+        score_cell_arm, 2);
+      current_statement__ = 118;
+      stan::math::validate_non_negative_index("score_cell_index",
+        "N_score_cells", N_score_cells);
       current_statement__ = 119;
-      stan::math::validate_non_negative_index("y_obs_index", "N_obs", N_obs);
+      context__.validate_dims("data initialization", "score_cell_index",
+        "int", std::vector<size_t>{static_cast<size_t>(N_score_cells)});
+      score_cell_index = std::vector<int>(N_score_cells,
+                           std::numeric_limits<int>::min());
+      current_statement__ = 119;
+      score_cell_index = context__.vals_i("score_cell_index");
+      current_statement__ = 119;
+      stan::math::check_greater_or_equal(function__, "score_cell_index",
+        score_cell_index, 1);
+      current_statement__ = 119;
+      stan::math::check_less_or_equal(function__, "score_cell_index",
+        score_cell_index, J);
       current_statement__ = 120;
-      context__.validate_dims("data initialization", "y_obs_index", "int",
-        std::vector<size_t>{static_cast<size_t>(N_obs)});
-      y_obs_index = std::vector<int>(N_obs, std::numeric_limits<int>::min());
-      current_statement__ = 120;
-      y_obs_index = context__.vals_i("y_obs_index");
-      current_statement__ = 120;
-      stan::math::check_greater_or_equal(function__, "y_obs_index",
-        y_obs_index, 1);
-      current_statement__ = 120;
-      stan::math::check_less_or_equal(function__, "y_obs_index", y_obs_index,
-        J);
+      stan::math::validate_non_negative_index("score_cell_count",
+        "N_score_cells", N_score_cells);
       current_statement__ = 121;
-      stan::math::validate_non_negative_index("score_value", "J", J);
+      context__.validate_dims("data initialization", "score_cell_count",
+        "int", std::vector<size_t>{static_cast<size_t>(N_score_cells)});
+      score_cell_count = std::vector<int>(N_score_cells,
+                           std::numeric_limits<int>::min());
+      current_statement__ = 121;
+      score_cell_count = context__.vals_i("score_cell_count");
+      current_statement__ = 121;
+      stan::math::check_greater_or_equal(function__, "score_cell_count",
+        score_cell_count, 1);
       current_statement__ = 122;
+      stan::math::validate_non_negative_index("score_value", "J", J);
+      current_statement__ = 123;
       context__.validate_dims("data initialization", "score_value", "double",
         std::vector<size_t>{static_cast<size_t>(J)});
       score_value_data__ = Eigen::Matrix<double,-1,1>::Constant(J,
@@ -396,32 +402,32 @@ public:
         Eigen::Map<Eigen::Matrix<double,-1,1>>(score_value_data__.data(), J);
       {
         std::vector<local_scalar_t__> score_value_flat__;
-        current_statement__ = 122;
+        current_statement__ = 123;
         score_value_flat__ = context__.vals_r("score_value");
-        current_statement__ = 122;
+        current_statement__ = 123;
         pos__ = 1;
-        current_statement__ = 122;
+        current_statement__ = 123;
         for (int sym1__ = 1; sym1__ <= J; ++sym1__) {
-          current_statement__ = 122;
+          current_statement__ = 123;
           stan::model::assign(score_value, score_value_flat__[(pos__ - 1)],
             "assigning variable score_value", stan::model::index_uni(sym1__));
-          current_statement__ = 122;
+          current_statement__ = 123;
           pos__ = (pos__ + 1);
         }
       }
-      current_statement__ = 123;
+      current_statement__ = 124;
       context__.validate_dims("data initialization", "K", "int",
         std::vector<size_t>{});
       K = std::numeric_limits<int>::min();
-      current_statement__ = 123;
-      K = context__.vals_i("K")[(1 - 1)];
-      current_statement__ = 123;
-      stan::math::check_greater_or_equal(function__, "K", K, 1);
       current_statement__ = 124;
-      stan::math::validate_non_negative_index("bin_lower", "K", K);
+      K = context__.vals_i("K")[(1 - 1)];
+      current_statement__ = 124;
+      stan::math::check_greater_or_equal(function__, "K", K, 1);
       current_statement__ = 125;
-      stan::math::validate_non_negative_index("bin_lower", "J", J);
+      stan::math::validate_non_negative_index("bin_lower", "K", K);
       current_statement__ = 126;
+      stan::math::validate_non_negative_index("bin_lower", "J", J);
+      current_statement__ = 127;
       context__.validate_dims("data initialization", "bin_lower", "double",
         std::vector<size_t>{static_cast<size_t>(K), static_cast<size_t>(J)});
       bin_lower_data__ = Eigen::Matrix<double,-1,-1>::Constant(K, J,
@@ -431,28 +437,28 @@ public:
         J);
       {
         std::vector<local_scalar_t__> bin_lower_flat__;
-        current_statement__ = 126;
+        current_statement__ = 127;
         bin_lower_flat__ = context__.vals_r("bin_lower");
-        current_statement__ = 126;
+        current_statement__ = 127;
         pos__ = 1;
-        current_statement__ = 126;
+        current_statement__ = 127;
         for (int sym1__ = 1; sym1__ <= J; ++sym1__) {
-          current_statement__ = 126;
+          current_statement__ = 127;
           for (int sym2__ = 1; sym2__ <= K; ++sym2__) {
-            current_statement__ = 126;
+            current_statement__ = 127;
             stan::model::assign(bin_lower, bin_lower_flat__[(pos__ - 1)],
               "assigning variable bin_lower", stan::model::index_uni(sym2__),
               stan::model::index_uni(sym1__));
-            current_statement__ = 126;
+            current_statement__ = 127;
             pos__ = (pos__ + 1);
           }
         }
       }
-      current_statement__ = 127;
-      stan::math::validate_non_negative_index("bin_upper", "K", K);
       current_statement__ = 128;
-      stan::math::validate_non_negative_index("bin_upper", "J", J);
+      stan::math::validate_non_negative_index("bin_upper", "K", K);
       current_statement__ = 129;
+      stan::math::validate_non_negative_index("bin_upper", "J", J);
+      current_statement__ = 130;
       context__.validate_dims("data initialization", "bin_upper", "double",
         std::vector<size_t>{static_cast<size_t>(K), static_cast<size_t>(J)});
       bin_upper_data__ = Eigen::Matrix<double,-1,-1>::Constant(K, J,
@@ -462,157 +468,157 @@ public:
         J);
       {
         std::vector<local_scalar_t__> bin_upper_flat__;
-        current_statement__ = 129;
+        current_statement__ = 130;
         bin_upper_flat__ = context__.vals_r("bin_upper");
-        current_statement__ = 129;
+        current_statement__ = 130;
         pos__ = 1;
-        current_statement__ = 129;
+        current_statement__ = 130;
         for (int sym1__ = 1; sym1__ <= J; ++sym1__) {
-          current_statement__ = 129;
+          current_statement__ = 130;
           for (int sym2__ = 1; sym2__ <= K; ++sym2__) {
-            current_statement__ = 129;
+            current_statement__ = 130;
             stan::model::assign(bin_upper, bin_upper_flat__[(pos__ - 1)],
               "assigning variable bin_upper", stan::model::index_uni(sym2__),
               stan::model::index_uni(sym1__));
-            current_statement__ = 129;
+            current_statement__ = 130;
             pos__ = (pos__ + 1);
           }
         }
       }
-      current_statement__ = 130;
-      stan::math::validate_non_negative_index("bin_valid", "K", K);
       current_statement__ = 131;
-      stan::math::validate_non_negative_index("bin_valid", "J", J);
+      stan::math::validate_non_negative_index("bin_valid", "K", K);
       current_statement__ = 132;
+      stan::math::validate_non_negative_index("bin_valid", "J", J);
+      current_statement__ = 133;
       context__.validate_dims("data initialization", "bin_valid", "int",
         std::vector<size_t>{static_cast<size_t>(K), static_cast<size_t>(J)});
       bin_valid = std::vector<std::vector<int>>(K,
                     std::vector<int>(J, std::numeric_limits<int>::min()));
       {
         std::vector<int> bin_valid_flat__;
-        current_statement__ = 132;
+        current_statement__ = 133;
         bin_valid_flat__ = context__.vals_i("bin_valid");
-        current_statement__ = 132;
+        current_statement__ = 133;
         pos__ = 1;
-        current_statement__ = 132;
+        current_statement__ = 133;
         for (int sym1__ = 1; sym1__ <= J; ++sym1__) {
-          current_statement__ = 132;
+          current_statement__ = 133;
           for (int sym2__ = 1; sym2__ <= K; ++sym2__) {
-            current_statement__ = 132;
+            current_statement__ = 133;
             stan::model::assign(bin_valid, bin_valid_flat__[(pos__ - 1)],
               "assigning variable bin_valid", stan::model::index_uni(sym2__),
               stan::model::index_uni(sym1__));
-            current_statement__ = 132;
+            current_statement__ = 133;
             pos__ = (pos__ + 1);
           }
         }
       }
-      current_statement__ = 132;
+      current_statement__ = 133;
       stan::math::check_greater_or_equal(function__, "bin_valid", bin_valid,
         0);
-      current_statement__ = 132;
-      stan::math::check_less_or_equal(function__, "bin_valid", bin_valid, 1);
       current_statement__ = 133;
+      stan::math::check_less_or_equal(function__, "bin_valid", bin_valid, 1);
+      current_statement__ = 134;
       context__.validate_dims("data initialization", "eta_groups", "int",
         std::vector<size_t>{});
       eta_groups = std::numeric_limits<int>::min();
-      current_statement__ = 133;
+      current_statement__ = 134;
       eta_groups = context__.vals_i("eta_groups")[(1 - 1)];
-      current_statement__ = 133;
+      current_statement__ = 134;
       stan::math::check_greater_or_equal(function__, "eta_groups",
         eta_groups, 1);
-      current_statement__ = 133;
-      stan::math::check_less_or_equal(function__, "eta_groups", eta_groups, 2);
       current_statement__ = 134;
+      stan::math::check_less_or_equal(function__, "eta_groups", eta_groups, 2);
+      current_statement__ = 135;
       context__.validate_dims("data initialization", "eta_group_by_arm",
         "int", std::vector<size_t>{static_cast<size_t>(2)});
       eta_group_by_arm = std::vector<int>(2, std::numeric_limits<int>::min());
-      current_statement__ = 134;
+      current_statement__ = 135;
       eta_group_by_arm = context__.vals_i("eta_group_by_arm");
-      current_statement__ = 134;
+      current_statement__ = 135;
       stan::math::check_greater_or_equal(function__, "eta_group_by_arm",
         eta_group_by_arm, 1);
-      current_statement__ = 134;
+      current_statement__ = 135;
       stan::math::check_less_or_equal(function__, "eta_group_by_arm",
         eta_group_by_arm, 2);
-      current_statement__ = 135;
+      current_statement__ = 136;
       context__.validate_dims("data initialization", "atom", "double",
         std::vector<size_t>{});
       atom = std::numeric_limits<double>::quiet_NaN();
-      current_statement__ = 135;
-      atom = context__.vals_r("atom")[(1 - 1)];
       current_statement__ = 136;
+      atom = context__.vals_r("atom")[(1 - 1)];
+      current_statement__ = 137;
       context__.validate_dims("data initialization", "rho_prior_alpha",
         "double", std::vector<size_t>{});
       rho_prior_alpha = std::numeric_limits<double>::quiet_NaN();
-      current_statement__ = 136;
+      current_statement__ = 137;
       rho_prior_alpha = context__.vals_r("rho_prior_alpha")[(1 - 1)];
-      current_statement__ = 136;
+      current_statement__ = 137;
       stan::math::check_greater_or_equal(function__, "rho_prior_alpha",
         rho_prior_alpha, 0);
-      current_statement__ = 137;
+      current_statement__ = 138;
       context__.validate_dims("data initialization", "rho_prior_beta",
         "double", std::vector<size_t>{});
       rho_prior_beta = std::numeric_limits<double>::quiet_NaN();
-      current_statement__ = 137;
+      current_statement__ = 138;
       rho_prior_beta = context__.vals_r("rho_prior_beta")[(1 - 1)];
-      current_statement__ = 137;
+      current_statement__ = 138;
       stan::math::check_greater_or_equal(function__, "rho_prior_beta",
         rho_prior_beta, 0);
-      current_statement__ = 138;
+      current_statement__ = 139;
       context__.validate_dims("data initialization", "alpha_prior_shape",
         "double", std::vector<size_t>{});
       alpha_prior_shape = std::numeric_limits<double>::quiet_NaN();
-      current_statement__ = 138;
+      current_statement__ = 139;
       alpha_prior_shape = context__.vals_r("alpha_prior_shape")[(1 - 1)];
-      current_statement__ = 138;
+      current_statement__ = 139;
       stan::math::check_greater_or_equal(function__, "alpha_prior_shape",
         alpha_prior_shape, 0);
-      current_statement__ = 139;
+      current_statement__ = 140;
       context__.validate_dims("data initialization", "alpha_prior_rate",
         "double", std::vector<size_t>{});
       alpha_prior_rate = std::numeric_limits<double>::quiet_NaN();
-      current_statement__ = 139;
+      current_statement__ = 140;
       alpha_prior_rate = context__.vals_r("alpha_prior_rate")[(1 - 1)];
-      current_statement__ = 139;
+      current_statement__ = 140;
       stan::math::check_greater_or_equal(function__, "alpha_prior_rate",
         alpha_prior_rate, 0);
-      current_statement__ = 140;
+      current_statement__ = 141;
       context__.validate_dims("data initialization", "m_prior_alpha",
         "double", std::vector<size_t>{});
       m_prior_alpha = std::numeric_limits<double>::quiet_NaN();
-      current_statement__ = 140;
+      current_statement__ = 141;
       m_prior_alpha = context__.vals_r("m_prior_alpha")[(1 - 1)];
-      current_statement__ = 140;
+      current_statement__ = 141;
       stan::math::check_greater_or_equal(function__, "m_prior_alpha",
         m_prior_alpha, 0);
-      current_statement__ = 141;
+      current_statement__ = 142;
       context__.validate_dims("data initialization", "m_prior_beta",
         "double", std::vector<size_t>{});
       m_prior_beta = std::numeric_limits<double>::quiet_NaN();
-      current_statement__ = 141;
+      current_statement__ = 142;
       m_prior_beta = context__.vals_r("m_prior_beta")[(1 - 1)];
-      current_statement__ = 141;
+      current_statement__ = 142;
       stan::math::check_greater_or_equal(function__, "m_prior_beta",
         m_prior_beta, 0);
-      current_statement__ = 142;
+      current_statement__ = 143;
       context__.validate_dims("data initialization", "phi_prior_meanlog",
         "double", std::vector<size_t>{});
       phi_prior_meanlog = std::numeric_limits<double>::quiet_NaN();
-      current_statement__ = 142;
-      phi_prior_meanlog = context__.vals_r("phi_prior_meanlog")[(1 - 1)];
       current_statement__ = 143;
+      phi_prior_meanlog = context__.vals_r("phi_prior_meanlog")[(1 - 1)];
+      current_statement__ = 144;
       context__.validate_dims("data initialization", "phi_prior_sdlog",
         "double", std::vector<size_t>{});
       phi_prior_sdlog = std::numeric_limits<double>::quiet_NaN();
-      current_statement__ = 143;
+      current_statement__ = 144;
       phi_prior_sdlog = context__.vals_r("phi_prior_sdlog")[(1 - 1)];
-      current_statement__ = 143;
+      current_statement__ = 144;
       stan::math::check_greater_or_equal(function__, "phi_prior_sdlog",
         phi_prior_sdlog, 0);
-      current_statement__ = 144;
-      stan::math::validate_non_negative_index("eta_prior", "K", K);
       current_statement__ = 145;
+      stan::math::validate_non_negative_index("eta_prior", "K", K);
+      current_statement__ = 146;
       context__.validate_dims("data initialization", "eta_prior", "double",
         std::vector<size_t>{static_cast<size_t>(K)});
       eta_prior_data__ = Eigen::Matrix<double,-1,1>::Constant(K,
@@ -621,40 +627,40 @@ public:
         Eigen::Map<Eigen::Matrix<double,-1,1>>(eta_prior_data__.data(), K);
       {
         std::vector<local_scalar_t__> eta_prior_flat__;
-        current_statement__ = 145;
+        current_statement__ = 146;
         eta_prior_flat__ = context__.vals_r("eta_prior");
-        current_statement__ = 145;
+        current_statement__ = 146;
         pos__ = 1;
-        current_statement__ = 145;
+        current_statement__ = 146;
         for (int sym1__ = 1; sym1__ <= K; ++sym1__) {
-          current_statement__ = 145;
+          current_statement__ = 146;
           stan::model::assign(eta_prior, eta_prior_flat__[(pos__ - 1)],
             "assigning variable eta_prior", stan::model::index_uni(sym1__));
-          current_statement__ = 145;
+          current_statement__ = 146;
           pos__ = (pos__ + 1);
         }
       }
-      current_statement__ = 145;
+      current_statement__ = 146;
       stan::math::check_greater_or_equal(function__, "eta_prior", eta_prior,
         0);
-      current_statement__ = 146;
-      v_2dim__ = std::numeric_limits<int>::min();
-      current_statement__ = 146;
-      v_2dim__ = (H - 1);
-      current_statement__ = 146;
-      stan::math::validate_non_negative_index("v", "H - 1", v_2dim__);
       current_statement__ = 147;
-      stan::math::validate_non_negative_index("m_comp", "H", H);
+      v_2dim__ = std::numeric_limits<int>::min();
+      current_statement__ = 147;
+      v_2dim__ = (H - 1);
+      current_statement__ = 147;
+      stan::math::validate_non_negative_index("v", "H - 1", v_2dim__);
       current_statement__ = 148;
-      stan::math::validate_non_negative_index("phi_comp", "H", H);
+      stan::math::validate_non_negative_index("m_comp", "H", H);
       current_statement__ = 149;
-      stan::math::validate_non_negative_index("eta", "eta_groups", eta_groups);
+      stan::math::validate_non_negative_index("phi_comp", "H", H);
       current_statement__ = 150;
-      stan::math::validate_positive_index("eta", "K", K);
+      stan::math::validate_non_negative_index("eta", "eta_groups", eta_groups);
       current_statement__ = 151;
-      stan::math::validate_non_negative_index("w", "H", H);
+      stan::math::validate_positive_index("eta", "K", K);
       current_statement__ = 152;
-      stan::math::validate_non_negative_index("survivor_score_pmf", "J", J);
+      stan::math::validate_non_negative_index("w", "H", H);
+      current_statement__ = 153;
+      stan::math::validate_non_negative_index("score_pmf", "J", J);
     } catch (const std::exception& e) {
       stan::lang::rethrow_located(e, locations_array__[current_statement__]);
     }
@@ -810,78 +816,71 @@ public:
                              stan::model::index_uni(g)), eta_prior));
         }
         current_statement__ = 83;
-        for (int n = 1; n <= N; ++n) {
+        for (int r = 1; r <= 2; ++r) {
           current_statement__ = 81;
-          lp_accum__.add(stan::math::bernoulli_lpmf<propto__>(
-                           stan::model::rvalue(A, "A",
-                             stan::model::index_uni(n)),
+          lp_accum__.add(stan::math::binomial_lpmf<propto__>(
+                           stan::model::rvalue(n_obs_arm, "n_obs_arm",
+                             stan::model::index_uni(r)),
+                           stan::model::rvalue(n_arm, "n_arm",
+                             stan::model::index_uni(r)),
                            stan::model::rvalue(pi, "pi",
-                             stan::model::index_uni(
-                               stan::model::rvalue(arm, "arm",
-                                 stan::model::index_uni(n))))));
+                             stan::model::index_uni(r))));
         }
-        current_statement__ = 108;
-        for (int n = 1; n <= N_obs; ++n) {
+        current_statement__ = 110;
+        for (int c = 1; c <= N_score_cells; ++c) {
           current_statement__ = 84;
           stan::math::validate_non_negative_index("component_lp", "H", H);
           Eigen::Matrix<local_scalar_t__,-1,1> component_lp =
             Eigen::Matrix<local_scalar_t__,-1,1>::Constant(H, DUMMY_VAR__);
+          int r = std::numeric_limits<int>::min();
           int j = std::numeric_limits<int>::min();
           int eta_group = std::numeric_limits<int>::min();
-          current_statement__ = 88;
-          j = stan::model::rvalue(y_obs_index, "y_obs_index",
-                stan::model::index_uni(n));
           current_statement__ = 89;
+          r = stan::model::rvalue(score_cell_arm, "score_cell_arm",
+                stan::model::index_uni(c));
+          current_statement__ = 90;
+          j = stan::model::rvalue(score_cell_index, "score_cell_index",
+                stan::model::index_uni(c));
+          current_statement__ = 91;
           eta_group = stan::model::rvalue(eta_group_by_arm,
-                        "eta_group_by_arm",
-                        stan::model::index_uni(
-                          stan::model::rvalue(arm_obs, "arm_obs",
-                            stan::model::index_uni(n))));
-          current_statement__ = 105;
+                        "eta_group_by_arm", stan::model::index_uni(r));
+          current_statement__ = 107;
           for (int h = 1; h <= H; ++h) {
-            current_statement__ = 90;
+            current_statement__ = 92;
             stan::math::validate_non_negative_index("grid_lp", "K", K);
             Eigen::Matrix<local_scalar_t__,-1,1> grid_lp =
               Eigen::Matrix<local_scalar_t__,-1,1>::Constant(K, DUMMY_VAR__);
             local_scalar_t__ beta_a = DUMMY_VAR__;
             local_scalar_t__ beta_b = DUMMY_VAR__;
-            current_statement__ = 94;
+            current_statement__ = 96;
             beta_a = (stan::model::rvalue(
                         stan::model::rvalue(m_comp, "m_comp",
-                          stan::model::index_uni(
-                            stan::model::rvalue(arm_obs, "arm_obs",
-                              stan::model::index_uni(n)))),
-                        "m_comp[arm_obs[n]]", stan::model::index_uni(h))
+                          stan::model::index_uni(r)), "m_comp[r]",
+                        stan::model::index_uni(h))
               *
               stan::model::rvalue(
                 stan::model::rvalue(phi_comp, "phi_comp",
-                  stan::model::index_uni(
-                    stan::model::rvalue(arm_obs, "arm_obs",
-                      stan::model::index_uni(n)))), "phi_comp[arm_obs[n]]",
+                  stan::model::index_uni(r)), "phi_comp[r]",
                 stan::model::index_uni(h)));
-            current_statement__ = 95;
+            current_statement__ = 97;
             beta_b = ((1 -
               stan::model::rvalue(
                 stan::model::rvalue(m_comp, "m_comp",
-                  stan::model::index_uni(
-                    stan::model::rvalue(arm_obs, "arm_obs",
-                      stan::model::index_uni(n)))), "m_comp[arm_obs[n]]",
+                  stan::model::index_uni(r)), "m_comp[r]",
                 stan::model::index_uni(h)))
               *
               stan::model::rvalue(
                 stan::model::rvalue(phi_comp, "phi_comp",
-                  stan::model::index_uni(
-                    stan::model::rvalue(arm_obs, "arm_obs",
-                      stan::model::index_uni(n)))), "phi_comp[arm_obs[n]]",
+                  stan::model::index_uni(r)), "phi_comp[r]",
                 stan::model::index_uni(h)));
-            current_statement__ = 102;
+            current_statement__ = 104;
             for (int k = 1; k <= K; ++k) {
-              current_statement__ = 100;
+              current_statement__ = 102;
               if (stan::math::logical_eq(
                     stan::model::rvalue(bin_valid, "bin_valid",
                       stan::model::index_uni(k), stan::model::index_uni(j)),
                     1)) {
-                current_statement__ = 98;
+                current_statement__ = 100;
                 stan::model::assign(grid_lp,
                   (stan::math::log(
                      stan::model::rvalue(
@@ -896,25 +895,24 @@ public:
                     beta_a, beta_b, pstream__)),
                   "assigning variable grid_lp", stan::model::index_uni(k));
               } else {
-                current_statement__ = 96;
+                current_statement__ = 98;
                 stan::model::assign(grid_lp, stan::math::negative_infinity(),
                   "assigning variable grid_lp", stan::model::index_uni(k));
               }
             }
-            current_statement__ = 103;
+            current_statement__ = 105;
             stan::model::assign(component_lp,
               (stan::math::log(
                  stan::model::rvalue(
-                   stan::model::rvalue(w, "w",
-                     stan::model::index_uni(
-                       stan::model::rvalue(arm_obs, "arm_obs",
-                         stan::model::index_uni(n)))), "w[arm_obs[n]]",
-                   stan::model::index_uni(h))) +
+                   stan::model::rvalue(w, "w", stan::model::index_uni(r)),
+                   "w[r]", stan::model::index_uni(h))) +
               stan::math::log_sum_exp(grid_lp)),
               "assigning variable component_lp", stan::model::index_uni(h));
           }
-          current_statement__ = 106;
-          lp_accum__.add(stan::math::log_sum_exp(component_lp));
+          current_statement__ = 108;
+          lp_accum__.add((stan::model::rvalue(score_cell_count,
+                            "score_cell_count", stan::model::index_uni(c)) *
+            stan::math::log_sum_exp(component_lp)));
         }
       }
     } catch (const std::exception& e) {
@@ -1082,7 +1080,7 @@ public:
       double rho_1 = std::numeric_limits<double>::quiet_NaN();
       double pi_0 = std::numeric_limits<double>::quiet_NaN();
       double pi_1 = std::numeric_limits<double>::quiet_NaN();
-      Eigen::Matrix<double,-1,-1> survivor_score_pmf =
+      Eigen::Matrix<double,-1,-1> score_pmf =
         Eigen::Matrix<double,-1,-1>::Constant(2, J,
           std::numeric_limits<double>::quiet_NaN());
       double mu_0_c = std::numeric_limits<double>::quiet_NaN();
@@ -1179,10 +1177,10 @@ public:
               "assigning variable component_lp", stan::model::index_uni(h));
           }
           current_statement__ = 54;
-          stan::model::assign(survivor_score_pmf,
+          stan::model::assign(score_pmf,
             stan::math::exp(stan::math::log_sum_exp(component_lp)),
-            "assigning variable survivor_score_pmf",
-            stan::model::index_uni(r), stan::model::index_uni(j));
+            "assigning variable score_pmf", stan::model::index_uni(r),
+            stan::model::index_uni(j));
         }
       }
       current_statement__ = 59;
@@ -1196,14 +1194,14 @@ public:
           (stan::model::rvalue(score_value, "score_value",
              stan::model::index_uni(j))
           *
-          stan::model::rvalue(survivor_score_pmf, "survivor_score_pmf",
+          stan::model::rvalue(score_pmf, "score_pmf",
             stan::model::index_uni(1), stan::model::index_uni(j))));
         current_statement__ = 62;
         mu_1_c = (mu_1_c +
           (stan::model::rvalue(score_value, "score_value",
              stan::model::index_uni(j))
           *
-          stan::model::rvalue(survivor_score_pmf, "survivor_score_pmf",
+          stan::model::rvalue(score_pmf, "score_pmf",
             stan::model::index_uni(2), stan::model::index_uni(j))));
       }
       current_statement__ = 65;
@@ -1219,7 +1217,7 @@ public:
       out__.write(rho_1);
       out__.write(pi_0);
       out__.write(pi_1);
-      out__.write(survivor_score_pmf);
+      out__.write(score_pmf);
       out__.write(mu_0_c);
       out__.write(mu_1_c);
       out__.write(delta_atom);
@@ -1501,9 +1499,8 @@ public:
     }
     if (emit_generated_quantities__) {
       std::vector<std::string>
-        temp{"rho_0", "rho_1", "pi_0", "pi_1", "survivor_score_pmf",
-             "mu_0_c", "mu_1_c", "delta_atom", "mu_delta", "alpha_delta",
-             "delta"};
+        temp{"rho_0", "rho_1", "pi_0", "pi_1", "score_pmf", "mu_0_c",
+             "mu_1_c", "delta_atom", "mu_delta", "alpha_delta", "delta"};
       names__.reserve(names__.size() + temp.size());
       names__.insert(names__.end(), temp.begin(), temp.end());
     }
@@ -1599,8 +1596,8 @@ public:
       param_names__.emplace_back(std::string() + "pi_1");
       for (int sym1__ = 1; sym1__ <= J; ++sym1__) {
         for (int sym2__ = 1; sym2__ <= 2; ++sym2__) {
-          param_names__.emplace_back(std::string() + "survivor_score_pmf" +
-            '.' + std::to_string(sym2__) + '.' + std::to_string(sym1__));
+          param_names__.emplace_back(std::string() + "score_pmf" + '.' +
+            std::to_string(sym2__) + '.' + std::to_string(sym1__));
         }
       }
       param_names__.emplace_back(std::string() + "mu_0_c");
@@ -1666,8 +1663,8 @@ public:
       param_names__.emplace_back(std::string() + "pi_1");
       for (int sym1__ = 1; sym1__ <= J; ++sym1__) {
         for (int sym2__ = 1; sym2__ <= 2; ++sym2__) {
-          param_names__.emplace_back(std::string() + "survivor_score_pmf" +
-            '.' + std::to_string(sym2__) + '.' + std::to_string(sym1__));
+          param_names__.emplace_back(std::string() + "score_pmf" + '.' +
+            std::to_string(sym2__) + '.' + std::to_string(sym1__));
         }
       }
       param_names__.emplace_back(std::string() + "mu_0_c");
@@ -1679,10 +1676,10 @@ public:
     }
   }
   inline std::string get_constrained_sizedtypes() const {
-    return std::string("[{\"name\":\"v\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(v_2dim__) + "}},\"block\":\"parameters\"},{\"name\":\"m_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"phi_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"alpha\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"rho\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"eta\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(eta_groups) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(K) + "}},\"block\":\"parameters\"},{\"name\":\"w\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"pi\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"transformed_parameters\"},{\"name\":\"rho_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"rho_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"survivor_score_pmf\",\"type\":{\"name\":\"matrix\",\"rows\":" + std::to_string(2) + ",\"cols\":" + std::to_string(J) + "},\"block\":\"generated_quantities\"},{\"name\":\"mu_0_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_1_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta_atom\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"alpha_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"}]");
+    return std::string("[{\"name\":\"v\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(v_2dim__) + "}},\"block\":\"parameters\"},{\"name\":\"m_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"phi_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"alpha\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"rho\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"eta\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(eta_groups) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(K) + "}},\"block\":\"parameters\"},{\"name\":\"w\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"pi\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"transformed_parameters\"},{\"name\":\"rho_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"rho_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"score_pmf\",\"type\":{\"name\":\"matrix\",\"rows\":" + std::to_string(2) + ",\"cols\":" + std::to_string(J) + "},\"block\":\"generated_quantities\"},{\"name\":\"mu_0_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_1_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta_atom\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"alpha_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"}]");
   }
   inline std::string get_unconstrained_sizedtypes() const {
-    return std::string("[{\"name\":\"v\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(v_2dim__) + "}},\"block\":\"parameters\"},{\"name\":\"m_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"phi_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"alpha\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"rho\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"eta\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(eta_groups) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string((K -1)) + "}},\"block\":\"parameters\"},{\"name\":\"w\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string((H -1)) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"pi\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"transformed_parameters\"},{\"name\":\"rho_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"rho_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"survivor_score_pmf\",\"type\":{\"name\":\"matrix\",\"rows\":" + std::to_string(2) + ",\"cols\":" + std::to_string(J) + "},\"block\":\"generated_quantities\"},{\"name\":\"mu_0_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_1_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta_atom\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"alpha_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"}]");
+    return std::string("[{\"name\":\"v\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(v_2dim__) + "}},\"block\":\"parameters\"},{\"name\":\"m_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"phi_comp\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string(H) + "}},\"block\":\"parameters\"},{\"name\":\"alpha\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"rho\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"parameters\"},{\"name\":\"eta\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(eta_groups) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string((K -1)) + "}},\"block\":\"parameters\"},{\"name\":\"w\",\"type\":{\"name\":\"array\",\"length\":" + std::to_string(2) + ",\"element_type\":{\"name\":\"vector\",\"length\":" + std::to_string((H -1)) + "}},\"block\":\"transformed_parameters\"},{\"name\":\"pi\",\"type\":{\"name\":\"vector\",\"length\":" + std::to_string(2) + "},\"block\":\"transformed_parameters\"},{\"name\":\"rho_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"rho_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_0\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"pi_1\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"score_pmf\",\"type\":{\"name\":\"matrix\",\"rows\":" + std::to_string(2) + ",\"cols\":" + std::to_string(J) + "},\"block\":\"generated_quantities\"},{\"name\":\"mu_0_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_1_c\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta_atom\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"mu_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"alpha_delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"},{\"name\":\"delta\",\"type\":{\"name\":\"real\"},\"block\":\"generated_quantities\"}]");
   }
   // Begin method overload boilerplate
   template <typename RNG> inline void

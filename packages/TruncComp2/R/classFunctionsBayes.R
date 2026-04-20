@@ -146,17 +146,7 @@ summary.trunc_comp_bayes_fit <- function(object, ...) {
   cat("  Min tail ESS:", format(diagnostics$min_tail_ess, digits = 6), "\n")
   cat("  Core OK:", isTRUE(diagnostics$core_ok), "\n")
   if(!is.null(diagnostics$truncation)) {
-    cat("  Truncation OK:", isTRUE(diagnostics$truncation_ok), "\n")
-    cat("  Omitted-tail q95:",
-        format(diagnostics$truncation$q95[["q95_tail_0"]], digits = 4),
-        "(control),",
-        format(diagnostics$truncation$q95[["q95_tail_1"]], digits = 4),
-        "(treatment)\n")
-    cat("  Omitted-tail threshold:",
-        format(diagnostics$truncation$thresholds[["threshold_0"]], digits = 4),
-        "(control),",
-        format(diagnostics$truncation$thresholds[["threshold_1"]], digits = 4),
-        "(treatment)\n")
+    cat("  Truncation diagnostic OK:", isTRUE(diagnostics$truncation_ok), "\n")
   }
   cat("  Diagnostic OK:", isTRUE(diagnostics$diagnostic_ok), "\n\n")
 

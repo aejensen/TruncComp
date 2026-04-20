@@ -23,14 +23,14 @@
 #'   while `"positive_real"` fits a Gamma-mixture model on the positive real
 #'   line and therefore requires all non-atom outcomes to be strictly
 #'   positive. `"bounded_continuous"` fits an experimental Beta-mixture model
-#'   by default for finely measured survivor outcomes inside
+#'   by default for finely measured bounded outcomes inside
 #'   `(score_min, score_max)`. `"bounded_score"` fits an experimental
 #'   discretized/heaped Beta-mixture model by default for integer or grid-valued
-#'   survivor scores in `[score_min, score_max]`. The bounded models can
+#'   non-atom scores in `[score_min, score_max]`. The bounded models can
 #'   instead use logit-normal mixture kernels via
 #'   `bounded_kernel = "logit_normal"`.
 #' @param score_min,score_max Finite numeric lower and upper bounds for the two
-#'   bounded Bayesian survivor models. Required when `continuous_support` is
+#'   bounded Bayesian models. Required when `continuous_support` is
 #'   `"bounded_continuous"` or `"bounded_score"`.
 #' @param score_step Positive score-grid spacing for
 #'   `continuous_support = "bounded_score"`. The default is `1`.
@@ -39,7 +39,7 @@
 #'   `score_step`; the default is `1`.
 #' @param heaping Whether bounded-score heaping proportions are shared across
 #'   arms (`"shared"`) or arm-specific (`"arm_specific"`).
-#' @param bounded_kernel Kernel family for bounded Bayesian survivor models.
+#' @param bounded_kernel Kernel family for bounded Bayesian models.
 #'   `"beta"` keeps the existing bounded Beta-mixture models and is the
 #'   default. `"logit_normal"` uses logit-normal mixture kernels for
 #'   `continuous_support = "bounded_continuous"` and
@@ -49,8 +49,8 @@
 #'   remains `10`.
 #' @param auto_select_mixture_components Logical flag indicating whether the
 #'   Bayesian fit should automatically increase the truncation level by
-#'   doubling it until the omitted-tail diagnostic is acceptable or the maximum
-#'   level is reached.
+#'   doubling it until sampler diagnostics pass or the maximum level is
+#'   reached.
 #' @param mixture_components_max Optional maximum truncation level used when
 #'   `auto_select_mixture_components = TRUE`. If left `NULL`, the effective
 #'   maximum is `max(40, mixture_components)`.
@@ -94,13 +94,11 @@
 #' The `mixture_components` argument now controls the initial finite
 #' stick-breaking approximation level. When
 #' `auto_select_mixture_components = TRUE`, the package fits the requested
-#' initial level, computes an omitted-tail diagnostic based on the posterior
-#' draws of the final retained stick weight and the concentration parameter in
-#' each arm, and accepts the current level only when those omitted-tail draws
-#' are sufficiently small and the usual sampler diagnostics also pass. If not,
-#' the truncation level is doubled and the model is refit until an acceptable
-#' level is found or `mixture_components_max` is reached. The smallest accepted
-#' level is retained as the final fit.
+#' initial level and accepts the current level when the usual sampler
+#' diagnostics pass. If sampler diagnostics fail, the truncation level is
+#' doubled and the model is refit until an acceptable level is found or
+#' `mixture_components_max` is reached. The smallest accepted level is retained
+#' as the final fit.
 #'
 #' In the stored posterior draws and summaries:
 #'

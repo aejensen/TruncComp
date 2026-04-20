@@ -33,7 +33,7 @@ its posterior mean atom mass.
 \description{
 Visualizes the arm-specific posterior mean continuous densities implied by a
 fitted \code{"trunc_comp_bayes_fit"} object, or posterior mean reported-score
-masses for \code{continuous_support = "bounded_score"}. The plotted survivor
+masses for \code{continuous_support = "bounded_score"}. The plotted non-atom
 distribution is weighted by the posterior probability of being observed away
 from the atom. The atom itself is shown separately as a solid vertical spike
 with an arrowhead, annotated with the posterior mean atom probability in each

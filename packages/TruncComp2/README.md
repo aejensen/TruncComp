@@ -24,7 +24,7 @@ The currently supported scope is:
 - adjusted `SPLRT` provides fitted tests and component confidence intervals, but not joint confidence regions or `delta` intervals
 - the Bayesian path is currently experimental, no-covariate only, and supports
   real-line, positive-real, bounded-continuous, and bounded reported-score
-  survivor outcomes through `continuous_support`
+  outcomes through `continuous_support`
 
 To install the development version of TruncComp2 run the following commands from within R
 
@@ -132,7 +132,7 @@ overlay on `log(Y)` so the visual diagnostic is not distorted by the boundary
 at zero, and the corresponding continuous posterior predictive p-value is
 computed on that same `log(Y)` scale.
 
-For bounded-score Bayesian fits, posterior predictive survivor replications are
+For bounded-score Bayesian fits, posterior predictive non-atom replications are
 drawn on the same reported score support as the observed data. The continuous
 PPC row is retained for compatibility, but it uses a discrete armwise CDF
 discrepancy and a score-mass plot rather than a smooth density overlay.
@@ -212,7 +212,7 @@ fit_bayes_score <- trunc_comp_bayes(
 
 For finely measured bounded outcomes where exact discreteness is not central,
 use `continuous_support = "bounded_continuous"` with `score_min` and
-`score_max`. Exact survivor values at the boundaries are rejected in the MVP;
+`score_max`. Exact non-atom values at the boundaries are rejected in the MVP;
 use the bounded-score model when endpoints are valid reported scores.
 
 # Confidence Intervals

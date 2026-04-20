@@ -268,7 +268,7 @@ test_that("bounded Bayesian support dispatch and validation are explicit", {
   )
 })
 
-test_that("bounded_score accepts endpoint survivor scores on the reported grid", {
+test_that("bounded_score accepts endpoint non-atom scores on the reported grid", {
   fit <- bayes_bounded_score_formula_fit(seed = 2201)
 
   expect_true(fit$success)

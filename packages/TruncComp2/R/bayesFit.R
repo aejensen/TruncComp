@@ -501,22 +501,6 @@ bayes_mixture_component_ladder <- function(mixture_components,
   as.integer(unique(ladder))
 }
 
-bayes_truncation_thresholds <- function(data) {
-  n_obs <- c(
-    as.integer(sum(data$A == 1L & data$R == 0L)),
-    as.integer(sum(data$A == 1L & data$R == 1L))
-  )
-
-  thresholds <- pmin(0.02, 1 / n_obs)
-  names(n_obs) <- c("n_obs_0", "n_obs_1")
-  names(thresholds) <- c("threshold_0", "threshold_1")
-
-  list(
-    n_obs = n_obs,
-    thresholds = thresholds
-  )
-}
-
 build_bayes_standata <- function(data, atom, mixture_components, prior,
                                  continuous_support = c(
                                    "real_line",
@@ -777,6 +761,21 @@ bayes_select_draws <- function(draws, variables) {
   draws[, c(metadata, variables), drop = FALSE]
 }
 
+bayes_truncation_parameter_names <- function(mixture_components) {
+  mixture_components <- validate_bayes_positive_integer(
+    mixture_components,
+    "mixture_components",
+    min_value = 2L
+  )
+
+  c(
+    "alpha[1]",
+    "alpha[2]",
+    sprintf("w[1,%d]", mixture_components),
+    sprintf("w[2,%d]", mixture_components)
+  )
+}
+
 bayes_extract_truncation_draws <- function(fit, mixture_components) {
   mixture_components <- validate_bayes_positive_integer(
     mixture_components,
@@ -792,25 +791,7 @@ bayes_extract_truncation_draws <- function(fit, mixture_components) {
   )
 
   draws <- posterior::as_draws_df(draws_array)
-  bayes_compute_omitted_tail_draws(
-    draws = draws,
-    mixture_components = mixture_components
-  )
-}
-
-bayes_compute_omitted_tail_draws <- function(draws, mixture_components) {
-  mixture_components <- validate_bayes_positive_integer(
-    mixture_components,
-    "mixture_components",
-    min_value = 2L
-  )
-
-  required <- c(
-    "alpha[1]",
-    "alpha[2]",
-    sprintf("w[1,%d]", mixture_components),
-    sprintf("w[2,%d]", mixture_components)
-  )
+  required <- bayes_truncation_parameter_names(mixture_components)
   missing <- setdiff(required, names(draws))
 
   if(length(missing) > 0L) {
@@ -818,12 +799,7 @@ bayes_compute_omitted_tail_draws <- function(draws, mixture_components) {
          paste(missing, collapse = ", "), ".")
   }
 
-  draws$omitted_tail_mass_0 <- draws[[sprintf("w[1,%d]", mixture_components)]] *
-    draws[["alpha[1]"]] / (1 + draws[["alpha[1]"]])
-  draws$omitted_tail_mass_1 <- draws[[sprintf("w[2,%d]", mixture_components)]] *
-    draws[["alpha[2]"]] / (1 + draws[["alpha[2]"]])
-
-  draws
+  bayes_select_draws(draws, required)
 }
 
 bayes_convergence_ok <- function(max_rhat, min_bulk_ess, min_tail_ess) {
@@ -859,39 +835,26 @@ bayes_convergence_summary <- function(draws, parameters) {
   )
 }
 
-bayes_truncation_ok <- function(q95, thresholds, convergence_ok, divergences = 0L) {
+bayes_truncation_ok <- function(convergence_ok, divergences = 0L) {
   isTRUE(divergences == 0L) &&
-    isTRUE(convergence_ok) &&
-    all(is.finite(q95)) &&
-    all(is.finite(thresholds)) &&
-    all(q95 < thresholds)
+    isTRUE(convergence_ok)
 }
 
-bayes_truncation_diagnostics <- function(truncation_draws, data, divergences = 0L) {
-  threshold_info <- bayes_truncation_thresholds(data)
-  tail_summary <- bayes_convergence_summary(
+bayes_truncation_diagnostics <- function(truncation_draws, divergences = 0L) {
+  parameters <- setdiff(names(truncation_draws), c(".chain", ".iteration", ".draw"))
+  truncation_summary <- bayes_convergence_summary(
     truncation_draws,
-    c("omitted_tail_mass_0", "omitted_tail_mass_1")
+    parameters
   )
-  q95 <- c(
-    stats::quantile(truncation_draws$omitted_tail_mass_0, probs = 0.95, names = FALSE),
-    stats::quantile(truncation_draws$omitted_tail_mass_1, probs = 0.95, names = FALSE)
-  )
-  names(q95) <- c("q95_tail_0", "q95_tail_1")
 
   list(
-    n_obs = threshold_info$n_obs,
-    thresholds = threshold_info$thresholds,
-    q95 = q95,
-    parameter_table = tail_summary$parameter_table,
-    max_rhat = tail_summary$max_rhat,
-    min_bulk_ess = tail_summary$min_bulk_ess,
-    min_tail_ess = tail_summary$min_tail_ess,
-    convergence_ok = tail_summary$convergence_ok,
+    parameter_table = truncation_summary$parameter_table,
+    max_rhat = truncation_summary$max_rhat,
+    min_bulk_ess = truncation_summary$min_bulk_ess,
+    min_tail_ess = truncation_summary$min_tail_ess,
+    convergence_ok = truncation_summary$convergence_ok,
     truncation_ok = bayes_truncation_ok(
-      q95 = q95,
-      thresholds = threshold_info$thresholds,
-      convergence_ok = tail_summary$convergence_ok,
+      convergence_ok = truncation_summary$convergence_ok,
       divergences = divergences
     )
   )
@@ -906,13 +869,12 @@ bayes_sampler_divergences <- function(fit) {
   )))
 }
 
-bayes_diagnostics <- function(fit, draws, truncation_draws, data,
+bayes_diagnostics <- function(fit, draws, truncation_draws,
                               parameters = bayes_parameter_names("contrast")) {
   divergences <- bayes_sampler_divergences(fit)
   core_summary <- bayes_convergence_summary(draws, parameters)
   truncation_summary <- bayes_truncation_diagnostics(
     truncation_draws = truncation_draws,
-    data = data,
     divergences = divergences
   )
   core_ok <- isTRUE(divergences == 0L) && isTRUE(core_summary$convergence_ok)
@@ -939,12 +901,6 @@ bayes_mixture_selection_history_row <- function(mixture_components,
   if(is.null(diagnostics)) {
     return(data.frame(
       mixture_components = as.integer(mixture_components),
-      n_obs_0 = NA_integer_,
-      n_obs_1 = NA_integer_,
-      threshold_0 = NA_real_,
-      threshold_1 = NA_real_,
-      q95_tail_0 = NA_real_,
-      q95_tail_1 = NA_real_,
       core_ok = NA,
       truncation_ok = FALSE,
       diagnostic_ok = FALSE,
@@ -953,9 +909,9 @@ bayes_mixture_selection_history_row <- function(mixture_components,
       max_rhat_core = NA_real_,
       min_bulk_ess_core = NA_real_,
       min_tail_ess_core = NA_real_,
-      max_rhat_tail = NA_real_,
-      min_bulk_ess_tail = NA_real_,
-      min_tail_ess_tail = NA_real_,
+      max_rhat_truncation = NA_real_,
+      min_bulk_ess_truncation = NA_real_,
+      min_tail_ess_truncation = NA_real_,
       fit_failed = TRUE,
       error = as.character(error),
       row.names = NULL
@@ -964,12 +920,6 @@ bayes_mixture_selection_history_row <- function(mixture_components,
 
   data.frame(
     mixture_components = as.integer(mixture_components),
-    n_obs_0 = as.integer(diagnostics$truncation$n_obs[[1]]),
-    n_obs_1 = as.integer(diagnostics$truncation$n_obs[[2]]),
-    threshold_0 = as.numeric(diagnostics$truncation$thresholds[[1]]),
-    threshold_1 = as.numeric(diagnostics$truncation$thresholds[[2]]),
-    q95_tail_0 = as.numeric(diagnostics$truncation$q95[[1]]),
-    q95_tail_1 = as.numeric(diagnostics$truncation$q95[[2]]),
     core_ok = isTRUE(diagnostics$core_ok),
     truncation_ok = isTRUE(diagnostics$truncation_ok),
     diagnostic_ok = isTRUE(diagnostics$diagnostic_ok),
@@ -978,9 +928,9 @@ bayes_mixture_selection_history_row <- function(mixture_components,
     max_rhat_core = as.numeric(diagnostics$max_rhat),
     min_bulk_ess_core = as.numeric(diagnostics$min_bulk_ess),
     min_tail_ess_core = as.numeric(diagnostics$min_tail_ess),
-    max_rhat_tail = as.numeric(diagnostics$truncation$max_rhat),
-    min_bulk_ess_tail = as.numeric(diagnostics$truncation$min_bulk_ess),
-    min_tail_ess_tail = as.numeric(diagnostics$truncation$min_tail_ess),
+    max_rhat_truncation = as.numeric(diagnostics$truncation$max_rhat),
+    min_bulk_ess_truncation = as.numeric(diagnostics$truncation$min_bulk_ess),
+    min_tail_ess_truncation = as.numeric(diagnostics$truncation$min_tail_ess),
     fit_failed = FALSE,
     error = as.character(error),
     row.names = NULL
@@ -1144,8 +1094,7 @@ fit_trunc_comp_bayes_once <- function(data, atom, conf.level = 0.95,
   diagnostics <- bayes_diagnostics(
     fit = fit,
     draws = draws,
-    truncation_draws = truncation_draws,
-    data = data
+    truncation_draws = truncation_draws
   )
 
   new_trunc_comp_bayes_fit(

@@ -138,7 +138,7 @@ generated quantities {
   real rho_1;
   real pi_0;
   real pi_1;
-  matrix[2, J] survivor_score_pmf;
+  matrix[2, J] score_pmf;
   real mu_0_c;
   real mu_1_c;
   real delta_atom;
@@ -179,15 +179,15 @@ generated quantities {
         component_lp[h] = log(w[r][h]) + log_sum_exp(grid_lp);
       }
 
-      survivor_score_pmf[r, j] = exp(log_sum_exp(component_lp));
+      score_pmf[r, j] = exp(log_sum_exp(component_lp));
     }
   }
 
   mu_0_c = 0;
   mu_1_c = 0;
   for (j in 1:J) {
-    mu_0_c = mu_0_c + score_value[j] * survivor_score_pmf[1, j];
-    mu_1_c = mu_1_c + score_value[j] * survivor_score_pmf[2, j];
+    mu_0_c = mu_0_c + score_value[j] * score_pmf[1, j];
+    mu_1_c = mu_1_c + score_value[j] * score_pmf[2, j];
   }
 
   delta_atom = rho_1 - rho_0;

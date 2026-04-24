@@ -198,7 +198,7 @@ simulation_study_build_scenario_table <- function(simulation_results, output_dir
     escape = FALSE,
     linesep = rep("", nrow(scenario_table)),
     caption = "Simulation scenarios for the TruncComp2 power study",
-    label = "tab:simulation"
+    label = "simulation"
   )
   table_object <- kableExtra::kable_styling(
     table_object,

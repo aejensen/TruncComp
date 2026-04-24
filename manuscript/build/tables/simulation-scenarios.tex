@@ -1,0 +1,18 @@
+\begin{table}[!h]
+\centering
+\caption{\label{tab:simulation}Simulation scenarios for the TruncComp2 power study}
+\centering
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\begin{tabular}[t]{llll}
+\toprule
+Scenario & Configuration & $P(A = 1 \mid R)$ & $Y \mid A = 1, R$\\
+\midrule
+S1 & Normal survivor shift, low atom & $\pi_0 = \pi_1 = 0.85$ & $Y \mid A = 1, R = 0 \sim N(3, 1)$, $Y \mid A = 1, R = 1 \sim N(3 + \delta_h, 1)$, $\delta_h \in \{0, 0.20, 0.35, 0.50\}$\\
+S2 & Survival-only effect & $\pi_0 = 0.45$, $\pi_1 \in \{0.45, 0.50, 0.55, 0.60\}$ & $Y \mid A = 1, R = 0 \sim Y \mid A = 1, R = 1 \sim N(3, 1)$\\
+S3 & Antagonistic cancellation & $\pi_0 = 0.50$, $\pi_1 \in \{0.50, 0.525, 0.55, 0.60\}$ & $Y \mid A = 1, R = 0 \sim N(3, 1)$, $Y \mid A = 1, R = 1 \sim N(1.5 / \pi_1, 1)$\\
+S4 & Concordant joint improvement & $\pi_0 = 0.50$, $\pi_1 \in \{0.50, 0.55, 0.60, 0.65\}$ & $Y \mid A = 1, R = 0 \sim N(3, 1)$, $Y \mid A = 1, R = 1 \sim N(3 + 0.15h, 1)$\\
+S5 & Gamma shape-change with mean shift & $\pi_0 = \pi_1 = 0.65$ & $Y \mid A = 1, R = 0 \sim \Gamma(9, 3/9)$, $Y \mid A = 1, R = 1 \sim \Gamma(k_h, m_h / k_h)$, $(k_h, m_h) \in \{(9, 3.0), (6, 3.2), (4, 3.4), (2.5, 3.6)\}$\\
+S6 & Rare-outlier contamination & $\pi_0 = \pi_1 = 0.80$ & $Y \mid A = 1, R = r$ is $0.95 N(3 + \delta_h r, 0.35^2) + 0.05 N(10 + \delta_h r, 0.5^2)$, $\delta_h \in \{0, 0.15, 0.25, 0.35\}$\\
+\bottomrule
+\end{tabular}}
+\end{table}

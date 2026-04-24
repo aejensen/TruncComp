@@ -44,7 +44,7 @@ install_github("aejensen/TruncComp", subdir = "packages/TruncComp2")
 
 ## Development
 
-The GitHub Actions workflow checks package directories from the monorepo layout.
+The package directories follow the monorepo layout.
 
 For local package work:
 

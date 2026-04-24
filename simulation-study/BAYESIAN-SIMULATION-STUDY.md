@@ -1,5 +1,10 @@
 # Bayesian Simulation Study
 
+> Status: idea backlog only. This document is a brainstorming note for a
+> possible future study, not an active deliverable or implementation
+> requirement. Do not treat the items below as work that needs to be completed
+> unless they are explicitly prioritized later.
+
 This document outlines a proposed companion simulation study for the experimental
 Bayesian pathway in `TruncComp2`, namely `trunc_comp_bayes()`. The existing
 `simulation-study/` workflow evaluates frequentist null calibration and power for

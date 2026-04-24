@@ -79,10 +79,8 @@ confint(fit_splrt, type = "simultaneous", plot = TRUE, resolution = 10)
 
 # Development
 
-The repository includes a GitHub Actions workflow that runs package install,
-the `testthat` suite, and `R CMD check --no-manual --no-build-vignettes` on
-changes. That check combination should be treated as the release gate for
-package changes.
+Treat the following local verification steps as the release gate for package
+changes.
 
 From the monorepo root, local package verification is:
 

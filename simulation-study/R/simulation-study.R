@@ -53,19 +53,80 @@ simulation_study_method_labels <- function() {
 }
 
 load_local_trunccomp2 <- function(repo_root) {
-  if (!requireNamespace("pkgload", quietly = TRUE)) {
-    stop("The pkgload package is required to load the local TruncComp2 package.", call. = FALSE)
+  package_path <- file.path(repo_root, "packages", "TruncComp2")
+  if (requireNamespace("pkgload", quietly = TRUE)) {
+    loaded <- tryCatch(
+      {
+        pkgload::load_all(
+          package_path,
+          quiet = TRUE,
+          export_all = FALSE,
+          helpers = FALSE,
+          attach_testthat = FALSE
+        )
+        TRUE
+      },
+      error = function(e) {
+        message(
+          "Unable to load the full local TruncComp2 package; ",
+          "falling back to the frequentist R sources only: ",
+          conditionMessage(e)
+        )
+        FALSE
+      }
+    )
+
+    if (loaded) {
+      options(trunccomp2.simulation_loader = "pkgload")
+      return(invisible(TRUE))
+    }
   }
 
-  pkgload::load_all(
-    file.path(repo_root, "packages", "TruncComp2"),
-    quiet = TRUE,
-    export_all = FALSE,
-    helpers = FALSE,
-    attach_testthat = FALSE
+  source_files <- file.path(
+    package_path,
+    "R",
+    c(
+      "utility.R",
+      "classFunctions.R",
+      "logitFunctions.R",
+      "empiricalLikelihood.R",
+      "LRT.R",
+      "SPLRT.R",
+      "CI.R",
+      "delta.R",
+      "simulation.R",
+      "truncComp.R"
+    )
   )
+  missing_files <- source_files[!file.exists(source_files)]
+  if (length(missing_files)) {
+    stop(
+      "Unable to load the frequentist TruncComp2 sources. Missing files: ",
+      paste(missing_files, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  invisible(lapply(source_files, sys.source, envir = globalenv()))
+  options(trunccomp2.simulation_loader = "source")
 
   invisible(TRUE)
+}
+
+simulation_study_simulate_truncated_data <- function(...) {
+  if (identical(getOption("trunccomp2.simulation_loader"), "source")) {
+    return(simulate_truncated_data(...))
+  }
+
+  TruncComp2::simulateTruncatedData(...)
+}
+
+simulation_study_trunc_comp <- function(...) {
+  if (identical(getOption("trunccomp2.simulation_loader"), "source")) {
+    return(trunc_comp(...))
+  }
+
+  TruncComp2::truncComp(...)
 }
 
 simulation_study_default_config <- function(reps = 25000L,
@@ -464,10 +525,10 @@ simulation_study_prepare_run <- function(output_dir,
     stats::t.test(Y ~ R, data = data)$p.value
   )
   results$lrt <- .simulation_study_measure_pvalue(
-    TruncComp2::truncComp(Y ~ R, atom = atom, data = data, method = "LRT")$p
+    simulation_study_trunc_comp(Y ~ R, atom = atom, data = data, method = "LRT")$p.value
   )
   results$splrt <- .simulation_study_measure_pvalue(
-    TruncComp2::truncComp(Y ~ R, atom = atom, data = data, method = "SPLRT")$p
+    simulation_study_trunc_comp(Y ~ R, atom = atom, data = data, method = "SPLRT")$p.value
   )
 
   results
@@ -504,7 +565,7 @@ simulation_study_run_cell <- function(cell, output_dir) {
   combined_deltas <- numeric(cell$reps)
 
   for (rep_index in seq_len(cell$reps)) {
-    data <- TruncComp2::simulateTruncatedData(
+    data <- simulation_study_simulate_truncated_data(
       n = cell$n,
       f0 = params$f0,
       f1 = params$f1,

@@ -98,3 +98,6 @@ cd manuscript
 make assets
 make pdf
 ```
+
+The PDF build uses `manuscript/manuscrip.tex` and writes
+`manuscript/manuscrip.pdf`.

@@ -30,6 +30,9 @@
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.75em}
+\setlength{\emergencystretch}{2em}
+\hfuzz=3pt
+\hbadness=10000
 \allowdisplaybreaks
 
 \DeclareMathOperator*{\E}{E}
@@ -1096,7 +1099,7 @@ The likelihood-ratio procedures test the joint null of no treatment effect on th
 
 Table~\ref{tab:ist3-delta-ci} illustrates three confidence intervals for $\Delta$ implemented in the software. The Welch interval is the direct interval for the atom-coded mean contrast. The profile interval constrains the full likelihood at a fixed $\Delta$, while the projected interval maps the joint confidence region for the component parameters into the implied combined mean contrast. In IST-3, the profile interval is nearly identical to the Welch interval, whereas the projected interval is wider because it preserves joint uncertainty in both the atom and non-atom components.
 
-We also fit the package Bayesian two-part model in \texttt{TruncComp2} using \texttt{continuous\_support = "bounded\_score"} and \texttt{bounded\_kernel = "logit\_normal"}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. The non-atom EQ-VAS distribution used a two-component logit-normal mixture on the bounded reported-score scale, with score range 0 to 100, unit score spacing, ordered component locations on the logit scale, and shared reporting-grid weights over 1-, 5-, and 10-point grids. The stick-breaking concentration parameters used $\mathrm{Gamma}(4,4)$ priors, the logit-scale component locations used $\mathrm{Normal}(0,2)$ priors, the component scales used $\mathrm{Lognormal}(\log 1.2,0.5)$ priors, and the reporting-grid weights used a $\mathrm{Dirichlet}(2,2,2)$ prior. The manuscript run used four chains with 1{,}000 warmup and 2{,}000 post-warmup iterations per chain at \texttt{adapt\_delta = 0.995}; the fit is cached with the generated application data, and setting \texttt{TRUNCCOMP\_REFRESH\_IST3\_BAYES=true} regenerates it from the fixed-width file. Because this Bayesian implementation uses a practical finite mixture for the manuscript build, we report sampler and mixture-weight diagnostics alongside the posterior summaries.
+We also fit the package Bayesian two-part model in \texttt{TruncComp2} using \texttt{continuous\_support = "bounded\_score"} and \texttt{bounded\_kernel = "logit\_normal"}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. The non-atom EQ-VAS distribution used a two-component logit-normal mixture on the bounded reported-score scale, with score range 0 to 100, unit score spacing, ordered component locations on the logit scale, and shared reporting-grid weights over 1-, 5-, and 10-point grids. The stick-breaking concentration parameters used $\mathrm{Gamma}(4,4)$ priors, the logit-scale component locations used $\mathrm{Normal}(0,2)$ priors, the component scales used $\mathrm{Lognormal}(\log 1.2, 0.5)$ priors, and the reporting-grid weights used a $\mathrm{Dirichlet}(2,2,2)$ prior. The manuscript run used four chains with 1{,}000 warmup and 2{,}000 post-warmup iterations per chain at \texttt{adapt\_delta = 0.995}. The fit is cached with the generated application data, and setting \texttt{TRUNCCOMP\_REFRESH\_IST3\_BAYES\allowbreak=true} regenerates it from the fixed-width file. Because this Bayesian implementation uses a practical finite mixture for the manuscript build, we report sampler and mixture-weight diagnostics alongside the posterior summaries.
 
 \input{build/tables/application-bayes-summary.tex}
 

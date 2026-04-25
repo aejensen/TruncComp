@@ -8,6 +8,18 @@ This repository hosts the `TruncComp` project material as a monorepo.
 - `packages/TruncComp2/`: a direct clone of `TruncComp` under a separate package name
 - `manuscript/`: manuscript sources, simulations, and supporting project material
 
+## Manuscript
+
+The main manuscript source is `manuscript/manuscrip.tex`. To rebuild the
+checked manuscript PDF from the repository root:
+
+```sh
+cd manuscript
+make pdf
+```
+
+The build writes `manuscript/manuscrip.pdf`.
+
 ## Packages
 
 ### `TruncComp`

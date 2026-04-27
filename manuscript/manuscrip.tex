@@ -78,7 +78,7 @@ Other approaches address truncated-by-death outcomes from different perspectives
 
 Our construction combines ideas from two-part models for semi-continuous outcomes \citep{aitchison1955distribution,cragg1971some} and empirical-likelihood inference for mean restrictions \citep{owen1988empirical,owen1991empirical,kitamura2001asymptotic}. We develop a factorized likelihood-ratio framework that yields a single prespecified p-value for the joint null together with interpretable component-wise effect estimates and confidence regions. We present both a parametric version, which is efficient under a credible model for the positive part, and a semi-parametric version, which relaxes that distributional commitment while retaining the same Bernoulli component. The resulting procedures preserve the clinically meaningful atom used in practice, but they test a sharper question than direct one-dimensional analyses of the combined outcome.
 
-Although we motivate the method by quality of life truncated by death, the same structure arises whenever one special value has a substantively different meaning than the remainder of an otherwise continuous scale. The target is an observed-data treatment contrast, not a principal-stratum causal estimand. The rest of the paper is organized as follows. Section~\ref{sec:method} introduces the statistical setup and the proposed tests. Section~\ref{sec:simulation-study} reports a simulation study, Section~\ref{sec:application} gives a clinical application, and Section~\ref{sec:discussion} concludes. Additional simulation results and a derivation of the empirical-likelihood component are collected in Appendix~\ref{app:supplementary-simulation-results} and Appendix~\ref{app:supplementary-derivation}.
+Although we motivate the method by quality of life truncated by death, the same structure arises whenever one special value has a substantively different meaning than the remainder of an otherwise continuous scale. The target is an observed-data treatment contrast, not a principal-stratum causal estimand. The rest of the paper is organized as follows. Section~\ref{sec:method} introduces the statistical setup and the proposed tests. Section~\ref{sec:simulation-study} reports a simulation study, Section~\ref{sec:application} gives a clinical application, and Section~\ref{sec:discussion} concludes. Additional simulation results are collected in Appendix~\ref{app:supplementary-simulation-results}.
 
 \section{Method}\label{sec:method}
 
@@ -380,7 +380,7 @@ When $X_i$ is absent, the empirical-likelihood regression construction reduces t
 \qquad
 \mathcal{I}_1 = \{i = 1,\ldots,n : R_i = 1, A_i = 1\}.
 \]
-Lemma~\ref{lem:empirical-likelihood-derivation} in Appendix~\ref{app:supplementary-derivation} shows that, for fixed $(\mu_0,\mu_\delta)$, the empirical-likelihood deviance for the observed outcomes is
+In the no-covariate case, the standard empirical-likelihood dual representation gives, for fixed $(\mu_0,\mu_\delta)$, the empirical-likelihood deviance
 \begin{align}
   \widetilde{W}_{Y,n}(\mu_0,\mu_\delta)
   &= 2\sum_{i = 1}^n \Biggl[
@@ -491,6 +491,38 @@ When there are no adjustment covariates and $e_0=0$, this reduces to
   \widehat{\pi}_0(b)\widehat{\mu}_0(m),
 \]
 where $\widehat{\pi}_r(b)$ and $\widehat{\mu}_r(m)$ are the corresponding arm-specific profiled probabilities and means. The fitted likelihood-based estimate of the numerical combined-outcome contrast is $g_n^{(e_0)}(\widehat{\mu}_\delta,\widehat{\beta}_\delta)$, where $(\widehat{\mu}_\delta,\widehat{\beta}_\delta)$ denotes the unrestricted component estimate.
+
+In the same no-covariate setting, the profiled Bernoulli probabilities can be written explicitly. For fixed $b$, let
+\[
+  \widehat{\beta}_0(b)
+  \in
+  \arg\min_{\beta_0\in\mathbb{R}}
+  \sum_{i=1}^n
+  \left[
+    \log\{1+\exp(\beta_0+bR_i)\}
+    -
+    A_i(\beta_0+bR_i)
+  \right],
+\]
+and set
+\[
+  \widehat{\pi}_r(b)
+  =
+  \operatorname{logit}^{-1}\{\widehat{\beta}_0(b)+rb\},
+  \qquad r\in\{0,1\}.
+\]
+For fixed $m$, the profiled non-atom means are
+\[
+  \widehat{\mu}_0(m)
+  \in
+  \begin{cases}
+    \arg\max\limits_{\mu_0,\Psi} L_{Y,n}(\mu_0,m,\Psi), & \text{parametric},\\[0.8em]
+    \arg\min\limits_{\mu_0\in\mathbb{R}} \widetilde{W}_{Y,n}(\mu_0,m), & \text{semi-parametric},
+  \end{cases}
+  \qquad
+  \widehat{\mu}_1(m)=\widehat{\mu}_0(m)+m.
+\]
+These are the quantities entering the no-covariate map $g_n^{(0)}(m,b)$.
 
 The first interval is the direct Welch interval for the atom-at-zero numerical outcome. Let $n_r=\sum_{i=1}^n\mathbbm{1}(R_i=r)$ and define
 \[
@@ -619,6 +651,126 @@ with endpoints
 \]
 The one-degree-of-freedom calibration reflects that the null constraint is on the single scalar functional $g_n^{(e_0)}(m,b)$, while the remaining component direction is profiled out.
 
+When the infimum defining $T_n(d)$ is attained on each non-empty fiber $\{(m,b):g_n^{(e_0)}(m,b)=d\}$, the accepted $\Delta$ values can equivalently be written as the image of the one-degree-of-freedom likelihood-ratio sublevel set,
+\[
+  \left\{
+    g_n^{(e_0)}(m,b):
+    \mathcal{W}_n(m,b)\leq\chi^2_{1,1-\alpha}
+  \right\}.
+\]
+This representation is useful for numerical evaluation and motivates the finite-grid approximation described in Appendix~\ref{app:supplementary-delta-intervals}.
+
+In the unadjusted Gaussian model, the profile map has a closed form in the continuous component. Let
+\[
+  N_+ = \sum_{i=1}^n A_i,
+  \qquad
+  \overline{Y}_+
+  =
+  \frac{1}{N_+}\sum_{i:A_i=1}Y_i,
+  \qquad
+  \overline{R}_+
+  =
+  \frac{1}{N_+}\sum_{i:A_i=1}R_i.
+\]
+For fixed $m$, profiling the Gaussian likelihood over the common intercept gives
+\[
+  \widehat{\mu}_0(m)=\overline{Y}_+-\overline{R}_+m,
+  \qquad
+  \widehat{\mu}_1(m)=\overline{Y}_++(1-\overline{R}_+)m.
+\]
+Substitution into $g_n^{(0)}$ yields the affine representation
+\begin{align}
+  g_n^{(0)}(m,b)
+  &=
+  \{\widehat{\pi}_1(b)-\widehat{\pi}_0(b)\}\overline{Y}_+\nonumber\\
+  &\quad+
+  \{\widehat{\pi}_1(b)(1-\overline{R}_+)+\widehat{\pi}_0(b)\overline{R}_+\}m.
+\end{align}
+Thus, for fixed $d$ and $b$, the compatible mean contrast is
+\[
+  m^\star(d,b)
+  =
+  \frac{
+    d-\{\widehat{\pi}_1(b)-\widehat{\pi}_0(b)\}\overline{Y}_+
+  }{
+    \widehat{\pi}_1(b)(1-\overline{R}_+)+\widehat{\pi}_0(b)\overline{R}_+
+  },
+\]
+whenever the denominator is positive, and the profile statistic reduces to
+\[
+  T_n(d)
+  =
+  \inf_{b\in\mathbb{R}}
+  \mathcal{W}_n\{m^\star(d,b),b\}.
+\]
+For the semi-parametric likelihood, the map $m\mapsto g_n^{(0)}(m,b)$ is generally not affine. The corresponding reduction is obtained by profiling over the feasible compatible mean contrasts:
+\[
+  T_n(d)
+  =
+  \inf_{b\in\mathbb{R}}
+  \inf\left\{
+    \mathcal{W}_n(m,b):
+    g_n^{(0)}(m,b)=d
+  \right\},
+\]
+with the inner infimum treated as infinite when no feasible empirical-likelihood mean contrast satisfies the scalar constraint.
+
+\paragraph{Numerical endpoint calculation.}
+The projected interval endpoints in Equation~(\ref{eq:projected-delta-ci}) may be computed as constrained optimization problems over a rectangular search box $B_n\subset\mathbb{R}^2$ on the $(m,b)$ scale. Let $c_{2,\alpha}=\chi^2_{2,1-\alpha}$. The finite-box endpoint problems are
+\begin{align}
+  L^{\mathrm{proj}}_{1-\alpha}(B_n)
+  &=
+  \inf_{(m,b)\in B_n}
+  \left\{
+    g_n^{(e_0)}(m,b):
+    \mathcal{W}_n(m,b)\leq c_{2,\alpha}
+  \right\},
+  \label{eq:delta-proj-box-lower}\\
+  U^{\mathrm{proj}}_{1-\alpha}(B_n)
+  &=
+  \sup_{(m,b)\in B_n}
+  \left\{
+    g_n^{(e_0)}(m,b):
+    \mathcal{W}_n(m,b)\leq c_{2,\alpha}
+  \right\}.
+  \label{eq:delta-proj-box-upper}
+\end{align}
+A practical unconstrained objective is obtained by replacing the hard likelihood-ratio constraint with a one-sided quadratic penalty. With $x_+=\max(x,0)$ and a large data-scaled penalty constant $\kappa_n>0$, the lower- and upper-endpoint objectives are
+\begin{align}
+  Q^{\mathrm{proj},L}_{n,\alpha}(m,b)
+  &=
+  g_n^{(e_0)}(m,b)
+  +
+  \kappa_n\{\mathcal{W}_n(m,b)-c_{2,\alpha}\}_+^2,
+  \label{eq:delta-proj-penalty-lower}\\
+  Q^{\mathrm{proj},U}_{n,\alpha}(m,b)
+  &=
+  -g_n^{(e_0)}(m,b)
+  +
+  \kappa_n\{\mathcal{W}_n(m,b)-c_{2,\alpha}\}_+^2.
+  \label{eq:delta-proj-penalty-upper}
+\end{align}
+After numerical minimization of Equation~(\ref{eq:delta-proj-penalty-lower}) or Equation~(\ref{eq:delta-proj-penalty-upper}) within $B_n$, the candidate is projected back to the feasible boundary if necessary. Specifically, let $(\widehat{m},\widehat{b})$ denote the unrestricted estimate and let $(m^\dagger,b^\dagger)$ denote the optimizer proposal. A one-dimensional binary search is performed on the line segment joining these two points to find the last point satisfying $\mathcal{W}_n(m,b)\leq c_{2,\alpha}$. If an endpoint remains close to the boundary of $B_n$, the search box is expanded and the optimization is repeated.
+
+For the profile interval, the statistic $T_n(d)$ is evaluated for candidate values $d$ of the combined-outcome contrast. In the unadjusted Gaussian case, this uses the one-dimensional profile over $b$ displayed above. In the semi-parametric case, the compatible mean contrast is obtained numerically. For fixed $(d,b)$, the empirical-likelihood feasible range for $m$ is
+\[
+  \left[
+    \min_{j\in\mathcal{I}_1}Y_j-\max_{i\in\mathcal{I}_0}Y_i,\;
+    \max_{j\in\mathcal{I}_1}Y_j-\min_{i\in\mathcal{I}_0}Y_i
+  \right].
+\]
+If the function $m\mapsto g_n^{(0)}(m,b)-d$ changes sign on this interval, the compatible value is found by one-dimensional root finding. Otherwise, the calculation minimizes the squared discrepancy
+\[
+  M_n(m;d,b)
+  =
+  \{g_n^{(0)}(m,b)-d\}^2
+\]
+over the feasible interval and accepts the resulting candidate only if the remaining discrepancy is below numerical tolerance; if not, the profile value for that $b$ is treated as infeasible. Once the function $d\mapsto T_n(d)$ can be evaluated, the lower and upper profile endpoints are obtained as the two roots of
+\[
+  T_n(d)=\chi^2_{1,1-\alpha}
+\]
+on either side of the fitted value $g_n^{(e_0)}(\widehat{\mu}_\delta,\widehat{\beta}_\delta)$. The roots are bracketed by step-doubling away from the fitted value and then refined by bisection until the requested numerical tolerance is reached.
+
 \begin{proposition}[Likelihood-ratio intervals for the combined-outcome contrast]\label{prop:delta-lr-intervals}
 Let $\theta_\delta=(\mu_\delta,\beta_\delta)^\top$. Suppose that $\mathcal{W}_n$ satisfies the regularity conditions for the relevant parametric or semi-parametric likelihood-ratio theory in a neighborhood of the true value $\theta_{\delta0}$. Assume further that $g_n^{(e_0)}$ converges uniformly in probability on this neighborhood to a continuously differentiable population map $g^{(e_0)}$, that $\nabla g^{(e_0)}(\theta_{\delta0})\neq 0$, and that $\Delta_0=g^{(e_0)}(\theta_{\delta0})$. Then
 \[
@@ -632,6 +784,8 @@ The likelihood-ratio surface is locally quadratic under the regularity condition
 \end{proof}
 
 The three intervals therefore describe related but distinct targets. The Welch interval in Equation~(\ref{eq:welch-delta-ci}) is a direct one-dimensional interval for the mean difference of the coded numerical outcome $\widetilde{Y}^{\,0}$; it is simple and relatively model-light, but it does not distinguish whether the contrast arises from the atom probability, the continuous non-atom component, or both. The projected interval in Equation~(\ref{eq:projected-delta-ci}) is a likelihood-based summary derived from the simultaneous two-component confidence region; it is appropriate when $\Delta^{(e_0)}$ is reported as a secondary scalar summary while maintaining coherence with the joint analysis, and it is usually wider because it retains simultaneous uncertainty in both $\mu_\delta$ and $\beta_\delta$. The profile interval in Equation~(\ref{eq:profile-delta-ci}) is instead a direct likelihood-ratio interval for the scalar functional $\Delta^{(e_0)}$; it profiles over nuisance component directions and is therefore more focused on the numerical combined-outcome contrast. Thus the profile and projected intervals remain tied to the two-part likelihood decomposition, whereas the Welch interval is an analysis of the numerical representation alone.
+
+In practice, the likelihood-based $\Delta$ intervals may also be approximated by evaluating the joint likelihood-ratio surface and the profiled $\Delta$ map on a finite grid of component contrasts. Appendix~\ref{app:supplementary-delta-intervals} gives the corresponding grid construction.
 
 
 %%%%%%%%%%%%%
@@ -930,71 +1084,6 @@ More generally, one may also examine scalar posterior predictive discrepancies b
 \]
 estimated by the corresponding empirical proportion over posterior draws and replicated data sets. Such quantities are useful diagnostics for systematic lack of fit in either the atom model or the continuous conditional distribution, but they should be interpreted as Bayesian model-checking summaries rather than as classical significance tests.
 
-\paragraph{Choosing the truncation level.}
-Because the infinite stick-breaking mixture is implemented through a finite truncation, the number of retained mixture components $H$ should be viewed as an approximation-control parameter rather than as an estimand for a ``true'' finite number of mixture components. The inferential target is the posterior of the scientific functionals in Equation~(\ref{eq:bayes-estimands}), not the posterior of an exact component count. This distinction is important in flexible mixture models, because nearby kernels may split or merge without materially changing either the fitted non-atom distribution or the posterior of the scientific summaries.
-
-For arm $r \in \{0,1\}$, the truncated stick-breaking construction implies
-\[
-  v_{rh} \mid \alpha_r \sim \Beta(1,\alpha_r),
-  \qquad
-  h = 1,\ldots,H-1,
-\]
-with weights
-\[
-  w_{r1} = v_{r1},
-  \qquad
-  w_{rh} = v_{rh}\prod_{\ell=1}^{h-1}(1-v_{r\ell}),
-  \quad h = 2,\ldots,H-1,
-\]
-and
-\[
-  w_{rH} = \prod_{\ell=1}^{H-1}(1-v_{r\ell}).
-\]
-Thus $w_{rH}$ is the residual stick mass after the first $H-1$ breaks, and the implementation assigns this remaining mass to the final retained component. If one were to continue the stick-breaking construction by one additional break $V_{rH} \mid \alpha_r \sim \Beta(1,\alpha_r)$, then the mass lying strictly beyond the retained truncation point would be $w_{rH}(1-V_{rH})$. Since
-\[
-  \E(1-V_{rH} \mid \alpha_r) = \frac{\alpha_r}{1+\alpha_r},
-\]
-a natural truncation diagnostic is
-\begin{equation}
-  T_{rH}
-  = w_{rH}\frac{\alpha_r}{1+\alpha_r},
-  \label{eq:truncation-diagnostic}
-\end{equation}
-which is the posterior expected omitted stick mass beyond $H$, conditional on the currently retained residual stick. Small values of $T_{rH}$ indicate that little posterior mass remains beyond the truncation boundary. This is more informative than monitoring $w_{rH}$ alone, because the last retained component may itself be genuinely occupied by data.
-
-We therefore choose $H$ by monitoring the posterior of $T_{rH}$ rather than by treating the number of occupied components as a scientific target. Let
-\[
-  n_r^{\mathrm{obs}}
-  =
-  \sum_{i=1}^n \mathbbm{1}(A_i = 1, R_i = r)
-\]
-denote the number of observed non-atom outcomes in arm $r$, and define the arm-specific tolerance
-\[
-  \eta_r = \min\!\left\{0.02,\frac{1}{n_r^{\mathrm{obs}}}\right\}.
-\]
-Operationally, we regard a truncation level as adequate when, for both treatment arms,
-\begin{equation}
-  Q_{0.95}(T_{rH} \mid \mathcal{D}_n) < \eta_r,
-  \label{eq:truncation-rule}
-\end{equation}
-and the Markov chain Monte Carlo diagnostics are satisfactory, with no divergent transitions, $\widehat{R} \leq 1.01$, and adequate bulk and tail effective sample sizes. If Equation~(\ref{eq:truncation-rule}) fails in either arm, then $H$ is increased and the model is refit; the final analysis uses the smallest $H$ satisfying the criterion.
-
-In the present implementation the ladder $H = 10 \rightarrow 20 \rightarrow 40$ is especially natural under the default prior $\alpha_r \sim \mathrm{Gamma}(2,1)$. Conditional on $\alpha_r$,
-\[
-  \E(w_{rH} \mid \alpha_r)
-  =
-  \left(\frac{\alpha_r}{1+\alpha_r}\right)^{H-1},
-\]
-so that
-\[
-  \E(T_{rH})
-  =
-  \E\!\left[
-    \left(\frac{\alpha_r}{1+\alpha_r}\right)^H
-  \right].
-\]
-Under $\mathrm{Gamma}(2,1)$, this prior mean omitted mass is approximately $0.033$ for $H=10$, $0.0039$ for $H=20$, and $1.6 \times 10^{-4}$ for $H=40$. Thus $H=10$ already provides a moderate truncation, $H=20$ drives the prior expected omitted mass below one-half of one percent, and $H=40$ makes prior truncation error negligible for practical purposes. Posterior predictive checks remain essential for overall model assessment, but they address model adequacy rather than truncation adequacy and therefore complement, rather than replace, the diagnostic in Equation~(\ref{eq:truncation-rule}).
-
 \paragraph{Covariate extensions.}
 The no-covariate treatment-stratified model is the primary development in this paper, but the same two-part architecture extends naturally when baseline covariates are present. A direct extension retains treatment stratification and replaces the arm-specific constants $\pi_r$ and $F_r^c$ by covariate-dependent quantities $\pi_r(x)$ and $F_r^c(\cdot \mid x)$. For example, one may write
 \begin{align*}
@@ -1111,7 +1200,7 @@ The likelihood-ratio procedures test the joint null of no treatment effect on th
 
 Table~\ref{tab:ist3-delta-ci} illustrates three confidence intervals for $\Delta$ implemented in the software. The Welch interval is the direct interval for the atom-coded mean contrast. The profile interval constrains the full likelihood at a fixed $\Delta$, while the projected interval maps the joint confidence region for the component parameters into the implied combined mean contrast. In IST-3, the profile interval is nearly identical to the Welch interval, whereas the projected interval is wider because it preserves joint uncertainty in both the atom and non-atom components.
 
-We also fit the package Bayesian two-part model in \texttt{TruncComp2} using the bounded-score logit-Normal likelihood defined in Section~\ref{sec:bayesian-two-group}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. The non-atom EQ-VAS distribution used $H=2$ mixture components, score range 0 to 100, unit score spacing, ordered component locations on the logit scale, and shared heap weights over 1-, 5-, and 10-point reporting grids. The stick-breaking concentration parameters used $\mathrm{Gamma}(4,4)$ priors, the logit-scale component locations used $\mathrm{Normal}(0,2)$ priors, the component scales used $\mathrm{Lognormal}(\log 1.2, 0.5)$ priors, and the heap weights used a $\mathrm{Dirichlet}(2,2,2)$ prior. The manuscript run used four chains with 1{,}000 warmup and 2{,}000 post-warmup iterations per chain at \texttt{adapt\_delta = 0.995}. The fit is cached with the generated application data, and setting \texttt{TRUNCCOMP\_REFRESH\_IST3\_BAYES\allowbreak=true} regenerates it from the fixed-width file. Because this Bayesian implementation uses a practical finite mixture for the manuscript build, we report sampler and mixture-weight diagnostics alongside the posterior summaries.
+We also fit the package Bayesian two-part model using the bounded-score logit-Normal likelihood defined in Section~\ref{sec:bayesian-two-group}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. The non-atom EQ-VAS distribution used $H=2$ mixture components, score range 0 to 100, unit score spacing, ordered component locations on the logit scale, and shared heap weights over 1-, 5-, and 10-point reporting grids. The stick-breaking concentration parameters used $\mathrm{Gamma}(4,4)$ priors, the logit-scale component locations used $\mathrm{Normal}(0,2)$ priors, the component scales used $\mathrm{Lognormal}(\log 1.2, 0.5)$ priors, and the heap weights used a $\mathrm{Dirichlet}(2,2,2)$ prior. The manuscript run used four chains with 1{,}000 warmup and 2{,}000 post-warmup iterations per chain at \texttt{adapt\_delta = 0.995}. The fit is cached with the generated application data, and setting \texttt{TRUNCCOMP\_REFRESH\_IST3\_BAYES\allowbreak=true} regenerates it from the fixed-width file. Because this Bayesian implementation uses a practical finite mixture for the manuscript build, we report sampler and mixture-weight diagnostics alongside the posterior summaries.
 
 \input{build/tables/application-bayes-summary.tex}
 
@@ -1178,432 +1267,61 @@ Figure~\ref{fig:type1Curves} summarizes the $h = 0$ null-calibration results acr
 \input{build/tables/supplementary-power-s6.tex}
 \input{build/tables/supplementary-type1.tex}
 
-\section{Supplementary description of the Delta-scale profile and projected intervals}\label{app:supplementary-delta-intervals}
+\section{Supplementary grid approximation for Delta-scale intervals}\label{app:supplementary-delta-intervals}
 
-This appendix records the exact unadjusted \texttt{TruncComp2} constructions underlying \texttt{DeltaProfileCI} and \texttt{DeltaProjectedCI}. These intervals are currently implemented only for the no-covariate parametric and semi-parametric models described in Section~\ref{sec:method}. To unify notation, define
-\[
-  \mathcal{W}_n(\mu_\delta,\beta_\delta)
-  =
-  \begin{cases}
-    W_n^P(\mu_\delta,\beta_\delta), & \text{for the parametric fit},\\[0.4em]
-    \widetilde{W}_n^P(\mu_\delta,\beta_\delta), & \text{for the semi-parametric fit}.
-  \end{cases}
-\]
-Thus $\mathcal{W}_n$ always denotes the fitted two-parameter joint likelihood-ratio surface on the $(\mu_\delta,\beta_\delta)$ scale.
+This appendix describes a finite-grid approximation to the likelihood-based $\Delta$ intervals defined in Section~\ref{sec:method}. The construction uses the joint likelihood-ratio surface $\mathcal{W}_n$ in Equation~(\ref{eq:generic-lr-surface}) and the profiled numerical contrast map $g_n^{(e_0)}$ in Equation~(\ref{eq:profiled-delta-map}).
 
-For the binary component, let
-\[
-  \ell_{A,n}(\beta_0,\beta_\delta)
-  =
-  \sum_{i = 1}^n
-  \left\{
-    \log\left(1 + e^{\beta_0 + \beta_\delta R_i}\right)
-    - A_i(\beta_0 + \beta_\delta R_i)
-  \right\}
-\]
-denote the negative Bernoulli log-likelihood. For fixed $\beta_\delta$, define the profiled intercept
-\[
-  \widehat{\beta}_0(\beta_\delta)
-  \in
-  \arg\min_{\beta_0 \in \mathbb{R}} \ell_{A,n}(\beta_0,\beta_\delta),
-\]
-and the corresponding fitted observation probabilities
-\[
-  \widehat{\pi}_r(\beta_\delta)
-  =
-  \operatorname{logit}^{-1}\!\left(\widehat{\beta}_0(\beta_\delta) + r\beta_\delta\right),
-  \qquad r \in \{0,1\}.
-\]
-For the continuous component, let $\widehat{\mu}_0(\mu_\delta)$ denote the profiled control-group mean among the observed outcomes under the fixed mean-difference constraint $\mu_\delta$:
-\[
-  \widehat{\mu}_0(\mu_\delta)
-  \in
-  \begin{cases}
-    \arg\max\limits_{\mu_0,\Psi} L_{Y,n}(\mu_0,\mu_\delta,\Psi), & \text{parametric},\\[0.8em]
-    \arg\min\limits_{\mu_0 \in \mathbb{R}} \widetilde{W}_{Y,n}(\mu_0,\mu_\delta), & \text{semi-parametric},
-  \end{cases}
-\]
-and define $\widehat{\mu}_1(\mu_\delta) = \widehat{\mu}_0(\mu_\delta) + \mu_\delta$. The profiled atom-at-zero numerical combined-outcome contrast induced by the pair $(\mu_\delta,\beta_\delta)$ is then
-\begin{align}
-  g_n(\mu_\delta,\beta_\delta)
-  &=
-  \widehat{\pi}_1(\beta_\delta)\widehat{\mu}_1(\mu_\delta)
-  -
-  \widehat{\pi}_0(\beta_\delta)\widehat{\mu}_0(\mu_\delta).
-  \label{eq:delta-map}
-\end{align}
-Equation~(\ref{eq:delta-map}) is the map that the software evaluates at every joint candidate point on the atom-at-zero numerical combined-outcome scale. In particular, the reported point estimate \texttt{Delta} is $\widehat{\Delta}_n := g_n(\widehat{\mu}_\delta,\widehat{\beta}_\delta)$.
-
-Let
-\[
-  c_{1,\alpha} = \chi^2_1(1-\alpha),
-  \qquad
-  c_{2,\alpha} = \chi^2_2(1-\alpha)
-\]
-denote the one- and two-degree-of-freedom upper quantiles used for the profile and projected intervals on the atom-at-zero numerical combined-outcome scale $\Delta$, respectively.
-
-\subsection*{Projected interval}
-
-The projected interval is the image of the two-dimensional simultaneous confidence region under the map in Equation~(\ref{eq:delta-map}). More precisely, the package reports the endpoint pair
-\[
-  \mathrm{CI}^{\Delta,\mathrm{proj}}_{1-\alpha}
-  =
-  \left[
-    L^{\mathrm{proj}}_{1-\alpha},
-    U^{\mathrm{proj}}_{1-\alpha}
-  \right],
-\]
-where
-\begin{align}
-  L^{\mathrm{proj}}_{1-\alpha}
-  &=
-  \inf
-  \left\{
-    g_n(\mu_\delta,\beta_\delta)
-    :
-    \mathcal{W}_n(\mu_\delta,\beta_\delta) \leq c_{2,\alpha}
-  \right\},\label{eq:delta-proj-lower}\\
-  U^{\mathrm{proj}}_{1-\alpha}
-  &=
-  \sup
-  \left\{
-    g_n(\mu_\delta,\beta_\delta)
-    :
-    \mathcal{W}_n(\mu_\delta,\beta_\delta) \leq c_{2,\alpha}
-  \right\}.\label{eq:delta-proj-upper}
-\end{align}
-Thus the projected interval is the smallest closed interval containing all $\Delta$ values induced by joint parameter pairs inside the $(1-\alpha)100\%$ simultaneous region for $(\mu_\delta,\beta_\delta)$.
-
-For the grid-based approximation used by default, choose a rectangular grid
+Choose a finite rectangular grid of component contrasts,
 \[
   \mathcal{G}_n
   =
   \left\{
-    (\mu_\delta^{(a)},\beta_\delta^{(b)})
-    :
-    a = 1,\ldots,A,\;
-    b = 1,\ldots,B
-  \right\}.
+    (m_a,b_b):
+    a=1,\ldots,A,\;
+    b=1,\ldots,B
+  \right\}
+  \subset \mathbb{R}^2,
 \]
-At each grid point define
+where $m_a$ indexes candidate values of $\mu_\delta$ and $b_b$ indexes candidate values of $\beta_\delta$. At each grid point compute
 \[
-  W_{ab} = \mathcal{W}_n(\mu_\delta^{(a)},\beta_\delta^{(b)}),
+  W_{ab} = \mathcal{W}_n(m_a,b_b),
   \qquad
-  g_{ab} = g_n(\mu_\delta^{(a)},\beta_\delta^{(b)}).
+  d_{ab} = g_n^{(e_0)}(m_a,b_b).
 \]
-The grid estimator of the projected interval is
+
+For the projected interval in Equation~(\ref{eq:projected-delta-ci}), retain the grid points inside the two-dimensional likelihood-ratio region,
+\[
+  \mathcal{A}_{2,n}
+  =
+  \left\{(a,b): W_{ab}\leq\chi^2_{2,1-\alpha}\right\}.
+\]
+When $\mathcal{A}_{2,n}$ is non-empty, the grid approximation is
 \[
   \widehat{\mathrm{CI}}^{\Delta,\mathrm{proj,grid}}_{1-\alpha}
   =
   \left[
-    \min\{g_{ab} : W_{ab} \leq c_{2,\alpha}\},
-    \max\{g_{ab} : W_{ab} \leq c_{2,\alpha}\}
-  \right],
+    \min_{(a,b)\in\mathcal{A}_{2,n}} d_{ab},
+    \max_{(a,b)\in\mathcal{A}_{2,n}} d_{ab}
+  \right].
 \]
-provided that the accepted grid set is non-empty. In the software, the grid bounds are enlarged iteratively until the accepted set no longer touches the boundary of the evaluated box, or until a prespecified maximum number of expansions is reached.
 
-For the optimization-based version, let $B_n \subset \mathbb{R}^2$ be the current rectangular search box on the $(\mu_\delta,\beta_\delta)$ scale. The exact endpoint problems are the constrained programs
-\begin{align}
-  L^{\mathrm{proj}}_{1-\alpha}(B_n)
-  &=
-  \inf_{(\mu_\delta,\beta_\delta) \in B_n}
-  \left\{
-    g_n(\mu_\delta,\beta_\delta)
-    :
-    \mathcal{W}_n(\mu_\delta,\beta_\delta) \leq c_{2,\alpha}
-  \right\},\label{eq:delta-proj-opt-lower}\\
-  U^{\mathrm{proj}}_{1-\alpha}(B_n)
-  &=
-  \sup_{(\mu_\delta,\beta_\delta) \in B_n}
-  \left\{
-    g_n(\mu_\delta,\beta_\delta)
-    :
-    \mathcal{W}_n(\mu_\delta,\beta_\delta) \leq c_{2,\alpha}
-  \right\}.\label{eq:delta-proj-opt-upper}
-\end{align}
-The implementation solves these box-constrained problems numerically by replacing the hard inequality with a one-sided quadratic penalty. Writing $x_+ = \max(x,0)$ and letting $\kappa_n > 0$ denote the large data-scaled penalty constant used in the code, the exact objectives passed to the optimizer are
-\begin{align}
-  Q^{\mathrm{proj},L}_{n,\alpha}(\mu_\delta,\beta_\delta)
-  &=
-  g_n(\mu_\delta,\beta_\delta)
-  +
-  \kappa_n\bigl(\mathcal{W}_n(\mu_\delta,\beta_\delta) - c_{2,\alpha}\bigr)_+^2,\label{eq:delta-proj-penalty-lower}\\
-  Q^{\mathrm{proj},U}_{n,\alpha}(\mu_\delta,\beta_\delta)
-  &=
-  -g_n(\mu_\delta,\beta_\delta)
-  +
-  \kappa_n\bigl(\mathcal{W}_n(\mu_\delta,\beta_\delta) - c_{2,\alpha}\bigr)_+^2.\label{eq:delta-proj-penalty-upper}
-\end{align}
-These expressions are obtained directly from Equations~(\ref{eq:delta-proj-opt-lower})--(\ref{eq:delta-proj-opt-upper}) by taking the lower-endpoint target $g_n(\mu_\delta,\beta_\delta)$ or the upper-endpoint target $-g_n(\mu_\delta,\beta_\delta)$ and then adding a quadratic penalty for positive excess above the simultaneous-region threshold. After numerical optimization of Equation~(\ref{eq:delta-proj-penalty-lower}) or~(\ref{eq:delta-proj-penalty-upper}) within $B_n$, the software moves along the line segment from the fitted center point to the optimizer proposal and performs binary search on that segment to recover the last feasible point satisfying $\mathcal{W}_n \leq c_{2,\alpha}$. If either endpoint lies too close to the box boundary, the box is expanded and the search is repeated.
-
-\subsection*{Profile interval}
-
-The $\Delta$-profile statistic is the one-dimensional profile of the same joint surface under the nonlinear constraint in Equation~(\ref{eq:delta-map}). For any target value $\Delta \in \mathbb{R}$ on the atom-at-zero numerical combined-outcome scale, define
-\begin{equation}
-  T_n(\Delta)
-  =
-  \inf
-  \left\{
-    \mathcal{W}_n(\mu_\delta,\beta_\delta)
-    :
-    g_n(\mu_\delta,\beta_\delta) = \Delta
-  \right\}.
-  \label{eq:delta-profile-stat}
-\end{equation}
-The corresponding profile interval is
+For the profile interval in Equation~(\ref{eq:profile-delta-ci}), retain instead the grid points below the one-degree-of-freedom likelihood-ratio threshold,
 \[
-  \mathrm{CI}^{\Delta,\mathrm{prof}}_{1-\alpha}
+  \mathcal{A}_{1,n}
   =
-  \left\{
-    \Delta \in \mathbb{R}
-    :
-    T_n(\Delta) \leq c_{1,\alpha}
-  \right\}.
+  \left\{(a,b): W_{ab}\leq\chi^2_{1,1-\alpha}\right\}.
 \]
-The package reports this set through its lower and upper endpoints,
-\[
-  \mathrm{CI}^{\Delta,\mathrm{prof}}_{1-\alpha}
-  =
-  \left[
-    L^{\mathrm{prof}}_{1-\alpha},
-    U^{\mathrm{prof}}_{1-\alpha}
-  \right],
-\]
-where
-\[
-  L^{\mathrm{prof}}_{1-\alpha}
-  =
-  \inf\{\Delta : T_n(\Delta) \leq c_{1,\alpha}\},
-  \qquad
-  U^{\mathrm{prof}}_{1-\alpha}
-  =
-  \sup\{\Delta : T_n(\Delta) \leq c_{1,\alpha}\}.
-\]
-Whenever the infimum in Equation~(\ref{eq:delta-profile-stat}) is attained on each non-empty fiber $\{(\mu_\delta,\beta_\delta): g_n(\mu_\delta,\beta_\delta) = \Delta\}$, the accepted $\Delta$ values can equivalently be written as
-\[
-  \left\{
-    g_n(\mu_\delta,\beta_\delta)
-    :
-    \mathcal{W}_n(\mu_\delta,\beta_\delta) \leq c_{1,\alpha}
-  \right\},
-\]
-which explains the grid approximation used in the package. Specifically, on the same joint grid $\mathcal{G}_n$ defined above, the default grid estimator is
+When $\mathcal{A}_{1,n}$ is non-empty, the grid approximation is
 \[
   \widehat{\mathrm{CI}}^{\Delta,\mathrm{prof,grid}}_{1-\alpha}
   =
   \left[
-    \min\{g_{ab} : W_{ab} \leq c_{1,\alpha}\},
-    \max\{g_{ab} : W_{ab} \leq c_{1,\alpha}\}
+    \min_{(a,b)\in\mathcal{A}_{1,n}} d_{ab},
+    \max_{(a,b)\in\mathcal{A}_{1,n}} d_{ab}
   \right].
 \]
-Thus the profile and projected grid intervals are computed from the same evaluated joint surface and differ only in the threshold: $c_{1,\alpha}$ for the profile interval and $c_{2,\alpha}$ for the projected interval.
 
-For the optimization-based profile interval, the inner profile problem in Equation~(\ref{eq:delta-profile-stat}) is reduced to a one-dimensional optimization over $\beta_\delta$.
-
-In the parametric Gaussian case, write
-\[
-  N_+ = \sum_{i = 1}^n A_i,
-  \qquad
-  \overline{Y}_+
-  =
-  \frac{1}{N_+}\sum_{i : A_i = 1} Y_i,
-  \qquad
-  \overline{R}_+
-  =
-  \frac{1}{N_+}\sum_{i : A_i = 1} R_i.
-\]
-For fixed $\mu_\delta$, the constrained Gaussian fit among observed outcomes minimizes
-\[
-  S_n(\mu_0;\mu_\delta)
-  =
-  \sum_{i : A_i = 1}
-  \left(Y_i - \mu_0 - \mu_\delta R_i\right)^2.
-\]
-Differentiating with respect to $\mu_0$ and setting the derivative to zero gives
-\[
-  \widehat{\mu}_0(\mu_\delta)
-  =
-  \overline{Y}_+ - \overline{R}_+\,\mu_\delta,
-  \qquad
-  \widehat{\mu}_1(\mu_\delta)
-  =
-  \overline{Y}_+ + (1-\overline{R}_+)\mu_\delta.
-\]
-Substituting these expressions into Equation~(\ref{eq:delta-map}) yields the exact affine representation on the atom-at-zero numerical combined-outcome scale
-\begin{align}
-  g_n(\mu_\delta,\beta_\delta)
-  &=
-  \bigl(\widehat{\pi}_1(\beta_\delta) - \widehat{\pi}_0(\beta_\delta)\bigr)\overline{Y}_+\nonumber\\
-  &\quad +
-  \bigl\{\widehat{\pi}_1(\beta_\delta)(1-\overline{R}_+) + \widehat{\pi}_0(\beta_\delta)\overline{R}_+\bigr\}\mu_\delta.
-  \label{eq:delta-parametric-affine}
-\end{align}
-Therefore, for fixed target $\Delta$ and fixed $\beta_\delta$, the unique compatible mean-difference value is
-\begin{equation}
-  \mu_\delta^{\star}(\Delta,\beta_\delta)
-  =
-  \frac{
-    \Delta
-    -
-    \bigl(\widehat{\pi}_1(\beta_\delta) - \widehat{\pi}_0(\beta_\delta)\bigr)\overline{Y}_+
-  }{
-    \widehat{\pi}_1(\beta_\delta)(1-\overline{R}_+) + \widehat{\pi}_0(\beta_\delta)\overline{R}_+
-  },
-  \label{eq:delta-parametric-mudelta}
-\end{equation}
-Whenever the denominator is positive, Equation~(\ref{eq:delta-profile-stat}) reduces exactly to the one-dimensional problem
-\begin{equation}
-  T_n(\Delta)
-  =
-  \inf_{\beta_\delta \in \mathbb{R}}
-  Q^{\mathrm{prof,par}}_n(\Delta,\beta_\delta),
-  \qquad
-  Q^{\mathrm{prof,par}}_n(\Delta,\beta_\delta)
-  =
-  \mathcal{W}_n\bigl(\mu_\delta^{\star}(\Delta,\beta_\delta),\beta_\delta\bigr).
-  \label{eq:delta-profile-parametric-objective}
-\end{equation}
-
-In the semi-parametric case, the same reduction is available conceptually but not in closed form. For fixed $\mu_\delta$, let
-\[
-  \widehat{\mu}_0(\mu_\delta)
-  \in
-  \arg\min_{\mu_0 \in \mathbb{R}} \widetilde{W}_{Y,n}(\mu_0,\mu_\delta),
-  \qquad
-  \widehat{\mu}_1(\mu_\delta)
-  =
-  \widehat{\mu}_0(\mu_\delta) + \mu_\delta,
-\]
-so that Equation~(\ref{eq:delta-map}) defines a nonlinear map $(\mu_\delta,\beta_\delta) \mapsto g_n(\mu_\delta,\beta_\delta)$. For fixed $(\Delta,\beta_\delta)$, the compatible mean-difference value $\mu_\delta^{\star}(\Delta,\beta_\delta)$ is any feasible solution of
-\[
-  g_n(\mu_\delta,\beta_\delta) = \Delta.
-\]
-Hence the exact profile objective is
-\begin{equation}
-  Q^{\mathrm{prof,sp}}_n(\Delta,\beta_\delta)
-  =
-  \begin{cases}
-    \mathcal{W}_n\bigl(\mu_\delta^{\star}(\Delta,\beta_\delta),\beta_\delta\bigr),
-    & \text{if a feasible solution exists},\\[0.6em]
-    \infty,
-    & \text{otherwise}.
-  \end{cases}
-  \label{eq:delta-profile-semiparametric-objective}
-\end{equation}
-The implementation constructs $\mu_\delta^{\star}(\Delta,\beta_\delta)$ by searching over the empirical-likelihood feasible range
-\[
-  \left[
-    \min_{j \in \mathcal{I}_1} Y_j - \max_{i \in \mathcal{I}_0} Y_i,\;
-    \max_{j \in \mathcal{I}_1} Y_j - \min_{i \in \mathcal{I}_0} Y_i
-  \right].
-\]
-If the function $\mu_\delta \mapsto g_n(\mu_\delta,\beta_\delta) - \Delta$ changes sign over that interval, the code solves the equation by root-finding. Otherwise it minimizes the exact squared-mismatch objective
-\begin{equation}
-  M_n(\mu_\delta;\Delta,\beta_\delta)
-  =
-  \left\{g_n(\mu_\delta,\beta_\delta) - \Delta\right\}^2
-  \label{eq:delta-profile-semiparametric-inner-objective}
-\end{equation}
-over the feasible interval and accepts the resulting candidate only if the remaining discrepancy is below numerical tolerance. The outer profile statistic is then
-\begin{equation}
-  T_n(\Delta)
-  =
-  \inf_{\beta_\delta \in \mathbb{R}}
-  Q^{\mathrm{prof,sp}}_n(\Delta,\beta_\delta).
-  \label{eq:delta-profile-semiparametric-outer}
-\end{equation}
-
-Once the profile function $\Delta \mapsto T_n(\Delta)$ has been defined, the lower and upper profile endpoints are the roots of $T_n(\Delta) = c_{1,\alpha}$ on the two sides of the fitted value $\widehat{\Delta}_n$. Numerically, the software brackets these roots by step-doubling away from $\widehat{\Delta}_n$ and then refines the bracket by bisection until the desired tolerance is reached.
-
-\section{Supplementary derivation of the semi-parametric test statistic}\label{app:supplementary-derivation}
-
-This appendix records the constrained empirical-likelihood calculation underlying Equation~(\ref{eq:nonparametric}). The grouped expression derived below is algebraically equivalent to the full-sample representation in Equation~(\ref{eq:nonparametric}) because $\widetilde{Y}_i^{\,0} = 0$ whenever $A_i = 0$. Throughout, the treatment-group means among the observed outcomes are parameterized as $\mu_0$ for group $R = 0$ and $\mu_1 = \mu_0 + \mu_\delta$ for group $R = 1$.
-
-More explicitly, the full-sample notation in Equation~(\ref{eq:nonparametric}) uses the factors $1-R_i$ and $R_i$ to select the control and treatment contributions, while the factors involving $A_i$ suppress subjects with $A_i = 0$. If $R_i = 0$ and $A_i = 1$, then $\widetilde{Y}_i^{\,0} = Y_i$ and the control-arm summand reduces to $\log\{1 + \lambda_0(Y_i - \mu_0)\}$. If $R_i = 1$ and $A_i = 1$, then the treatment-arm summand reduces to $\log\{1 + \lambda_1(Y_i - \mu_0 - \mu_\delta)\}$. If $A_i = 0$, then $\widetilde{Y}_i^{\,0} = 0$ and both summands equal $\log(1) = 0$. Thus the full-sample display is exactly the same criterion as the grouped notation indexed by $\mathcal{I}_0$ and $\mathcal{I}_1$.
-
-\begin{lemma}\label{lem:empirical-likelihood-derivation}
-Fix $(\mu_0,\mu_\delta) \in \mathbb{R}^2$ such that $\mu_0$ lies in the interior of the convex hull of $\{Y_i : i \in \mathcal{I}_0\}$ and $\mu_0 + \mu_\delta$ lies in the interior of the convex hull of $\{Y_j : j \in \mathcal{I}_1\}$. Define the normalized empirical likelihood ratio
-\begin{align}
-  R_{Y,n}^{\mathrm{E}}(\mu_0,\mu_\delta)
-  = \sup_{\{p_i\},\{q_j\}}
-  \left\{
-    \prod_{i \in \mathcal{I}_0} |\mathcal{I}_0|p_i
-    \prod_{j \in \mathcal{I}_1} |\mathcal{I}_1|q_j
-  \right\}\label{eq:empiricalLik1}
-\end{align}
-subject to
-\begin{alignat*}{3}
-  p_i &\geq 0, &\quad \sum_{i \in \mathcal{I}_0} p_i &= 1, &\quad \sum_{i \in \mathcal{I}_0} p_i(Y_i - \mu_0) &= 0,\\
-  q_j &\geq 0, &\quad \sum_{j \in \mathcal{I}_1} q_j &= 1, &\quad \sum_{j \in \mathcal{I}_1} q_j(Y_j - \mu_0 - \mu_\delta) &= 0.
-\end{alignat*}
-Then the maximizer in Equation~(\ref{eq:empiricalLik1}) is unique and is given by
-\begin{align*}
-  p_i = \frac{1}{|\mathcal{I}_0|\left(1 + \lambda_0(Y_i - \mu_0)\right)},
-  \qquad
-  q_j = \frac{1}{|\mathcal{I}_1|\left(1 + \lambda_1(Y_j - \mu_0 - \mu_\delta)\right)},
-\end{align*}
-where $(\lambda_0,\lambda_1)$ satisfy
-\begin{align*}
-  \frac{1}{|\mathcal{I}_0|}\sum_{i \in \mathcal{I}_0}
-  \frac{Y_i - \mu_0}{1 + \lambda_0(Y_i - \mu_0)} &= 0,\\
-  \frac{1}{|\mathcal{I}_1|}\sum_{j \in \mathcal{I}_1}
-  \frac{Y_j - \mu_0 - \mu_\delta}{1 + \lambda_1(Y_j - \mu_0 - \mu_\delta)} &= 0.
-\end{align*}
-Consequently,
-\begin{align*}
-  \log R_{Y,n}^{\mathrm{E}}(\mu_0,\mu_\delta)
-  &= -\sum_{i \in \mathcal{I}_0}\log\left(1 + \lambda_0(Y_i - \mu_0)\right)
-     - \sum_{j \in \mathcal{I}_1}\log\left(1 + \lambda_1(Y_j - \mu_0 - \mu_\delta)\right),\\
-  \widetilde{W}_{Y,n}(\mu_0,\mu_\delta)
-  &= -2\log R_{Y,n}^{\mathrm{E}}(\mu_0,\mu_\delta)\\
-  &= 2\left(
-      \sum_{i \in \mathcal{I}_0}\log\left(1 + \lambda_0(Y_i - \mu_0)\right)
-      + \sum_{j \in \mathcal{I}_1}\log\left(1 + \lambda_1(Y_j - \mu_0 - \mu_\delta)\right)
-    \right),
-\end{align*}
-and the profiled statistic is
-\begin{align*}
-  \widetilde{W}_{Y,n}^P(\mu_\delta) = \inf_{\mu_0 \in \mathbb{R}} \widetilde{W}_{Y,n}(\mu_0,\mu_\delta).
-\end{align*}
-\end{lemma}
-
-\begin{proof}
-The objective in Equation~(\ref{eq:empiricalLik1}) is strictly concave on a convex feasible set. The convex-hull assumptions imply that the feasible set contains an interior point, hence the maximizer is unique and satisfies the first-order conditions. Introduce the Lagrangian
-\begin{align}
-  O(\{p_i\},\{q_j\})
-  &= \sum_{i \in \mathcal{I}_0}\log(|\mathcal{I}_0|p_i)
-   + \sum_{j \in \mathcal{I}_1}\log(|\mathcal{I}_1|q_j)\nonumber\\
-  &\quad + \gamma_1\left(\sum_{i \in \mathcal{I}_0} p_i - 1\right)
-   + \gamma_2\left(\sum_{j \in \mathcal{I}_1} q_j - 1\right)\nonumber\\
-  &\quad - |\mathcal{I}_0|\lambda_0\sum_{i \in \mathcal{I}_0} p_i(Y_i - \mu_0)
-   - |\mathcal{I}_1|\lambda_1\sum_{j \in \mathcal{I}_1} q_j(Y_j - \mu_0 - \mu_\delta).
-\end{align}
-Differentiation with respect to $p_i$ and $q_j$ yields
-\begin{align}
-  0 &= \frac{\partial O(\{p_i\},\{q_j\})}{\partial p_i}
-  = \frac{1}{p_i} - |\mathcal{I}_0|\lambda_0(Y_i - \mu_0) + \gamma_1,\label{eq:lambda1}\\
-  0 &= \frac{\partial O(\{p_i\},\{q_j\})}{\partial q_j}
-  = \frac{1}{q_j} - |\mathcal{I}_1|\lambda_1(Y_j - \mu_0 - \mu_\delta) + \gamma_2.\label{eq:lambda2}
-\end{align}
-Multiplying Equation~(\ref{eq:lambda1}) by $p_i$ and summing over $i \in \mathcal{I}_0$, then using the constraints, gives
-\begin{align*}
-  0
-  &= \sum_{i \in \mathcal{I}_0} p_i \frac{\partial O(\{p_i\},\{q_j\})}{\partial p_i}\\
-  &= |\mathcal{I}_0| - |\mathcal{I}_0|\lambda_0\sum_{i \in \mathcal{I}_0} p_i(Y_i - \mu_0) + \gamma_1\sum_{i \in \mathcal{I}_0} p_i\\
-  &= |\mathcal{I}_0| + \gamma_1.
-\end{align*}
-Hence $\gamma_1 = -|\mathcal{I}_0|$, and the same argument gives $\gamma_2 = -|\mathcal{I}_1|$. Substituting these identities into Equations~(\ref{eq:lambda1}) and~(\ref{eq:lambda2}) yields the stated optimizer weights.
-
-The multiplier equations follow by imposing the moment constraints after substitution of the optimizer. Inserting the optimizer into Equation~(\ref{eq:empiricalLik1}) gives
-\begin{align*}
-  \log R_{Y,n}^{\mathrm{E}}(\mu_0,\mu_\delta)
-  &= \sum_{i \in \mathcal{I}_0}\log(|\mathcal{I}_0|p_i)
-   + \sum_{j \in \mathcal{I}_1}\log(|\mathcal{I}_1|q_j)\\
-  &= -\sum_{i \in \mathcal{I}_0}\log\left(1 + \lambda_0(Y_i - \mu_0)\right)
-     - \sum_{j \in \mathcal{I}_1}\log\left(1 + \lambda_1(Y_j - \mu_0 - \mu_\delta)\right).
-\end{align*}
-The displayed expression for $\widetilde{W}_{Y,n}(\mu_0,\mu_\delta)$ is therefore immediate from the definition $\widetilde{W}_{Y,n}(\mu_0,\mu_\delta) = -2\log R_{Y,n}^{\mathrm{E}}(\mu_0,\mu_\delta)$, and the profiled statistic is obtained by minimizing over the nuisance mean $\mu_0$.
-\end{proof}
+Thus the projected and profile approximations use the same evaluated pairs $(W_{ab},d_{ab})$ and differ only in the likelihood-ratio cutoff used to accept grid points. The approximation is a discretized image of the corresponding likelihood-ratio region; its accuracy depends on the grid resolution and on whether the grid covers the relevant part of the likelihood-ratio surface. In computation, the rectangular grid bounds are enlarged if an accepted point lies on the boundary of the evaluated rectangle. This expansion is repeated until the accepted set is separated from the boundary, or until a prespecified expansion limit is reached.
 
 \clearpage
 \bibliographystyle{plainnat}

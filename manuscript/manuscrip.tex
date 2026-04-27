@@ -45,7 +45,7 @@
 
 \input{build/generated-values.tex}
 
-\title{Likelihood-ratio tests for continuous outcomes truncated by death}
+\title{Testing two-component treatment effects in truncated continuous outcomes}
 \author{
   Andreas Kryger Jensen and Theis Lange\\
   Section of Biostatistics, Department of Public Health\\
@@ -78,20 +78,19 @@ Other approaches address truncated-by-death outcomes from different perspectives
 
 Our construction combines ideas from two-part models for semi-continuous outcomes \citep{aitchison1955distribution,cragg1971some} and empirical-likelihood inference for mean restrictions \citep{owen1988empirical,owen1991empirical,kitamura2001asymptotic}. We develop a factorized likelihood-ratio framework that yields a single prespecified p-value for the joint null together with interpretable component-wise effect estimates and confidence regions. We present both a parametric version, which is efficient under a credible model for the positive part, and a semi-parametric version, which relaxes that distributional commitment while retaining the same Bernoulli component. The resulting procedures preserve the clinically meaningful atom used in practice, but they test a sharper question than direct one-dimensional analyses of the combined outcome.
 
-Although we motivate the method by quality of life truncated by death, the same structure arises whenever one special value has a substantively different meaning than the remainder of an otherwise continuous scale. The target is an observed-data treatment contrast, not a principal-stratum causal estimand. The rest of the paper is organized as follows. Section~\ref{sec:method} introduces the statistical setup and the proposed tests. Section~\ref{sec:simulation-study} reports a simulation study, Section~\ref{sec:application} gives a clinical application, and Section~\ref{sec:discussion} concludes. Secondary package-data applications, additional simulation results, and a derivation of the empirical-likelihood component are collected in Appendix~\ref{app:joiner-liver-application}, Appendix~\ref{app:licorice-gargle-application}, Appendix~\ref{app:supplementary-simulation-results}, and Appendix~\ref{app:supplementary-derivation}.
+Although we motivate the method by quality of life truncated by death, the same structure arises whenever one special value has a substantively different meaning than the remainder of an otherwise continuous scale. The target is an observed-data treatment contrast, not a principal-stratum causal estimand. The rest of the paper is organized as follows. Section~\ref{sec:method} introduces the statistical setup and the proposed tests. Section~\ref{sec:simulation-study} reports a simulation study, Section~\ref{sec:application} gives a clinical application, and Section~\ref{sec:discussion} concludes. Additional simulation results and a derivation of the empirical-likelihood component are collected in Appendix~\ref{app:supplementary-simulation-results} and Appendix~\ref{app:supplementary-derivation}.
 
 \section{Method}\label{sec:method}
 
-\subsection{Setup and scientific null}
 
-We observe independent and identically distributed random variables $(Y_i, A_i, R_i, X_i)$ for $i = 1, \ldots, n$. Here $Y_i$ is a continuous outcome when it is defined, $A_i \in \{0,1\}$ indicates whether the outcome is defined and observed, $R_i \in \{0,1\}$ is the treatment indicator, and $X_i$ is a $p$-dimensional vector of baseline covariates. Because $Y_i$ is only meaningful when $A_i = 1$, the scientific null hypothesis of no treatment effect is
+Let data be independent and identically distributed random variables $(Y_i, A_i, R_i, X_i)$ for $i = 1, \ldots, n$, where $Y_i$ is a continuous outcome when it is defined, $A_i \in \{0,1\}$ indicates whether the outcome is defined and observed, $R_i \in \{0,1\}$ is the treatment indicator, and $X_i$ is a $p$-dimensional vector of baseline covariates. Because $Y_i$ is only meaningful when $A_i = 1$, we define the null hypothesis of no treatment effect as the joint equality
 \begin{align*}
   \mathcal{L}(Y_i \mid A_i = 1, R_i = 1, X_i)
   &= \mathcal{L}(Y_i \mid A_i = 1, R_i = 0, X_i),\\
   \Pr(A_i = 1 \mid R_i = 1, X_i)
   &= \Pr(A_i = 1 \mid R_i = 0, X_i).
 \end{align*}
-In practice, analysts often replace this bivariate object by a single combined outcome. Let $\mathcal{Y} \subset \mathbb{R}$ be a compact set containing the support of $Y_i \mid A_i = 1$, and let $\mathcal{E} \notin \mathcal{Y}$ be a distinguished symbol representing the undefined outcome. We define the outcome space by
+In practice, this bivariate object is often replaced by a single combined outcome. Let $\mathcal{Y} \subset \mathbb{R}$ be a compact set containing the support of $Y_i \mid A_i = 1$, and let $\mathcal{E} \notin \mathcal{Y}$ be a distinguished symbol representing the undefined outcome. We define the outcome space by
 \[
   \widetilde{\mathcal{Y}} = \mathcal{Y} \sqcup \{\mathcal{E}\},
 \]
@@ -695,7 +694,20 @@ with
 \]
 For computation we use the standard finite truncated approximation \citep{ishwaran2001gibbs}, retaining $H$ mixture components and assigning the remaining stick mass to the last retained component. This approximation gives a finite-dimensional posterior computation while retaining the stick-breaking interpretation.
 
-The same two-part construction accommodates several choices of non-atom support by changing only the kernel $K(\cdot\mid\theta)$ and its base distribution. On the full real line one may use Normal kernels; on the positive real line, Gamma kernels parameterized by their component means; and on a bounded interval $[a,b]$, kernels defined after the affine transformation $x=(y-a)/(b-a)\in(0,1)$. For a continuously observed bounded outcome this gives a density on the original scale through the usual Jacobian. For a reported score outcome, let $\mathcal{S}=\{s_1,\ldots,s_J\}\subset[a,b]$ be the possible reported scores and let $q_\ell$, $\ell=1,\ldots,L$, denote candidate reporting-grid widths, such as one-, five-, or ten-point grids. If score $s_j$ is admissible on grid $\ell$, define the unit-scale interval
+The same two-part construction accommodates several choices of non-atom support by changing only the kernel $K(\cdot\mid\theta)$ and its base distribution. On the full real line one may use Normal kernels; on the positive real line, Gamma kernels parameterized by their component means; and on a bounded interval $[a,b]$, kernels defined after the affine transformation $x=(y-a)/(b-a)\in(0,1)$. For a continuously observed bounded outcome this gives a density on the original scale through the usual Jacobian.
+
+\paragraph{Bounded-score logit-Normal model.}
+For a reported bounded score, let $\mathcal{S}=\{s_1,\ldots,s_J\}\subset[a,b]$ be the possible non-atom scores. The bounded-score model treats the recorded score as a discretized observation of an underlying bounded response rather than as an exact continuous measurement. A logit-Normal component with parameters $\theta_{rh}=(\mu_{rh},\sigma_{rh})$ is defined by
+\[
+  X_{rh} \sim \mathrm{LogitNormal}(\mu_{rh},\sigma_{rh}^2),
+  \qquad
+  \operatorname{logit}(X_{rh}) \sim N(\mu_{rh},\sigma_{rh}^2),
+  \qquad
+  X_{rh}\in(0,1),
+\]
+with the corresponding response on the original scale given by $a+(b-a)X_{rh}$. This kernel is appropriate for bounded health scores because it assigns probability only to the admissible interval, can represent skewness and boundary-adjacent mass after transformation, and, through mixtures, can approximate irregular survivor-score distributions without imposing a single Gaussian shape on the original scale.
+
+We define a heap as a candidate reporting-grid width $q_\ell$, $\ell=1,\ldots,L$. In the IST-3 analysis the heaps are $q_\ell\in\{1,5,10\}$ EQ-VAS points, corresponding to unit reporting and plausible five- or ten-point rounding. Score $s_j$ is admissible on heap $\ell$ only if $s_j-a$ is an integer multiple of $q_\ell$; otherwise its heap-specific probability is zero. If $s_j$ is admissible on heap $\ell$, observing $s_j$ is interpreted as the event that the underlying bounded response falls in the centered rounding bin for that grid. Thus define
 \[
   I_{\ell j}
   =
@@ -706,7 +718,7 @@ The same two-part construction accommodates several choices of non-atom support 
     \frac{\min(b,s_j+q_\ell/2)-a}{b-a}
   \right],
 \]
-and set $c_{\ell j}=1$ for admissible score-grid pairs and $c_{\ell j}=0$ otherwise. Let $G_\theta$ be the CDF of a unit-interval kernel, for example a Beta CDF $G_\theta(x)=I_x\{m\phi,(1-m)\phi\}$ or a logit-Normal CDF $G_\theta(x)=\Phi\{(\operatorname{logit}x-\mu)/\sigma\}$. The component probability of observing score $s_j$ under reporting grid $\ell$ is then
+and set $c_{\ell j}=1$ for admissible score-heap pairs and $c_{\ell j}=0$ otherwise. Let $G_\theta(x)=\Phi\{(\operatorname{logit}x-\mu)/\sigma\}$ denote the logit-Normal CDF on the unit interval. The component probability of observing score $s_j$ under heap $\ell$ is then
 \[
   q_{rh\ell j}(\theta_{rh})
   =
@@ -715,7 +727,7 @@ and set $c_{\ell j}=1$ for admissible score-grid pairs and $c_{\ell j}=0$ otherw
     G_{\theta_{rh}}(u_{\ell j}) - G_{\theta_{rh}}(l_{\ell j})
   \right\},
 \]
-with endpoint intervals truncated to $[0,1]$ and CDF values at 0 and 1 interpreted by continuity. If $\eta_{r\ell}$ are the reporting-grid weights in arm $r$, the arm-specific score probability is
+with endpoint intervals truncated to $[0,1]$ and CDF values at 0 and 1 interpreted by continuity. If $\eta_{r\ell}$ are the heap weights in arm $r$, the arm-specific score probability is
 \[
   p_{rj}(\vartheta)
   =
@@ -735,7 +747,7 @@ Thus, writing $d_r$ for the number of atom observations in arm $r$, $m_r$ for th
   \qquad
   \pi_r=1-\rho_r.
 \]
-The reporting-grid weights may be constrained to be common across arms, $\eta_{0\ell}=\eta_{1\ell}$, or allowed to vary by arm; either way the atom probability, mixture weights, and unit-interval kernel parameters retain the same interpretation.
+Marginalizing over heaps accounts for reporting resolution directly in the likelihood, rather than treating all heaped scores as exact continuous observations. The heap weights may be constrained to be common across arms, $\eta_{0\ell}=\eta_{1\ell}$, or allowed to vary by arm; either way the atom probability, mixture weights, and unit-interval kernel parameters retain the same interpretation. In the IST-3 application we use shared heap weights because the reporting grid is a feature of EQ-VAS measurement and recording, not a treatment-specific biological mechanism.
 
 Writing $\widetilde{Y}_i^{(e_0)} = e_0$ when $A_i = 0$ and $\widetilde{Y}_i^{(e_0)} = Y_i$ when $A_i = 1$, the no-covariate model may be expressed hierarchically as
 \begin{align}
@@ -1099,7 +1111,7 @@ The likelihood-ratio procedures test the joint null of no treatment effect on th
 
 Table~\ref{tab:ist3-delta-ci} illustrates three confidence intervals for $\Delta$ implemented in the software. The Welch interval is the direct interval for the atom-coded mean contrast. The profile interval constrains the full likelihood at a fixed $\Delta$, while the projected interval maps the joint confidence region for the component parameters into the implied combined mean contrast. In IST-3, the profile interval is nearly identical to the Welch interval, whereas the projected interval is wider because it preserves joint uncertainty in both the atom and non-atom components.
 
-We also fit the package Bayesian two-part model in \texttt{TruncComp2} using \texttt{continuous\_support = "bounded\_score"} and \texttt{bounded\_kernel = "logit\_normal"}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. The non-atom EQ-VAS distribution used a two-component logit-normal mixture on the bounded reported-score scale, with score range 0 to 100, unit score spacing, ordered component locations on the logit scale, and shared reporting-grid weights over 1-, 5-, and 10-point grids. The stick-breaking concentration parameters used $\mathrm{Gamma}(4,4)$ priors, the logit-scale component locations used $\mathrm{Normal}(0,2)$ priors, the component scales used $\mathrm{Lognormal}(\log 1.2, 0.5)$ priors, and the reporting-grid weights used a $\mathrm{Dirichlet}(2,2,2)$ prior. The manuscript run used four chains with 1{,}000 warmup and 2{,}000 post-warmup iterations per chain at \texttt{adapt\_delta = 0.995}. The fit is cached with the generated application data, and setting \texttt{TRUNCCOMP\_REFRESH\_IST3\_BAYES\allowbreak=true} regenerates it from the fixed-width file. Because this Bayesian implementation uses a practical finite mixture for the manuscript build, we report sampler and mixture-weight diagnostics alongside the posterior summaries.
+We also fit the package Bayesian two-part model in \texttt{TruncComp2} using the bounded-score logit-Normal likelihood defined in Section~\ref{sec:bayesian-two-group}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. The non-atom EQ-VAS distribution used $H=2$ mixture components, score range 0 to 100, unit score spacing, ordered component locations on the logit scale, and shared heap weights over 1-, 5-, and 10-point reporting grids. The stick-breaking concentration parameters used $\mathrm{Gamma}(4,4)$ priors, the logit-scale component locations used $\mathrm{Normal}(0,2)$ priors, the component scales used $\mathrm{Lognormal}(\log 1.2, 0.5)$ priors, and the heap weights used a $\mathrm{Dirichlet}(2,2,2)$ prior. The manuscript run used four chains with 1{,}000 warmup and 2{,}000 post-warmup iterations per chain at \texttt{adapt\_delta = 0.995}. The fit is cached with the generated application data, and setting \texttt{TRUNCCOMP\_REFRESH\_IST3\_BAYES\allowbreak=true} regenerates it from the fixed-width file. Because this Bayesian implementation uses a practical finite mixture for the manuscript build, we report sampler and mixture-weight diagnostics alongside the posterior summaries.
 
 \input{build/tables/application-bayes-summary.tex}
 
@@ -1137,126 +1149,6 @@ Software implementing both procedures, including the code used to generate the m
 
 \clearpage
 \appendix
-\section{Appendix application: joineR liver data}\label{app:joiner-liver-application}
-
-As a secondary example, we applied the same workflow to the liver cirrhosis trial data distributed with the \texttt{joineR} R package, version \LiverAppendixPackageVersion{} \citep{joineRPackage}. The data contain repeated prothrombin index measurements, survival time, censoring status, and the allocated treatment arm for \LiverAppendixRandomizedN{} participants from a controlled trial of prednisone in liver cirrhosis. The package documentation states that \texttt{treatment = 0} denotes placebo, \texttt{treatment = 1} denotes prednisone, and \texttt{cens = 1} denotes death; the data were analyzed by \citet{henderson2002identification} and are described as coming from \citet{andersen2003statistical}. We use this example as an appendix application because it is public and reproducible through an R package, but it requires a landmark construction and is therefore less direct than the IST-3 quality-of-life endpoint.
-
-The appendix endpoint uses a two-year landmark. Participants who died before or at two years are assigned the atom value 0. Participants known alive at two years are assigned their latest recorded prothrombin index at or before two years. Participants censored before two years are excluded because their two-year death status is not observed. Thus
-\[
-  Y =
-  \begin{cases}
-    0, & \text{death by 2 years},\\
-    \text{latest prothrombin index before 2 years}, & \text{known alive at 2 years},
-  \end{cases}
-  \qquad
-  A = \mathbbm{1}(Y \ne 0).
-\]
-We code $R=1$ for prednisone and $R=0$ for placebo, so all contrasts are prednisone minus placebo. Higher prothrombin index is treated as the favorable direction for the continuous component, and avoiding the death atom is favorable for the binary component. This left \LiverAppendixN{} participants for analysis after excluding \LiverAppendixExcludedCensored{} participants censored before the landmark (\LiverAppendixExcludedControl{} placebo and \LiverAppendixExcludedTreatment{} prednisone). No additional subject was excluded for lacking a prothrombin measurement before the landmark.
-
-\input{build/tables/appendix-liver-descriptives.tex}
-
-Figure~\ref{fig:appendix-liver} displays the endpoint components and the semiparametric likelihood-ratio region. The death atom was common in both arms: \LiverAppendixControlDeaths{} placebo participants (\LiverAppendixControlDeathPct{}) and \LiverAppendixTreatmentDeaths{} prednisone participants (\LiverAppendixTreatmentDeathPct{}) died by two years among the landmark analysis set. Among participants known alive at two years, the mean prothrombin index was \LiverAppendixControlMean{} in the placebo arm and \LiverAppendixTreatmentMean{} in the prednisone arm, giving $\hat\mu_\delta=\LiverAppendixMuDelta{}$. The fitted odds ratio for being in the non-atom component rather than at the death atom was $\hat\alpha_\delta=\LiverAppendixAlphaDelta{}$, and the combined mean contrast under the death-at-zero coding was $\hat\Delta=\LiverAppendixDelta{}$.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{appendix-liver.pdf}
-\caption{joineR liver appendix endpoint components and semiparametric likelihood-ratio region. The left panel shows death by two years and known-alive-with-prothrombin counts by treatment arm. The middle panel shows the prothrombin distribution among known two-year survivors. The right panel shows the semiparametric likelihood-ratio surface for $(\mu_\delta,\log\alpha_\delta)$ with reference lines at no prothrombin mean difference and no non-atom probability difference.}
-\label{fig:appendix-liver}
-\end{figure}
-
-Table~\ref{tab:liver-frequentist} compares standard analyses with the proposed likelihood-ratio tests. A Welch $t$-test applied to the atom-coded endpoint gave p-value \LiverAppendixTTestP{}, and the Wilcoxon rank-sum test gave p-value \LiverAppendixWilcoxP{}. As in the main application, the atom-coded $t$-test depends on the numerical atom value, whereas the Wilcoxon test treats deaths as tied at the bottom of the analyzed scale. Analyses restricted to the non-atom component gave p-values \LiverAppendixNonAtomTTestP{} for Welch's $t$-test and \LiverAppendixNonAtomWilcoxP{} for the Wilcoxon test, but those analyses condition on being known alive at the two-year landmark.
-
-\input{build/tables/appendix-liver-frequentist.tex}
-
-The parametric LRT statistic was \LiverAppendixLRTStatistic{} with p-value \LiverAppendixLRTP{}, and the semiparametric LRT statistic was \LiverAppendixSPLRTStatistic{} with p-value \LiverAppendixSPLRTP{}. Both tests target the joint null of no prednisone-placebo difference in death by two years and no difference in the prothrombin mean among known two-year survivors. In this appendix example, the joint result is driven primarily by the continuous prothrombin component, while the estimated non-atom odds ratio is close to one. The result should therefore be read as an illustration of the method on a public clinical data set, not as a definitive treatment conclusion.
-
-\input{build/tables/appendix-liver-delta-ci.tex}
-
-Table~\ref{tab:liver-delta-ci} gives the Welch, profile, and projected intervals for $\Delta$. The same interpretational caveat applies as in the IST-3 analysis: $\Delta$ is a mean of the numerical combined endpoint after assigning death the value 0, so changing the atom coding would change its scale. The component estimates $(\mu_\delta,\alpha_\delta)$ remain directly interpretable as a prothrombin mean difference and a non-atom odds ratio.
-
-We also fit the Bayesian two-part model in \texttt{TruncComp2}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. Because all non-atom prothrombin values are strictly positive, the continuous component used the positive-real mixture model with four components and weakly informative priors on the internally transformed scale. The fit is cached with the generated appendix data; setting \texttt{TRUNCCOMP\_REFRESH\_LIVER\_BAYES=true} regenerates it from the packaged \texttt{joineR::liver} data.
-
-\input{build/tables/appendix-liver-bayes-summary.tex}
-
-The Bayesian summaries in Table~\ref{tab:liver-bayes} again separate the atom and continuous components. Under the benefit-oriented coding used here, $\Pr(\Delta>0\mid\mathrm{data})=\LiverAppendixDeltaBenefitProbability{}$ summarizes the posterior probability that prednisone improves the combined two-year endpoint. The corresponding posterior probabilities for the component effects are $\Pr(\mu_\delta>0\mid\mathrm{data})=\LiverAppendixMuBenefitProbability{}$ for the prothrombin mean and $\Pr(\alpha_\delta>1\mid\mathrm{data})=\LiverAppendixAlphaBenefitProbability{}$ for avoiding the atom. Figure~\ref{fig:appendix-liver-posterior} shows these posterior contrasts.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.92\textwidth]{appendix-liver-posterior.pdf}
-\caption{Posterior distributions for the joineR liver appendix contrasts. Vertical dashed lines mark no prothrombin mean difference, no difference in the odds of being known alive with prothrombin observed, and no combined endpoint mean difference.}
-\label{fig:appendix-liver-posterior}
-\end{figure}
-
-Finally, Table~\ref{tab:liver-ppc} and Figure~\ref{fig:appendix-liver-ppc} report posterior predictive checks for the atom and continuous components. These checks are especially important here because the appendix endpoint uses a derived landmark biomarker summary rather than a trial-scheduled single assessment. The atom check assesses whether the model reproduces the two-year death proportions, while the continuous check assesses whether the positive-real mixture captures the skewness and spread of prothrombin among known two-year survivors. We report the sampler and truncation diagnostics in Table~\ref{tab:liver-bayes}; any remaining warnings should be interpreted as limitations of the experimental Bayesian mixture fit rather than as part of the frequentist likelihood-ratio analysis.
-
-\input{build/tables/appendix-liver-ppc.tex}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{appendix-liver-ppc.pdf}
-\caption{Posterior predictive checks for the joineR liver Bayesian model, separately for the two-year death atom and the prothrombin component among known two-year survivors.}
-\label{fig:appendix-liver-ppc}
-\end{figure}
-
-\section{Appendix application: licorice gargle randomized trial}\label{app:licorice-gargle-application}
-
-As a second appendix example, we analyzed the licorice gargle randomized trial data distributed with the \texttt{medicaldata} R package, version \LicoriceAppendixPackageVersion{} \citep{medicaldataPackage}. The data source is the Licorice Gargle Dataset contributed by \citet{licoriceGargleDataset}; the source clinical trial is the randomized, double-blind comparison of preoperative licorice versus sugar-water gargle for prevention of postoperative sore throat and postextubation coughing after double-lumen endotracheal intubation \citep{ruetzler2013licorice}. The package data are reproducible from CRAN, but the original TSHS portal is an educational repository and states that publication reuse permission is not granted by the portal itself. We therefore present this as a transparent secondary illustration rather than as the main clinical application.
-
-The scientific atom is absence of postoperative sore-throat pain. We used the 30-minute PACU pain-on-swallowing score, \texttt{pacu30min\_swallowPain}, because the documentation describes it as an 11-point Likert score with 0 denoting no pain and 10 denoting worst pain. The endpoint is
-\[
-Y_i =
-\begin{cases}
-0, & \text{if participant } i \text{ reported no swallowing pain at 30 minutes},\\
-\text{positive swallowing-pain score}, & \text{otherwise},
-\end{cases}
-\]
-with atom value 0 and $A_i = 1(Y_i \ne 0)$. We coded $R=1$ for licorice gargle and $R=0$ for sugar-water gargle, so all contrasts are licorice minus sugar-water. In contrast to the IST-3 and liver examples, larger values of $Y$ are worse. A clinically favorable effect is therefore a higher no-pain atom probability, a lower odds of being in the positive-pain component, a negative $\mu_\delta$, and a negative combined mean contrast $\Delta$.
-
-\input{build/tables/appendix-licorice-descriptives.tex}
-
-The packaged data contain \LicoriceAppendixRandomizedN{} participants, with \LicoriceAppendixExcludedMissing{} missing 30-minute swallowing-pain scores (\LicoriceAppendixExcludedControl{} in the sugar-water arm and \LicoriceAppendixExcludedTreatment{} in the licorice arm). The analysis includes \LicoriceAppendixControlN{} sugar-water participants and \LicoriceAppendixTreatmentN{} licorice participants. The no-pain atom was observed for \LicoriceAppendixControlNoPain{} sugar-water participants (\LicoriceAppendixControlNoPainPct{}) and \LicoriceAppendixTreatmentNoPain{} licorice participants (\LicoriceAppendixTreatmentNoPainPct{}). Among participants with positive pain, the mean score was \LicoriceAppendixControlMean{} in the sugar-water arm and \LicoriceAppendixTreatmentMean{} in the licorice arm, giving $\hat\mu_\delta=\LicoriceAppendixMuDelta{}$. The fitted odds ratio for any pain rather than no pain was $\hat\alpha_\delta=\LicoriceAppendixAlphaDelta{}$, and the combined mean contrast was $\hat\Delta=\LicoriceAppendixDelta{}$. These estimates all favor licorice on the chosen scale.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{appendix-licorice.pdf}
-\caption{Licorice gargle appendix endpoint components and semiparametric likelihood-ratio region. The left panel shows no-pain and any-pain counts by randomized arm. The middle panel shows the positive 30-minute swallowing-pain scores among participants with symptoms. The right panel shows the semiparametric likelihood-ratio surface for $(\mu_\delta,\log\alpha_\delta)$ with reference lines at no positive-pain mean difference and no difference in the odds of any pain.}
-\label{fig:appendix-licorice}
-\end{figure}
-
-Table~\ref{tab:licorice-frequentist} compares standard analyses with the likelihood-ratio tests. A Welch $t$-test on the atom-coded pain endpoint gave p-value \LicoriceAppendixTTestP{}, and the Wilcoxon rank-sum test gave p-value \LicoriceAppendixWilcoxP{}. These standard tests are easy to compute, but the $t$-test remains tied to the numerical atom coding and the Wilcoxon test treats no-pain observations as tied at the bottom of a scale on which larger values are worse. The positive-pain-only Welch and Wilcoxon analyses gave p-values \LicoriceAppendixNonAtomTTestP{} and \LicoriceAppendixNonAtomWilcoxP{}, respectively, but condition on the post-randomization subset with symptoms. Fisher's exact test for the no-pain atom gave p-value \LicoriceAppendixAtomFisherP{}.
-
-\input{build/tables/appendix-licorice-frequentist.tex}
-
-The parametric LRT statistic was \LicoriceAppendixLRTStatistic{} with p-value \LicoriceAppendixLRTP{}, and the semiparametric LRT statistic was \LicoriceAppendixSPLRTStatistic{} with p-value \LicoriceAppendixSPLRTP{}. Both tests reject the joint null of no licorice-sugar-water difference in the no-pain probability and no difference in positive swallowing-pain scores. In this example the component estimates point in the same clinical direction: licorice is associated with more participants at the no-pain atom and lower positive pain scores among those with symptoms.
-
-\input{build/tables/appendix-licorice-delta-ci.tex}
-
-Table~\ref{tab:licorice-delta-ci} reports the Welch, profile, and projected intervals for $\Delta$. Because $Y=0$ is a favorable atom and larger positive scores are worse, intervals below zero favor licorice for the coded combined endpoint. This interpretation is clinically natural here, but it is still a numerical composite: changing the atom coding or reversing the pain scale would change $\Delta$, whereas $(\mu_\delta,\alpha_\delta)$ retain their component interpretations.
-
-We also fit the Bayesian two-part model in \texttt{TruncComp2}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. Since all non-atom scores are strictly positive, the continuous component used the positive-real mixture model with two components and weakly informative priors on the internally transformed scale. The fit is cached with the generated appendix data and can be refreshed from the packaged \texttt{medicaldata} data using the manuscript asset script.
-
-\input{build/tables/appendix-licorice-bayes-summary.tex}
-
-The Bayesian summaries in Table~\ref{tab:licorice-bayes} give the same clinical picture. Because larger pain scores are worse, the posterior probability of treatment benefit for the combined endpoint is $\Pr(\Delta<0\mid\mathrm{data})=\LicoriceAppendixDeltaBenefitProbability{}$. The corresponding component probabilities are $\Pr(\mu_\delta<0\mid\mathrm{data})=\LicoriceAppendixMuBenefitProbability{}$ for lower positive pain scores, $\Pr(\alpha_\delta<1\mid\mathrm{data})=\LicoriceAppendixAlphaBenefitProbability{}$ for lower odds of any pain, and $\Pr(\text{no-pain probability increase}\mid\mathrm{data})=\LicoriceAppendixNoPainBenefitProbability{}$. Figure~\ref{fig:appendix-licorice-posterior} shows the posterior contrasts with reference values for no effect.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.92\textwidth]{appendix-licorice-posterior.pdf}
-\caption{Posterior distributions for the licorice gargle appendix contrasts. Vertical dashed lines mark no positive-pain mean difference, no difference in the odds of any pain, and no combined endpoint mean difference. Negative values favor licorice for $\mu_\delta$ and $\Delta$, and negative log odds ratios favor licorice for $\alpha_\delta$.}
-\label{fig:appendix-licorice-posterior}
-\end{figure}
-
-Finally, Table~\ref{tab:licorice-ppc} and Figure~\ref{fig:appendix-licorice-ppc} report posterior predictive checks. The atom check assesses whether the model reproduces the no-pain proportions in each arm. The continuous check is more demanding because the positive component is an integer-valued, bounded Likert score with visible heaping rather than a truly continuous measurement. We therefore regard this appendix as useful for demonstrating the atom-plus-positive-score workflow, while the posterior predictive diagnostics are a reminder that the smooth positive-real Bayesian mixture is only an approximation for this endpoint.
-
-\input{build/tables/appendix-licorice-ppc.tex}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{appendix-licorice-ppc.pdf}
-\caption{Posterior predictive checks for the licorice gargle Bayesian model, separately for the no-pain atom and the positive 30-minute swallowing-pain score among participants with symptoms.}
-\label{fig:appendix-licorice-ppc}
-\end{figure}
-
 \section{Supplementary simulation results}\label{app:supplementary-simulation-results}
 
 This appendix collects the simulation figures and tables referenced in Section~\ref{sec:simulation-study}. It also records the exact simulation protocol implemented in \texttt{simulation-study/scripts/run-simulation-study.R} and \texttt{simulation-study/R/simulation-study.R}.

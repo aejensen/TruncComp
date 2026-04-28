@@ -825,22 +825,61 @@ with
   \qquad
   \theta_{rh} \stackrel{\mathrm{iid}}{\sim} G_0.
 \]
-For computation we use the standard finite truncated approximation \citep{ishwaran2001gibbs}, retaining $H$ mixture components and assigning the remaining stick mass to the last retained component. This approximation gives a finite-dimensional posterior computation while retaining the stick-breaking interpretation.
+For computation we use the standard finite truncated approximation \citep{ishwaran2001gibbs}, retaining $H$ mixture components and assigning the remaining stick mass to the last retained component. Thus the arm-specific non-atom law is represented as
+\[
+  F_r^c(B)
+  =
+  \sum_{h=1}^{H}w_{rh}K(B\mid\theta_{rh}),
+  \qquad
+  w_{rH}=\prod_{\ell=1}^{H-1}(1-v_{r\ell}),
+\]
+with the preceding stick-breaking weights for $h<H$. The atom probability $\rho_r$ remains outside this mixture; the mixture describes only the conditional law given that the outcome is not at the atom.
 
-The same two-part construction accommodates several choices of non-atom support by changing only the kernel $K(\cdot\mid\theta)$ and its base distribution. On the full real line one may use Normal kernels; on the positive real line, Gamma kernels parameterized by their component means; and on a bounded interval $[a,b]$, kernels defined after the affine transformation $x=(y-a)/(b-a)\in(0,1)$. For a continuously observed bounded outcome this gives a density on the original scale through the usual Jacobian.
+\paragraph{Support-specific non-atom kernels.}
+The same two-part construction accommodates different non-atom supports by matching the kernel $K$ and its base distribution to $\mathcal{Y}$. For $\mathcal{Y}=\mathbb{R}$, a real-line Gaussian mixture uses
+\[
+  K(dy\mid m,s)=\phi(y;m,s^2)\,dy,
+  \qquad s>0,
+\]
+where $\phi(\cdot;m,s^2)$ is the Normal density. For $\mathcal{Y}=(0,\infty)$, a positive-real Gamma mixture can be parameterized by component mean $m>0$ and shape $a>0$,
+\[
+  K(dy\mid m,a)=g(y;a,a/m)\,dy,
+\]
+where $g(\cdot;a,b)$ is the Gamma density with shape $a$ and rate $b$, so that the component mean is $m$. For a continuously observed bounded outcome on $[a,b]$, write $x=(y-a)/(b-a)\in(0,1)$. If $H_\theta$ has density $h_\theta$ on $(0,1)$, the corresponding kernel on the original scale is
+\[
+  K(dy\mid\theta)
+  =
+  \frac{1}{b-a}h_\theta\!\left(\frac{y-a}{b-a}\right)dy.
+\]
+Examples are bounded continuous Beta mixture kernels, with
+\[
+  H_\theta(x)=I_x\{m\phi,(1-m)\phi\},
+  \qquad 0<m<1,
+  \quad \phi>0,
+\]
+and bounded continuous logit-Normal mixture kernels, with
+\[
+  H_\theta(x)=\Phi\{(\logit x-\mu)/\sigma\},
+  \qquad \sigma>0.
+\]
+For a bounded reported score, the support is a finite set $\mathcal{S}=\{s_1,\ldots,s_J\}\subset[a,b]$. In that case the continuous unit-interval kernel is converted to a probability mass function by integrating over reporting or rounding bins. If $I_{\ell j}=[l_{\ell j},u_{\ell j}]\subset[0,1]$ is the bin for score $s_j$ under reporting grid $\ell$ and $c_{\ell j}$ indicates whether the score is admissible on that grid, then a component assigns mass
+\[
+  c_{\ell j}\{H_\theta(u_{\ell j})-H_\theta(l_{\ell j})\}
+\]
+to $s_j$ on that grid, and grid-averaged reported-score kernels use a weighted average over $\ell$. Thus the framework includes real-line Gaussian mixture kernels; positive-real Gamma mixture kernels parameterized by component means; bounded continuous Beta mixture kernels; bounded continuous logit-Normal mixture kernels; bounded reported-score Beta mixture kernels with discretization/heaping; and bounded reported-score logit-Normal mixture kernels with discretization/heaping.
 
-\paragraph{Bounded-score logit-Normal model.}
-For a reported bounded score, let $\mathcal{S}=\{s_1,\ldots,s_J\}\subset[a,b]$ be the possible non-atom scores. The bounded-score model treats the recorded score as a discretized observation of an underlying bounded response rather than as an exact continuous measurement. A logit-Normal component with parameters $\theta_{rh}=(\mu_{rh},\sigma_{rh})$ is defined by
+\paragraph{Bounded reported-score logit-Normal likelihood.}
+The bounded reported-score logit-Normal member deserves separate statement because it is non-standard and is used in the IST-3 application. Let $\mathcal{S}=\{s_1,\ldots,s_J\}\subset[a,b]$ be the possible non-atom scores. The reported-score model treats the recorded score as a discretized observation of an underlying bounded response rather than as an exact continuous measurement. A logit-Normal component with parameters $\theta_{rh}=(\mu_{rh},\sigma_{rh})$ is defined by
 \[
   X_{rh} \sim \mathrm{LogitNormal}(\mu_{rh},\sigma_{rh}^2),
   \qquad
-  \operatorname{logit}(X_{rh}) \sim N(\mu_{rh},\sigma_{rh}^2),
+  \logit(X_{rh}) \sim N(\mu_{rh},\sigma_{rh}^2),
   \qquad
   X_{rh}\in(0,1),
 \]
 with the corresponding response on the original scale given by $a+(b-a)X_{rh}$. This kernel is appropriate for bounded health scores because it assigns probability only to the admissible interval, can represent skewness and boundary-adjacent mass after transformation, and, through mixtures, can approximate irregular survivor-score distributions without imposing a single Gaussian shape on the original scale.
 
-We define a heap as a candidate reporting-grid width $q_\ell$, $\ell=1,\ldots,L$. In the IST-3 analysis the heaps are $q_\ell\in\{1,5,10\}$ EQ-VAS points, corresponding to unit reporting and plausible five- or ten-point rounding. Score $s_j$ is admissible on heap $\ell$ only if $s_j-a$ is an integer multiple of $q_\ell$; otherwise its heap-specific probability is zero. If $s_j$ is admissible on heap $\ell$, observing $s_j$ is interpreted as the event that the underlying bounded response falls in the centered rounding bin for that grid. Thus define
+We define a heap grid as a candidate reporting-grid width $q_\ell$, $\ell=1,\ldots,L$. In the IST-3 analysis the heap grids are $q_\ell\in\{1,5,10\}$ EQ-VAS points, corresponding to unit reporting and plausible five- or ten-point rounding. Score $s_j$ is admissible on heap grid $\ell$ only if $s_j-a$ is an integer multiple of $q_\ell$; otherwise its heap-specific probability is zero. Define the admissibility indicator $c_{\ell j}=1$ for admissible score-grid pairs and $c_{\ell j}=0$ otherwise. If $s_j$ is admissible on grid $\ell$, observing $s_j$ is interpreted as the event that the underlying bounded response falls in the centered rounding bin for that grid. Thus define
 \[
   I_{\ell j}
   =
@@ -849,9 +888,9 @@ We define a heap as a candidate reporting-grid width $q_\ell$, $\ell=1,\ldots,L$
   \left[
     \frac{\max(a,s_j-q_\ell/2)-a}{b-a},
     \frac{\min(b,s_j+q_\ell/2)-a}{b-a}
-  \right],
+  \right].
 \]
-and set $c_{\ell j}=1$ for admissible score-heap pairs and $c_{\ell j}=0$ otherwise. Let $G_\theta(x)=\Phi\{(\operatorname{logit}x-\mu)/\sigma\}$ denote the logit-Normal CDF on the unit interval. The component probability of observing score $s_j$ under heap $\ell$ is then
+Let $G_\theta(x)=\Phi\{(\logit x-\mu)/\sigma\}$ denote the logit-Normal CDF on the unit interval. The component probability of observing score $s_j$ under heap grid $\ell$ is then
 \[
   q_{rh\ell j}(\theta_{rh})
   =
@@ -869,7 +908,7 @@ with endpoint intervals truncated to $[0,1]$ and CDF values at 0 and 1 interpret
   \qquad
   \sum_{j=1}^{J}p_{rj}(\vartheta)=1.
 \]
-Thus, writing $d_r$ for the number of atom observations in arm $r$, $m_r$ for the number of non-atom observations, and $n_{rj}$ for the number of reported non-atom scores equal to $s_j$, the concrete likelihood for the heaped reported-score model is, up to multinomial constants,
+Thus, writing $d_r$ for the number of atom observations in arm $r$, $m_r$ for the number of non-atom observations, and $n_{rj}$ for the number of reported non-atom scores equal to $s_j$, the score likelihood for the heaped reported-score model is, up to multinomial constants,
 \[
   L_{\mathrm{score}}(\vartheta)
   \propto
@@ -880,7 +919,7 @@ Thus, writing $d_r$ for the number of atom observations in arm $r$, $m_r$ for th
   \qquad
   \pi_r=1-\rho_r.
 \]
-Marginalizing over heaps accounts for reporting resolution directly in the likelihood, rather than treating all heaped scores as exact continuous observations. The heap weights may be constrained to be common across arms, $\eta_{0\ell}=\eta_{1\ell}$, or allowed to vary by arm; either way the atom probability, mixture weights, and unit-interval kernel parameters retain the same interpretation. In the IST-3 application we use shared heap weights because the reporting grid is a feature of EQ-VAS measurement and recording, not a treatment-specific biological mechanism.
+Marginalizing over heap grids accounts for reporting resolution directly in the likelihood, rather than treating all heaped scores as exact continuous observations. The heap weights may be constrained to be common across arms, $\eta_{0\ell}=\eta_{1\ell}$, or allowed to vary by arm; either way the atom probability, mixture weights, and unit-interval kernel parameters retain the same interpretation. Replacing the logit-Normal CDF $G_\theta$ by the Beta CDF $I_x\{m\phi,(1-m)\phi\}$ gives the analogous bounded reported-score Beta mixture with the same discretization/heaping construction. In the IST-3 application we use shared heap weights because the reporting grid is a feature of EQ-VAS measurement and recording, not a treatment-specific biological mechanism.
 
 For a fixed numerical code, the coded endpoint satisfies $\widetilde{Y}_i^{(e_0)} = e_0$ when $A_i = 0$ and $\widetilde{Y}_i^{(e_0)} = Y_i$ when $A_i = 1$. The no-covariate model may be expressed hierarchically as
 \begin{align}
@@ -897,8 +936,9 @@ For a fixed numerical code, the coded endpoint satisfies $\widetilde{Y}_i^{(e_0)
   Y_i \mid (A_i = 1, R_i = r)
   &\sim F_r^c,
   \nonumber\\
-  F_r^c(dy)
-  &= \sum_{h=1}^{H} w_{rh}K(dy \mid \theta_{rh}),
+  F_r^c(B)
+  &= \sum_{h=1}^{H} w_{rh}K(B \mid \theta_{rh}),
+  \qquad B\subseteq\mathcal{Y},
   \nonumber\\
   v_{rh} \mid \alpha_r
   &\sim \Beta(1,\alpha_r),
@@ -918,58 +958,16 @@ For a fixed numerical code, the coded endpoint satisfies $\widetilde{Y}_i^{(e_0)
   \nonumber\\
   w_{rH}
   &= \prod_{\ell=1}^{H-1}(1-v_{r\ell}),
-  \label{eq:bayes-hierarchy}\\
-  K(dy \mid \theta_{rh})
-  &= \phi(y; m_{rh}, s_{rh}^2)\,dy,
-  \qquad
-  \mathcal{Y} = \mathbb{R},
   \nonumber\\
-  m_{rh}
-  &\sim N(m_0,s_0^2),
-  \qquad
-  s_{rh} \sim \mathrm{Lognormal}(m_s,s_s^2),
+  \theta_{rh} \mid K
+  &\stackrel{\mathrm{ind}}{\sim} G_0^{K},
   \nonumber\\
-  K(dy \mid \theta_{rh})
-  &= g\!\left(y; a_{rh}, a_{rh}/m_{rh}\right)\,dy,
-  \qquad
-  \mathcal{Y} = (0,\infty),
-  \nonumber\\
-  m_{rh}
-  &\sim \mathrm{Lognormal}(m_m,s_m^2),
-  \qquad
-  a_{rh} \sim \mathrm{Lognormal}(m_a,s_a^2),
-  \nonumber\\
-  K(\{s_j\}\mid \theta_{rh},\eta_r)
-  &=
-  \sum_{\ell=1}^{L}\eta_{r\ell}
-  c_{\ell j}\{G_{\theta_{rh}}(u_{\ell j})-G_{\theta_{rh}}(l_{\ell j})\},
-  \qquad
-  \mathcal{Y}=\{s_1,\ldots,s_J\},
-  \nonumber\\
-  G_{\theta_{rh}}(x)
-  &=
-  I_x\{m_{rh}\phi_{rh},(1-m_{rh})\phi_{rh}\},
-  \nonumber\\
-  m_{rh}
-  &\sim \Beta(a_m,b_m),
-  \qquad
-  \phi_{rh}\sim \mathrm{Lognormal}(m_\phi,s_\phi^2),
-  \nonumber\\
-  G_{\theta_{rh}}(x)
-  &=
-  \Phi\{(\operatorname{logit}x-\mu_{rh})/\sigma_{rh}\},
-  \qquad
-  \mu_{r1}<\cdots<\mu_{rH},
-  \qquad
-  \sigma_{rh}>0,
-  \nonumber\\
-  \log\sigma_{rh}
-  &\sim N(m_\sigma,s_\sigma^2),
-  \qquad
-  \eta_r \sim \mathrm{Dirichlet}(\zeta).
-  \nonumber
+  \eta_r
+  &\sim \mathrm{Dirichlet}(\zeta)
+  \quad\text{when a reported-score model averages over heap grids.}
+  \label{eq:bayes-hierarchy}
 \end{align}
-where $\phi(\cdot; m,s^2)$ denotes the Normal density with mean $m$ and variance $s^2$, and $g(\cdot; a,b)$ denotes the Gamma density with shape $a$ and rate $b$. Thus the full-real-line member uses Normal kernels, whereas the positive-support member uses Gamma kernels parameterized so that $m_{rh}$ is the component mean. The latter formulation requires all non-atom outcomes to be strictly positive. For bounded outcomes, the unit-interval kernel may be either Beta or logit-Normal; for reported scores, the observed score probabilities are obtained by integrating the unit-interval kernel over the reporting intervals and averaging over the reporting grids. In all versions, the mixture is arm-specific, the atom probability is explicit, and the scientific summaries remain directly interpretable despite the flexibility of the non-atom component.
+Here $G_0^K$ denotes a support-specific base law on the kernel parameters. For continuous-support models, $K(B\mid\theta)$ is obtained by integrating the corresponding density over $B$. For reported-score models, $K(\{s_j\}\mid\theta,\eta_r)$ is the score mass defined above; if heap weights are shared, a common $\eta$ replaces the arm-specific $\eta_r$. In all versions, the mixture is arm-specific, the atom probability is explicit, and the scientific summaries remain directly interpretable despite the flexibility of the non-atom component.
 
 \paragraph{Posterior inference.}
 Let
@@ -1228,7 +1226,7 @@ The likelihood-ratio procedures test the joint null of no treatment effect on th
 
 For the combined mean contrast $\Delta=\Delta^{(-1)}$, the direct Welch interval for $\widetilde Y^{(-1)}$ was $[-0.46, 4.63]$, and the semiparametric profile-likelihood interval was almost identical at $[-0.46, 4.62]$. By contrast, projecting the joint confidence region for the atom and non-atom components onto the $\Delta$ scale gave the wider interval $[-1.09, 5.25]$, reflecting the additional uncertainty retained by the two-component likelihood-ratio region.
 
-We also fit the package Bayesian two-part model using the bounded-score logit-Normal likelihood defined in Section~\ref{sec:bayesian-two-group}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. The non-atom EQ-VAS distribution used $H=2$ mixture components, score range 0 to 100, unit score spacing, ordered component locations on the logit scale, and shared heap weights over 1-, 5-, and 10-point reporting grids. The reporting-grid component was empirically relevant: among participants alive with observed EQ-VAS, 85.3\% of placebo/control scores and 83.8\% of rt-PA scores were multiples of 5, including 64.3\% and 62.7\%, respectively, that were multiples of 10. The stick-breaking concentration parameters used $\mathrm{Gamma}(4,4)$ priors, the logit-scale component locations used $\mathrm{Normal}(0,2)$ priors, the component scales used $\mathrm{Lognormal}(\log 1.2, 0.5)$ priors, and the heap weights used a $\mathrm{Dirichlet}(2,2,2)$ prior. The manuscript run used four chains with 1{,}000 warmup and 2{,}000 post-warmup iterations per chain at \texttt{adapt\_delta = 0.995}. The fit is cached with the generated application data, and setting \texttt{TRUNCCOMP\_REFRESH\_IST3\_BAYES\allowbreak=true} regenerates it from the fixed-width file. Because this Bayesian implementation uses a practical finite mixture for the manuscript build, we report sampler and mixture-weight diagnostics alongside the posterior summaries.
+We also fit a Bayesian two-part model using the bounded-score logit-Normal likelihood defined in Section~\ref{sec:bayesian-two-group}. The Bernoulli atom probabilities used independent $\mathrm{Beta}(1,1)$ priors. The non-atom EQ-VAS distribution used $H=2$ mixture components, score range 0 to 100, unit score spacing, ordered component locations on the logit scale, and shared heap weights over 1-, 5-, and 10-point reporting grids. The reporting-grid component was empirically relevant: among participants alive with observed EQ-VAS, 85.3\% of placebo/control scores and 83.8\% of rt-PA scores were multiples of 5, including 64.3\% and 62.7\%, respectively, that were multiples of 10. The stick-breaking concentration parameters used $\mathrm{Gamma}(4,4)$ priors, the logit-scale component locations used $\mathrm{Normal}(0,2)$ priors, the component scales used $\mathrm{Lognormal}(\log 1.2, 0.5)$ priors, and the heap weights used a $\mathrm{Dirichlet}(2,2,2)$ prior. Posterior computation used four chains with 1{,}000 warmup and 2{,}000 post-warmup iterations per chain, with target acceptance probability 0.995. Because this analysis uses a practical finite mixture, we report sampler and mixture-weight diagnostics alongside the posterior summaries.
 
 \input{build/tables/application-bayes-summary.tex}
 

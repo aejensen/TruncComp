@@ -149,7 +149,7 @@ write_application_frequentist_table <- function(application_results, path) {
     label = "tab:ist3-frequentist",
     header = c("Analysis", "Method", "Estimate/target", "Statistic", "$p$-value"),
     rows = rows,
-    align = "lllcc",
+    align = "p{0.16\\textwidth}p{0.20\\textwidth}p{0.34\\textwidth}cc",
     size = "\\scriptsize"
   )
 }
@@ -195,25 +195,8 @@ write_application_bayes_summary_table <- function(application_results, path) {
   arm <- bayes$arm_table
   contrast <- bayes$summary_table
   probs <- bayes$probabilities
-  diagnostics <- bayes$diagnostics
   interval <- function(tab, row) {
     sprintf("%s to %s", format_number(tab[row, "conf.low"], 2), format_number(tab[row, "conf.high"], 2))
-  }
-  diagnostic_text <- sprintf(
-    "Divergences %s; max $\\hat R$ %s; min bulk ESS %s",
-    format_count(diagnostics$divergences),
-    format_number(diagnostics$max_rhat, 3),
-    format_number(diagnostics$min_bulk_ess, 0)
-  )
-  mixture_text <- if (!is.null(diagnostics$truncation)) {
-    sprintf(
-      "max $\\hat R$ %s; min bulk ESS %s; passed = %s",
-      format_number(diagnostics$truncation$max_rhat, 3),
-      format_number(diagnostics$truncation$min_bulk_ess, 0),
-      ifelse(isTRUE(diagnostics$truncation_ok), "yes", "no")
-    )
-  } else {
-    "Not assessed"
   }
 
   rows <- rbind(
@@ -226,9 +209,7 @@ write_application_bayes_summary_table <- function(application_results, path) {
     c("Death risk difference", format_number(contrast["delta_atom", "estimate"], 3), interval(contrast, "delta_atom"), sprintf("$\\Pr(<0) = %s$", format_probability(probs[["death_risk_reduction"]]))),
     c("$\\mu_\\delta$", format_number(contrast["mu_delta", "estimate"], 2), interval(contrast, "mu_delta"), sprintf("$\\Pr(>0) = %s$", format_probability(probs[["mu_delta_gt_0"]]))),
     c("$\\alpha_\\delta$", format_number(contrast["alpha_delta", "estimate"], 3), interval(contrast, "alpha_delta"), sprintf("$\\Pr(>1) = %s$", format_probability(probs[["alpha_delta_gt_1"]]))),
-    c("$\\Delta$", format_number(contrast["delta", "estimate"], 2), interval(contrast, "delta"), sprintf("$\\Pr(>0) = %s$", format_probability(probs[["delta_gt_0"]]))),
-    c("Sampler diagnostics", "--", "--", diagnostic_text),
-    c("Mixture-weight diagnostics", "--", "--", mixture_text)
+    c("$\\Delta$", format_number(contrast["delta", "estimate"], 2), interval(contrast, "delta"), sprintf("$\\Pr(>0) = %s$", format_probability(probs[["delta_gt_0"]])))
   )
 
   write_latex_table(
@@ -237,7 +218,7 @@ write_application_bayes_summary_table <- function(application_results, path) {
     label = "tab:ist3-bayes",
     header = c("Quantity", "Posterior median", "95\\% CrI", "Probability"),
     rows = rows,
-    align = "llll",
+    align = "p{0.34\\textwidth}p{0.14\\textwidth}p{0.17\\textwidth}p{0.17\\textwidth}",
     size = "\\scriptsize"
   )
 }
@@ -278,7 +259,7 @@ write_application_ppc_table <- function(application_results, path) {
     label = "tab:ist3-ppc",
     header = c("Component", "Statistic", "Posterior predictive $p$", "Notes"),
     rows = rows,
-    align = "p{0.16\\textwidth}p{0.31\\textwidth}p{0.16\\textwidth}p{0.18\\textwidth}",
+    align = "p{0.18\\textwidth}p{0.29\\textwidth}p{0.15\\textwidth}p{0.22\\textwidth}",
     size = "\\scriptsize"
   )
 }
@@ -556,7 +537,7 @@ write_liver_appendix_ppc_table <- function(liver_results, path) {
     label = "tab:liver-ppc",
     header = c("Component", "Statistic", "Posterior predictive $p$", "Notes"),
     rows = rows,
-    align = "p{0.16\\textwidth}p{0.31\\textwidth}p{0.16\\textwidth}p{0.18\\textwidth}",
+    align = "p{0.18\\textwidth}p{0.29\\textwidth}p{0.15\\textwidth}p{0.22\\textwidth}",
     size = "\\scriptsize"
   )
 }
@@ -832,7 +813,7 @@ write_licorice_appendix_ppc_table <- function(licorice_results, path) {
     label = "tab:licorice-ppc",
     header = c("Component", "Statistic", "Posterior predictive $p$", "Notes"),
     rows = rows,
-    align = "p{0.16\\textwidth}p{0.31\\textwidth}p{0.16\\textwidth}p{0.18\\textwidth}",
+    align = "p{0.18\\textwidth}p{0.29\\textwidth}p{0.15\\textwidth}p{0.22\\textwidth}",
     size = "\\scriptsize"
   )
 }

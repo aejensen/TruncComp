@@ -1,0 +1,129 @@
+#' Summarize a truncated-comparison fit
+#'
+#' Prints the estimated treatment contrasts, their confidence intervals, and the
+#' joint likelihood ratio result for a fitted `"trunc_comp_fit"` object.
+#'
+#' @param object A `"trunc_comp_fit"` object returned by [trunc_comp()].
+#' @param ... Unused additional arguments.
+#' @return The input object, returned invisibly.
+#' @details
+#' For successful unadjusted fits the summary also reports the fitted `delta`
+#' point estimate. Any confidence interval for `delta` is computed on demand
+#' through [confint.trunc_comp_fit()].
+#' @examples
+#' library(TruncComp)
+#' f0 <- function(n) stats::rnorm(n, 3, 1)
+#' f1 <- function(n) stats::rnorm(n, 3.5, 1)
+#' d <- simulate_truncated_data(n = 40, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
+#' fit <- trunc_comp(Y ~ R, atom = 0, data = d, method = "splrt")
+#' summary(fit)
+#' @rdname summary
+#' @export
+summary.trunc_comp_fit <- function(object, ...) {
+  if(!is.null(object$call)) {
+    cat("Call:\n")
+    print(object$call)
+    cat("\n")
+  }
+
+  cat("Method:", trunc_comp_method_label(object$method), "\n")
+  cat("Confidence level = ", object$conf.level * 100, "%\n\n", sep = "")
+  if(!is.null(object$adjust)) {
+    cat("Adjusted for:", object$adjust, "\n\n")
+  }
+
+  if(isTRUE(object$success)) {
+    estimates <- matrix(NA_real_, 2, 3)
+    estimates[1, 1] <- object$mu_delta
+    estimates[1, 2:3] <- object$mu_delta_ci
+    estimates[2, 1] <- object$alpha_delta
+    estimates[2, 2:3] <- object$alpha_delta_ci
+
+    rownames(estimates) <- c(
+      "Conditional non-atom mean difference",
+      "Odds ratio for being outside the atom"
+    )
+    colnames(estimates) <- c("Estimate", "CI Lower", "CI Upper")
+
+    if(is.finite(object$delta)) {
+      estimates <- rbind(
+        estimates,
+        "Coded endpoint mean difference (delta)" = c(object$delta, NA_real_, NA_real_)
+      )
+    }
+
+    cat("Treatment contrasts\n")
+    print.default(estimates)
+    cat("\nJoint test statistic:", object$statistic)
+    cat("\np value:", object$p.value, "\n")
+  } else {
+    cat("The estimation procedure failed.\n")
+    cat("The error message was:", object$error, "\n")
+  }
+  cat("\n")
+
+  invisible(object)
+}
+
+#' Print a truncated-comparison fit
+#'
+#' Prints a concise overview of a fitted `"trunc_comp_fit"` object.
+#'
+#' @param x A `"trunc_comp_fit"` object returned by [trunc_comp()].
+#' @param ... Unused additional arguments.
+#' @return The input object, returned invisibly.
+#' @examples
+#' library(TruncComp)
+#' f0 <- function(n) stats::rnorm(n, 3, 1)
+#' f1 <- function(n) stats::rnorm(n, 3.5, 1)
+#' d <- simulate_truncated_data(n = 40, f0 = f0, f1 = f1, pi0 = 0.6, pi1 = 0.5)
+#' fit <- trunc_comp(Y ~ R, atom = 0, data = d, method = "lrt")
+#' print(fit)
+#' @rdname print
+#' @export
+print.trunc_comp_fit <- function(x, ...) {
+  cat("<trunc_comp_fit>\n")
+  if(!is.null(x$call)) {
+    cat("Call:\n")
+    print(x$call)
+  }
+  cat("Method:", trunc_comp_method_label(x$method), "\n")
+  cat("Success:", isTRUE(x$success), "\n")
+
+  if(isTRUE(x$success)) {
+    estimates <- stats::setNames(
+      c(numeric_or_na(x$mu_delta), numeric_or_na(x$alpha_delta), numeric_or_na(x$delta)),
+      c("mu_delta", "alpha_delta", "delta")
+    )
+    print.default(estimates)
+    cat("\nUse summary() for confidence intervals and the joint test.\n")
+  } else {
+    cat("Error:", x$error, "\n")
+  }
+
+  invisible(x)
+}
+
+#' Extract fitted treatment-contrast estimates
+#'
+#' Returns the primary fitted treatment-contrast estimates from a
+#' `"trunc_comp_fit"` object.
+#'
+#' @param object A `"trunc_comp_fit"` object returned by [trunc_comp()].
+#' @param ... Unused additional arguments.
+#' @return A named numeric vector with entries `mu_delta`, `alpha_delta`, and
+#'   `delta`.
+#' @examples
+#' library(TruncComp)
+#' data("trunc_comp_example", package = "TruncComp")
+#' fit <- trunc_comp(Y ~ R, atom = 0, data = trunc_comp_example, method = "lrt")
+#' coef(fit)
+#' @export
+coef.trunc_comp_fit <- function(object, ...) {
+  stats::setNames(
+    c(numeric_or_na(object$mu_delta),
+      numeric_or_na(object$alpha_delta),
+      numeric_or_na(object$delta)),
+    c("mu_delta", "alpha_delta", "delta")
+  )
+}

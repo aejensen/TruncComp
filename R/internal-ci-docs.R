@@ -1,0 +1,138 @@
+#' Internal confidence-surface helpers
+#'
+#' Developer-facing documentation for the helpers that build marginal interval
+#' displays, simultaneous confidence grids, and joint likelihood surfaces.
+#'
+#' @name trunccomp-ci-helpers
+#' @title Internal confidence-surface helpers
+#' @description
+#' These helpers validate plotting and grid arguments, choose adaptive grid
+#' bounds and evaluate joint likelihood ratio surfaces using the parametric and
+#' semiparametric candidate calculators.
+#' @aliases validateJointContrastResolution
+#' @aliases jointContrastAxisBounds
+#' @aliases jointContrastGrid
+#' @aliases jointContrastMuFallbackOffset
+#' @aliases jointContrastLogORFallbackOffset
+#' @aliases jointContrastAxisOffset
+#' @aliases jointContrastDefaultOffsets
+#' @aliases normalizeJointContrastOffsets
+#' @aliases jointContrastDefaultBounds
+#' @aliases jointContrastPlot
+#' @aliases validateConfidenceLevel
+#' @aliases buildMarginalCIMatrix
+#' @aliases jointContrastSurfaceData
+#' @usage
+#' validateJointContrastResolution(resolution)
+#' jointContrastAxisBounds(interval = NULL, center = NULL, offset)
+#' jointContrastGrid(interval = NULL, center = NULL, offset, resolution = 35)
+#' jointContrastMuFallbackOffset(m)
+#' jointContrastLogORFallbackOffset(m)
+#' jointContrastAxisOffset(interval = NULL, center = NULL, fallback = NULL)
+#' jointContrastDefaultOffsets(m)
+#' normalizeJointContrastOffsets(m, offset = NULL)
+#' jointContrastDefaultBounds(m, offset = NULL)
+#' jointContrastPlot(mu_delta, log_or_delta, surface, m, conf.level)
+#' validateConfidenceLevel(conf.level)
+#' buildMarginalCIMatrix(object)
+#' jointContrastSurfaceData(
+#'   m, muDelta = NULL, logORdelta = NULL, conf.level = m$conf.level,
+#'   plot = TRUE, offset = NULL, resolution = 35
+#' )
+#' @details
+#' ### `validateJointContrastResolution(resolution)`
+#'
+#' Validates the requested simultaneous-surface resolution. The helper returns
+#' the value coerced to integer and errors unless `resolution` is a single
+#' positive finite number. Its role is to keep joint component surface grid
+#' generation from silently using malformed resolutions.
+#'
+#' ### `jointContrastAxisBounds(interval = NULL, center = NULL, offset)`
+#'
+#' Derives plotting bounds for one joint-inference axis. `interval` is an
+#' optional marginal interval, `center` is an optional point estimate, and
+#' `offset` is the expansion amount. The helper returns a length-two numeric
+#' vector. It errors when `offset` is not scalar, finite, and non-negative. Its
+#' role is to translate marginal inference output into an initial simultaneous
+#' search box.
+#'
+#' ### `jointContrastGrid(interval = NULL, center = NULL, offset,
+#' resolution = 35)`
+#'
+#' Builds an equally spaced grid for one axis by combining
+#' `validateJointContrastResolution()` with `jointContrastAxisBounds()`. The
+#' helper returns the numeric grid vector. Its role is to keep both axes of the
+#' simultaneous region synchronized with the same resolution logic.
+#'
+#' ### `jointContrastMuFallbackOffset(m)` and
+#' `jointContrastLogORFallbackOffset(m)`
+#'
+#' Provide fallback expansions for the mean-difference and log-odds axes when
+#' marginal intervals are unavailable or degenerate. `m` is a fitted
+#' `"trunc_comp_fit"` object. Each helper returns a scalar positive offset derived
+#' from observed-data variability or, failing that, a scale based on the raw
+#' data and sample size. Their role is to make simultaneous-region evaluation
+#' possible even when the component intervals are `NA`.
+#'
+#' ### `jointContrastAxisOffset(interval = NULL, center = NULL, fallback = NULL)`
+#'
+#' Chooses a single axis expansion from the preferred available source: half the
+#' width of `interval`, otherwise `fallback`, otherwise the absolute `center`,
+#' otherwise `1`. The helper returns a scalar numeric offset. Its role is to
+#' encode the package's priority order for default simultaneous-region windows.
+#'
+#' ### `jointContrastDefaultOffsets(m)` and
+#' `normalizeJointContrastOffsets(m, offset = NULL)`
+#'
+#' `jointContrastDefaultOffsets()` returns the named default axis offsets for the
+#' fitted object `m`. `normalizeJointContrastOffsets()` either returns those
+#' defaults or validates a user-supplied scalar or length-two override. The
+#' second helper errors on negative, non-finite, or wrong-length overrides.
+#' Their role is to let public and internal callers share the same windowing
+#' rules.
+#'
+#' ### `jointContrastDefaultBounds(m, offset = NULL)`
+#'
+#' Combines the fitted marginal intervals, transformed log odds ratio scale, and the
+#' normalized offsets into a named list with `muDelta` and `logORdelta` bounds.
+#' The helper returns that list directly. Its role is to provide the initial box
+#' used by the simultaneous component region.
+#'
+#' ### `jointContrastPlot(mu_delta, log_or_delta, surface, m, conf.level)`
+#'
+#' Creates the `ggplot2` raster-and-contour visualization for the joint
+#' likelihood surface. The grid vectors `mu_delta` and `log_or_delta`, the matrix
+#' `surface`, the fitted object `m`, and the contour level `conf.level` fully
+#' determine the result. The helper returns a `ggplot` object. It quietly omits
+#' the fitted-point overlay when the estimate is not finite. Its role is to keep
+#' all plotting logic separate from the numerical surface evaluation.
+#'
+#' ### `validateConfidenceLevel(conf.level)`
+#'
+#' Shared scalar confidence-level validator used across confidence-interval and
+#' surface helpers. It returns the supplied value unchanged when it lies strictly
+#' between `0` and `1`, otherwise it errors. Its role is to make confidence-level
+#' handling consistent across the package.
+#'
+#' ### `buildMarginalCIMatrix(object)`
+#'
+#' Converts a successful `"trunc_comp_fit"` object into the printed component
+#' confidence-interval matrix used by `confint()` when `parameter` selects the
+#' stored component intervals. The helper returns a numeric matrix with
+#' human-readable row and column names. Its role is to centralize the display
+#' formatting of the stored one-parameter intervals.
+#'
+#' ### `jointContrastSurfaceData(m, muDelta = NULL, logORdelta = NULL,
+#' conf.level = m$conf.level, plot = TRUE, offset = NULL, resolution = 35)`
+#'
+#' Core surface evaluator used by [joint_contrast_surface()]. `m` must be a
+#' successful `"trunc_comp_fit"` fit;
+#' the remaining arguments define or derive the evaluation grid and whether to
+#' plot. The helper returns a list containing the axis vectors
+#' and the surface matrix. For adjusted fits, nuisance adjustment coefficients
+#' are profiled out. It errors on failed fits, unsupported methods, or invalid
+#' confidence levels. Its role is to centralize component surface evaluation.
+#'
+#' @seealso [confint.trunc_comp_fit()], [joint_contrast_surface()]
+#' @keywords internal
+NULL

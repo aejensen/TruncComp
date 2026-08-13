@@ -1,0 +1,266 @@
+---
+title: "Likelihood-based analysis of the packaged example data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Likelihood-based analysis of the packaged example data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+`TruncComp` provides two likelihood-based frequentist procedures for comparing
+two groups when a continuous outcome may be undefined because a substantive
+event has occurred:
+
+- `method = "lrt"` for the parametric likelihood ratio analysis
+- `method = "splrt"` for the semiparametric likelihood ratio analysis
+
+This vignette applies both methods to the packaged example data set used
+throughout the package documentation. The goal is to compare the fitted
+probabilities outside the atom, the fitted non-atom mean contrast, and the
+coded-endpoint contrast.
+
+## Load the example data
+
+```{r}
+library(TruncComp)
+
+data("trunc_comp_example", package = "TruncComp")
+example_data <- transform(
+  trunc_comp_example,
+  A = as.integer(Y != 0)
+)
+
+head(example_data, 10)
+```
+
+The packaged example uses `0` as the atom. Thus `A = 0` marks the substantive
+event for which the continuous outcome is undefined, and `A = 1` marks rows
+outside the atom.
+
+It is useful to inspect the example on three scales before fitting either
+procedure:
+
+- the atom probability
+- the mean among the non-atom outcomes
+- the mean of the coded endpoint
+
+```{r}
+arm_summary <- do.call(
+  rbind,
+  lapply(split(example_data, example_data$R), function(d) {
+    data.frame(
+      n = nrow(d),
+      atom_probability = mean(d$A == 0L),
+      outside_atom_probability = mean(d$A == 1L),
+      mean_non_atom = mean(d$Y[d$A == 1L]),
+      mean_coded_endpoint = mean(d$Y),
+      row.names = NULL
+    )
+  })
+)
+
+arm_summary$arm <- c("control", "treatment")
+arm_summary <- arm_summary[, c("arm", "n", "atom_probability",
+                               "outside_atom_probability", "mean_non_atom",
+                               "mean_coded_endpoint")]
+arm_summary
+```
+
+This table makes the target quantities concrete. The two likelihood-based
+procedures below use the same atom and the same binary treatment indicator, but
+they differ in how strongly they model the non-atom outcome distribution.
+
+## Fit the parametric and semiparametric procedures
+
+The same formula interface fits either the parametric likelihood ratio
+procedure or the semiparametric likelihood ratio procedure:
+
+```{r}
+fit_lrt <- trunc_comp(
+  Y ~ R,
+  atom = 0,
+  data = example_data,
+  method = "lrt"
+)
+
+fit_splrt <- trunc_comp(
+  Y ~ R,
+  atom = 0,
+  data = example_data,
+  method = "splrt"
+)
+
+fit_lrt
+fit_splrt
+```
+
+The two printed objects report the same three fitted contrasts:
+
+- `mu_delta`: treatment-minus-control non-atom mean contrast
+- `alpha_delta`: treatment-to-control odds ratio for being outside the atom
+- `delta`: treatment-minus-control coded-endpoint mean contrast
+
+Each fit also stores the joint likelihood ratio statistic and its p-value.
+
+## Compare the fitted likelihood results
+
+```{r}
+fit_comparison <- data.frame(
+  method = c("Parametric likelihood", "Semiparametric likelihood"),
+  mu_delta = c(fit_lrt$mu_delta, fit_splrt$mu_delta),
+  alpha_delta = c(fit_lrt$alpha_delta, fit_splrt$alpha_delta),
+  delta = c(fit_lrt$delta, fit_splrt$delta),
+  statistic = c(fit_lrt$statistic, fit_splrt$statistic),
+  p_value = c(fit_lrt$p.value, fit_splrt$p.value),
+  row.names = NULL
+)
+
+fit_comparison
+```
+
+For this example the fitted contrasts are the same to the displayed precision.
+This agreement is specific to these data. Both methods target the same
+contrasts, but the semiparametric procedure places less structure on the
+continuous non-atom distribution.
+
+The full printed summaries also expose the stored component confidence
+intervals and the joint likelihood ratio result:
+
+```{r}
+summary(fit_lrt)
+summary(fit_splrt)
+```
+
+Notice that the summary output reports the point estimate for the
+coded-endpoint contrast `delta`, but leaves its confidence interval blank.
+That is intentional. Unlike `mu_delta` and `alpha_delta`, the package does not
+store one default interval for `delta` on the fitted object because there are
+multiple supported constructions for that interval, and they answer slightly
+different questions. Instead, `delta` intervals are computed on demand through
+`confint()` after you choose the interval type explicitly.
+
+## Component confidence intervals
+
+The component intervals are available directly through `confint()`:
+
+```{r}
+confint(fit_lrt)
+confint(fit_splrt)
+```
+
+These correspond to the two primary model components:
+
+- the non-atom mean contrast
+- the odds ratio for being outside the atom
+
+Their interval constructions differ by method:
+
+- For `method = "lrt"`, both intervals invert their parametric component
+  likelihood ratio statistics. The logistic interval is exponentiated to the
+  odds ratio scale.
+- For `method = "splrt"`, the interval for `mu_delta` inverts the empirical
+  likelihood statistic for the non-atom outcomes, while the interval
+  for `alpha_delta` inverts the logistic likelihood ratio statistic and is
+  exponentiated to the odds ratio scale.
+
+For this example the fitted component intervals are again very similar across
+the two likelihood paths.
+
+## Coded-endpoint intervals for `delta`
+
+Unlike the component intervals, intervals for the coded-endpoint contrast
+`delta` are computed on demand. The package provides three choices:
+
+- `method = "welch"` for a direct interval on the coded endpoint
+- `method = "profile"` for a profile likelihood interval
+- `method = "projected"` for a full likelihood-region projection interval
+
+The likelihood-based `delta` constructions use the full parameter vector of
+both arm means and both arm logits. This is necessary because `delta` depends
+on the baseline levels as well as the two treatment contrasts. Therefore these
+intervals are not obtained from the two-dimensional surface returned by
+`joint_contrast_surface()`.
+
+The projected interval optimizes `delta` over the full region defined by a
+four-degree-of-freedom likelihood ratio cutoff. The profile interval imposes a
+fixed scalar `delta`, profiles every remaining coordinate, and inverts the
+result at the one-degree-of-freedom cutoff.
+
+```{r}
+extract_delta_interval <- function(fit, method) {
+  capture.output(
+    interval <- confint(
+      fit,
+      parameter = "delta",
+      method = method,
+      plot = FALSE
+    )
+  )
+
+  data.frame(
+    lower = unname(interval[1, 1]),
+    upper = unname(interval[1, 2]),
+    row.names = NULL
+  )
+}
+
+delta_interval_table <- do.call(
+  rbind,
+  lapply(
+    list(
+      list(label = "Parametric likelihood", fit = fit_lrt),
+      list(label = "Semiparametric likelihood", fit = fit_splrt)
+    ),
+    function(entry) {
+      do.call(
+        rbind,
+        lapply(c("welch", "profile", "projected"), function(method_name) {
+          interval <- extract_delta_interval(entry$fit, method_name)
+          data.frame(
+            method = entry$label,
+            interval_type = method_name,
+            lower = interval$lower,
+            upper = interval$upper,
+            row.names = NULL
+          )
+        })
+      )
+    }
+  )
+)
+
+delta_interval_table
+```
+
+On this data set the Welch interval is identical across the two fitted objects
+because it depends only on the coded endpoint. The profile and projected
+intervals use the full four-parameter criterion for the arm means and arm
+logits and can differ slightly between the parametric and semiparametric
+procedures.
+
+## Joint confidence surfaces
+
+For successful adjusted and unadjusted fits, `TruncComp` also exposes the joint
+likelihood ratio surface in `(mu_delta, log_or_delta)` for simultaneous
+component inference. In an adjusted fit, the axes are the two treatment
+coefficients and the adjustment coefficients are profiled out. The
+coded-endpoint intervals above are based on the full four-parameter criterion
+rather than this two-dimensional component surface.
+
+Adjusted fits set `delta = NA`, and coded-endpoint intervals are unavailable
+because conditional treatment coefficients do not define a standardized
+marginal coded-endpoint contrast.
+
+Below is the joint confidence plot for the semiparametric likelihood path on
+the same example data:
+
+```{r, fig.width=11, fig.height=5.5, out.width="100%"}
+joint_contrast_surface(fit_splrt, resolution = 60)
+```

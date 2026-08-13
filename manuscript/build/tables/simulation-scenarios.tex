@@ -1,0 +1,18 @@
+\begin{table}[!h]
+\centering
+\caption{\label{tab:simulation}Simulation scenarios S1--S6 for effect levels $h=0,1,2,3$}
+\centering
+\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{
+\begin{tabular}[t]{llll}
+\toprule
+Scenario & Configuration & \makecell[l]{Probability outside atom\\ $\pi_{r,h}=\Prob(A=1\mid R=r)$} & \makecell[l]{Non-atom law\\ $F_{r,h}^c$}\\
+\midrule
+S1 & \makecell[l]{Normal non-atom shift,\\ low atom probability} & \makecell[l]{$\pi_{0,h} = \pi_{1,h} = 0.85$} & \makecell[l]{$F_{0,h}^c = N(3, 1)$\\ $F_{1,h}^c = N(3 + \delta_h, 1)$\\ $(\delta_0,\ldots,\delta_3) = (0, 0.20, 0.35, 0.50)$}\\
+S2 & \makecell[l]{Effect only on probability\\ outside atom} & \makecell[l]{$\pi_{0,h} = 0.45$\\ $(\pi_{1,0},\ldots,\pi_{1,3}) = (0.45, 0.50, 0.55, 0.60)$} & \makecell[l]{$F_{0,h}^c = F_{1,h}^c = N(3, 1)$}\\
+S3 & \makecell[l]{Antagonistic\\ cancellation} & \makecell[l]{$\pi_{0,h} = 0.50$\\ $(\pi_{1,0},\ldots,\pi_{1,3}) = (0.50, 0.525, 0.55, 0.60)$} & \makecell[l]{$F_{0,h}^c = N(3, 1)$\\ $F_{1,h}^c = N(1.5 / \pi_{1,h}, 1)$}\\
+S4 & \makecell[l]{Concordant joint\\ improvement} & \makecell[l]{$\pi_{0,h} = 0.50$\\ $(\pi_{1,0},\ldots,\pi_{1,3}) = (0.50, 0.55, 0.60, 0.65)$} & \makecell[l]{$F_{0,h}^c = N(3, 1)$\\ $F_{1,h}^c = N(3 + 0.15h, 1)$}\\
+S5 & \makecell[l]{Gamma shape change\\ with mean shift} & \makecell[l]{$\pi_{0,h} = \pi_{1,h} = 0.65$} & \makecell[l]{$F_{0,h}^c = \Gamma(9, 3/9)$\\ $F_{1,h}^c = \Gamma(k_h, m_h / k_h)$\\ $(k_0,\ldots,k_3) = (9, 6, 4, 2.5)$\\ $(m_0,\ldots,m_3) = (3.0, 3.2, 3.4, 3.6)$}\\
+S6 & \makecell[l]{Rare outlier\\ contamination} & \makecell[l]{$\pi_{0,h} = \pi_{1,h} = 0.80$} & \makecell[l]{$F_{r,h}^c = 0.95 N(3 + r\delta_h, 0.35^2)$\\ $\hspace{2.6em}{}+ 0.05 N(10 + r\delta_h, 0.5^2)$\\ $(\delta_0,\ldots,\delta_3) = (0, 0.15, 0.25, 0.35)$}\\
+\bottomrule
+\end{tabular}}
+\end{table}

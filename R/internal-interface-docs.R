@@ -1,0 +1,234 @@
+#' Internal interface normalization helpers
+#'
+#' Developer-facing documentation for the helpers that turn the public
+#' `trunc_comp()` inputs into the standardized `Y`/`A`/`R` analysis frame used by
+#' both estimation engines.
+#'
+#' @name trunccomp-input-helpers
+#' @title Internal interface normalization helpers
+#' @description
+#' These helpers validate the formula and default interfaces, normalize optional
+#' covariate-adjustment inputs, infer the atom value when possible, and dispatch
+#' into the shared fitting core.
+#' @aliases normalizeFormulaAdjust
+#' @aliases prepareFormulaAdjustment
+#' @aliases prepareDefaultAdjustment
+#' @aliases resolveDefaultAtom
+#' @aliases trunc_comp_core
+#' @usage
+#' normalizeFormulaAdjust(adjust, outcome_name, treatment_name)
+#' prepareFormulaAdjustment(data, adjust)
+#' prepareDefaultAdjustment(adjust, n)
+#' resolveDefaultAtom(y, a, atom = NULL)
+#' trunc_comp_core(
+#'   y, a, r, method, conf.level = 0.95,
+#'   adjust_data = NULL, adjust_formula = NULL, atom = NULL, call = NULL
+#' )
+#' @details
+#' ### `normalizeFormulaAdjust(adjust, outcome_name, treatment_name)`
+#'
+#' Validates a one-sided adjustment formula supplied through the public formula
+#' interface. `adjust` must be `NULL` or a one-sided additive formula;
+#' `outcome_name` and `treatment_name` are the variable names from the main
+#' model formula and are used to reject collisions. The helper returns the
+#' validated formula unchanged or `NULL` when no adjustment terms remain. It
+#' errors on non-formulas, formulas using `.`, interaction terms, references to
+#' the outcome or treatment variables, or the reserved standardized names `Y`,
+#' `A`, and `R`. Its role is to ensure the later model-frame construction is
+#' unambiguous.
+#'
+#' ### `prepareFormulaAdjustment(data, adjust)`
+#'
+#' Builds the adjustment-only model frame for the formula interface. `data` is
+#' the user-supplied data frame and `adjust` is the validated one-sided formula.
+#' The helper returns a list with `data` containing the covariate frame and
+#' `formula` containing the original adjustment formula, or `NULL` components
+#' when no adjustment variables are present. It fails if `na.fail` detects
+#' missing values or if duplicate covariate names would make the later
+#' standardized analysis data ambiguous. Its role is to keep adjustment handling
+#' identical across `LRT` and `SPLRT`.
+#'
+#' ### `prepareDefaultAdjustment(adjust, n)`
+#'
+#' Normalizes adjustment covariates passed through `trunc_comp.default()`.
+#' `adjust` may be `NULL`, a data frame, or a matrix, and `n` is the expected
+#' number of rows matching `y`. The helper returns a list with standardized
+#' adjustment data and an additive formula created with `reformulate()`. It
+#' errors when row counts do not match, names are missing or duplicated, the
+#' input is neither matrix nor data frame, or reserved names would collide with
+#' the internal `Y`/`A`/`R` columns. Its role is to align the default interface
+#' with the formula interface before both enter the same core fitter.
+#'
+#' ### `resolveDefaultAtom(y, a, atom = NULL)`
+#'
+#' Determines which atom value should be stored on the fitted object for the
+#' default interface. `y` is the coded endpoint vector, `a` is the non-atom
+#' indicator, and `atom` is an optional explicit atom supplied by the caller.
+#' The helper returns a single numeric atom. It errors when an explicit atom is
+#' not scalar and finite, or when implicit inference is impossible because
+#' `y[a == 0]` does not collapse to a single unique finite value. Its role is to
+#' make later `delta` calculations reproducible even when the user omits `atom`.
+#'
+#' ### `trunc_comp_core(y, a, r, method, conf.level = 0.95,
+#' adjust_data = NULL, adjust_formula = NULL, atom = NULL, call = NULL)`
+#'
+#' Shared engine used by both public interfaces after argument normalization.
+#' `y`, `a`, and `r` are the standardized coded endpoint, non-atom, and treatment
+#' vectors; `method` chooses `LRT` or `SPLRT`; `conf.level` and `atom` are stored
+#' on the result; and `adjust_data` plus `adjust_formula` represent
+#' optional baseline covariates. The helper returns a `"trunc_comp_fit"` object from
+#' [LRT()] or [SPLRT()], augmented with the standardized analysis data and atom.
+#' If `isDataOkay()` fails it returns a structured error object instead of
+#' attempting estimation. Its role is to keep the two public interfaces thin and
+#' to guarantee that both methods see the same canonical analysis frame.
+#'
+#' @seealso [trunc_comp()], [trunc_comp.default()], [LRT()], [SPLRT()]
+#' @keywords internal
+NULL
+
+#' Internal object-construction helpers
+#'
+#' Developer-facing documentation for the low-level helpers that validate the
+#' standardized data, summarize adjustment metadata, and create successful or
+#' failed `"trunc_comp_fit"` result objects.
+#'
+#' @name trunccomp-object-helpers
+#' @title Internal object-construction helpers
+#' @description
+#' These helpers centralize object creation and metadata normalization so every
+#' estimation path returns the same top-level structure.
+#' @aliases isDataOkay
+#' @aliases adjustmentSpecification
+#' @aliases is_valid_trunc_comp_fit
+#' @aliases normalize_trunc_comp_method
+#' @aliases trunc_comp_method_label
+#' @aliases new_trunc_comp_fit
+#' @aliases new_failed_trunc_comp_fit
+#' @aliases numeric_or_na
+#' @usage
+#' isDataOkay(d)
+#' adjustmentSpecification(adjust)
+#' is_valid_trunc_comp_fit(object)
+#' normalize_trunc_comp_method(method)
+#' trunc_comp_method_label(method)
+#' numeric_or_na(x)
+#' new_trunc_comp_fit(
+#'   mu_delta = NULL, mu_delta_ci = NULL, alpha_delta = NULL,
+#'   alpha_delta_ci = NULL, delta = NULL, statistic = NULL,
+#'   p.value = NULL, method, conf.level, success, error = "",
+#'   data = NULL, adjust = NULL, adjust_formula = NULL,
+#'   atom = NULL, call = NULL
+#' )
+#' new_failed_trunc_comp_fit(
+#'   error, method, conf.level, data = NULL,
+#'   adjust = NULL, adjust_formula = NULL, atom = NULL, call = NULL
+#' )
+#' @details
+#' ### `isDataOkay(d)`
+#'
+#' Performs the final minimum-data check on the standardized analysis frame `d`.
+#' The helper inspects only the non-atom outcomes (`A == 1`) and returns `TRUE`
+#' when both treatment groups contain at least two non-atom values, otherwise
+#' `FALSE`. It does not throw; the caller decides whether to convert the result
+#' into a warning or structured error object. Its role is to block likelihood
+#' routines that require at least minimal within-group variation.
+#'
+#' ### `adjustmentSpecification(adjust)`
+#'
+#' Converts a validated adjustment formula into a compact human-readable string.
+#' `adjust` is either `NULL` or an additive one-sided formula. The helper
+#' returns `NULL` when there is no effective adjustment and otherwise collapses
+#' the term labels with `" + "`. It is intentionally permissive once the formula
+#' has passed earlier validation. Its role is to provide stable metadata for the
+#' fitted object and printed summaries.
+#'
+#' ### `is_valid_trunc_comp_fit(object)`
+#'
+#' Small predicate for checking whether a result object represents a successful
+#' fit. `object` is any object expected to carry a `success` field. The
+#' helper returns `TRUE` only when `success` is explicitly `TRUE`, and `FALSE`
+#' otherwise. Its role is to give downstream helpers a single convention for
+#' success checks.
+#'
+#' ### `normalize_trunc_comp_method(method)` and
+#' `trunc_comp_method_label(method)`
+#'
+#' These helpers normalize method identifiers and derive the display labels used
+#' in printed summaries. Their role is to separate the canonical object field
+#' (`"lrt"` / `"splrt"`) from the human-readable summary text.
+#'
+#' ### `numeric_or_na(x)`
+#'
+#' Small coercion helper used by `print()` and `coef()` so missing estimates are
+#' displayed as `NA_real_` rather than disappearing from named vectors.
+#'
+#' ### `new_trunc_comp_fit(...)`
+#'
+#' Constructs the canonical `"trunc_comp_fit"` object. The arguments mirror the
+#' fields exposed by the package: component estimates and intervals, the `delta`
+#' point estimate, test statistic, `p.value`, method metadata, success state,
+#' optional standardized data, printable adjustment metadata, the normalized
+#' adjustment formula with its environment, the fitted atom, and the matched
+#' call.
+#'
+#' ### `new_failed_trunc_comp_fit(...)`
+#'
+#' Convenience wrapper for creating failed `"trunc_comp_fit"` objects while
+#' preserving method and input metadata.
+#'
+#' @seealso [new_trunc_comp_fit()], [summary.trunc_comp_fit()],
+#'   [print.trunc_comp_fit()]
+#' @keywords internal
+NULL
+
+#' Internal simulation helpers
+#'
+#' Developer-facing documentation for the utilities that build reproducible
+#' simulated datasets for tests, examples, and validation scripts.
+#'
+#' @name trunccomp-simulation-helpers
+#' @title Internal simulation helpers
+#' @description
+#' These helpers validate and implement the public simulation interface.
+#' @aliases .validateSimulationInputs
+#' @aliases .drawObservedOutcome
+#' @aliases .simulateTruncatedGroup
+#' @usage
+#' .validateSimulationInputs(n, f0, f1, pi0, pi1, atom = 0)
+#' .drawObservedOutcome(generator, n, label)
+#' .simulateTruncatedGroup(n, r, generator, probability, label, atom = 0)
+#' @details
+#' ### `.validateSimulationInputs(n, f0, f1, pi0, pi1, atom = 0)`
+#'
+#' Checks the user-supplied inputs for [simulate_truncated_data()]. `n` must be a
+#' positive integer, `f0` and `f1` must be functions, `pi0` and `pi1` must lie
+#' in `[0, 1]`, and `atom` must be scalar and finite. The helper returns `NULL`
+#' invisibly and throws descriptive errors on invalid inputs. Its role is to
+#' keep the public simulator from repeating input-validation logic.
+#'
+#' ### `.drawObservedOutcome(generator, n, label)`
+#'
+#' Calls a group-specific outcome generator and standardizes its output.
+#' `generator` is the user-provided function, `n` is the requested sample size,
+#' and `label` names the generator in error messages. The helper returns a
+#' numeric vector of length `n`. If the generator returns a single scalar, that
+#' first scalar is kept and the helper obtains the remaining draws by repeated
+#' calls to `generator(1)`. It errors when the result is not finite numeric data
+#' of the correct length. Its role is to make the simulation interface flexible
+#' while keeping downstream code simple.
+#'
+#' ### `.simulateTruncatedGroup(n, r, generator, probability, label, atom = 0)`
+#'
+#' Simulates one treatment arm. `n` is the group size, `r` is the treatment-arm
+#' label to store in the `R` column, `generator` produces non-atom outcomes,
+#' `probability` is the probability of being outside the atom, `label` is passed
+#' to `.drawObservedOutcome()`, and `atom` represents atom observations. The
+#' helper errors if a non-atom draw equals `atom`, because that value uniquely
+#' identifies the atom in the coded endpoint. It returns a standardized data
+#' frame with `R`, `A`, and `Y`. It inherits input validation failures from the
+#' upstream helpers. Its role is to keep the public simulator symmetric across
+#' the two treatment groups.
+#'
+#' @seealso [simulate_truncated_data()]
+#' @keywords internal
+NULL

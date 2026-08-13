@@ -1,0 +1,44 @@
+Package: TruncComp
+Type: Package
+Title: Two-Component Comparisons for Outcomes with a Substantive Atom
+Version: 0.2.0
+Author: Andreas Kryger Jensen
+Maintainer: Andreas Kryger Jensen <aeje@sund.ku.dk>
+Description: Implements parametric and semiparametric likelihood ratio methods
+    for comparing two groups when a continuous outcome may be undefined because
+    a substantive event has occurred. The methods jointly assess treatment
+    contrasts in the conditional non-atom mean and the probability outside the
+    atom. The package also provides
+    component intervals, joint component regions, coded-endpoint intervals for
+    unadjusted analyses, and an experimental Bayesian two-part mixture model.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports:
+    bayesplot,
+    ggplot2,
+    methods,
+    posterior,
+    Rcpp (>= 0.12.0),
+    RcppParallel (>= 5.0.1),
+    rstan (>= 2.18.1),
+    rstantools (>= 2.6.0)
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat
+VignetteBuilder: knitr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Config/testthat/edition: 3
+Biarch: true
+Depends: 
+    R (>= 3.4.0)
+LinkingTo: 
+    BH (>= 1.66.0),
+    Rcpp (>= 0.12.0),
+    RcppEigen (>= 0.3.3.3.0),
+    RcppParallel (>= 5.0.1),
+    rstan (>= 2.18.1),
+    StanHeaders (>= 2.18.0)
+SystemRequirements: GNU make

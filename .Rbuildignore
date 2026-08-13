@@ -1,0 +1,9 @@
+^\.github($|/)
+^\.git$
+^\.gitignore$
+^\.Rproj\.user$
+^TruncComp\.Rproj$
+^docs$
+^manuscript$
+^simulation-study$
+^\.\.?Rcheck$
